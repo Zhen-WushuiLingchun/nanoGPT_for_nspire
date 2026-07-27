@@ -1,0 +1,129 @@
+{
+  "alignment_protocol": {
+    "fp32_max_absolute_error_gate": 0.0002,
+    "fp32_rmse_gate": 0.00005,
+    "generated_tokens": 64,
+    "generation": "greedy",
+    "logits_checkpoint": "after fixed prompt",
+    "prompt": "First Citizen:",
+    "require_exact_generated_tokens": true
+  },
+  "binary_format": {
+    "alignment_bytes": 64,
+    "endianness": "little",
+    "file_limit_bytes": 6291456,
+    "header_bytes": 128,
+    "header_crc32": true,
+    "magic": "NGNSP001",
+    "payload_crc32": true,
+    "schema_version": 1,
+    "tensor_entry_bytes": 64,
+    "tied_lm_head_stored_twice": false
+  },
+  "experiment_id": "lesson08-export-host-c-and-ndless-build",
+  "models": {
+    "Direct-Small": {
+      "alignment": {
+        "generated_tokens_exact": true,
+        "max_absolute_error": 0.000003814697265625,
+        "passed": true,
+        "rmse": 0.0000015533283332985994
+      },
+      "arena_bytes": 663232,
+      "export": {
+        "bytes": 5046592,
+        "sha256": "db2adc41e2d8e60e49d6c3da54ff8a3ce21b15e49cbc8d6c62b86fab3ccd8aa1",
+        "tensor_count": 27
+      },
+      "generated_text": "\nThe senators of the sea of the state of the sea,\nAnd therefore ",
+      "host_c_tokens_per_second": 2108.10811,
+      "model_storage": "FP32",
+      "parameters": 1261120,
+      "total_model_plus_arena_bytes": 5709824
+    },
+    "Distilled-Small": {
+      "alignment": {
+        "generated_tokens_exact": true,
+        "max_absolute_error": 0.00000476837158203125,
+        "passed": true,
+        "rmse": 0.000001492339318908558
+      },
+      "arena_bytes": 663232,
+      "export": {
+        "bytes": 5046592,
+        "sha256": "9661e3d437077672ba30ad19059886127e574235f01acd1bca1f351e707ab745",
+        "tensor_count": 27
+      },
+      "generated_text": "\nI will not so so so so so so so so so so sound\nThat we have so ",
+      "host_c_tokens_per_second": 2108.10811,
+      "model_storage": "FP32",
+      "parameters": 1261120,
+      "total_model_plus_arena_bytes": 5709824
+    },
+    "Quantized-Small": {
+      "alignment": {
+        "generated_tokens_exact": true,
+        "max_absolute_error": 0.00000286102294921875,
+        "passed": true,
+        "rmse": 0.000000669131955231943
+      },
+      "arena_bytes": 2378624,
+      "export": {
+        "bytes": 6036544,
+        "sha256": "87882cae9a098e280414df5e327253be12202f2c1f6db5ccd0e24503925647c9",
+        "tensor_count": 39
+      },
+      "generated_text": "\nWhat is the city of this cause?\n\nSecond Citizen:\nHe was a fair ",
+      "host_c_tokens_per_second": 132.879046,
+      "model_storage": "packed groupwise INT4 matrices plus FP32 scales and LayerNorm",
+      "parameters": 10695936,
+      "runtime_arithmetic": {
+        "activation": "dynamic groupwise signed INT8 [-127, 127]",
+        "accumulator": "INT32 per group",
+        "fp32_matrix_expansion": false,
+        "group_size": 64
+      },
+      "total_model_plus_arena_bytes": 8415168,
+      "w4a8_quality": {
+        "better_than_direct_small": true,
+        "extra_degradation_gate_passed": true,
+        "extra_degradation_over_w4a32": -0.000056419372558513814,
+        "quality_gate_passed": true,
+        "validation_bpc": 2.126161284292571,
+        "validation_loss": 1.473742699623108,
+        "w4a32_validation_loss": 1.4737991189956665
+      }
+    }
+  },
+  "ndless_build": {
+    "arm_elf": {
+      "bss_bytes": 868,
+      "data_bytes": 4416,
+      "text_bytes": 58356,
+      "total_bytes": 63640
+    },
+    "ndless_minimum_revision": 2022,
+    "package_bytes": 48056,
+    "package_path": "dist/nanogpt-runtime-smoke.tns",
+    "portable_runtime_linked": true,
+    "status": "compile_link_package_passed",
+    "toolchain": "Arm GNU Toolchain 14.3 through installed Ndless SDK",
+    "true_cx_ii_execution": "pending Lesson 09"
+  },
+  "quality_evaluation": {
+    "batch_size": 64,
+    "batches": 50,
+    "dataset": "Tiny Shakespeare character-level",
+    "validation_seed": 1338,
+    "windows_identical_to_lesson07": true
+  },
+  "schema_version": 1,
+  "source_commit": "a94a9a9b9625e26d4da648e1c1b3220caf52f308",
+  "verification": {
+    "c_tests_passed": 3,
+    "ndless_compiled_with_warnings_as_errors": true,
+    "python_tests_passed": 182,
+    "runtime_allocation_inside_forward": false,
+    "runtime_reset_uses_observable_zeroing": true
+  }
+}

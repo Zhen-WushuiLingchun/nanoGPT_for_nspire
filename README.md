@@ -14,7 +14,8 @@
 - 已完成：[第五课：Direct-Small 完整小 GPT](docs/lessons/05-direct-small-gpt.md)
 - 已完成：[第六课：Teacher 与 INT4 量化诊断](docs/lessons/06-int4-quantization.md)
 - 已完成：[第七课：Teacher v2、正式量化与蒸馏](docs/lessons/07-teacher-v2-distillation-and-comparison.md)
-- 后续：Lesson 08 C 对齐、Lesson 09 CX II 测量
+- 已完成：[第八课：统一模型文件、C 推理与 PyTorch 对齐](docs/lessons/08-c-runtime-and-pytorch-alignment.md)
+- 下一步：[Lesson 09 Ndless 像素对话界面与 CX II 测量](docs/plans/2026-07-28-lesson-09-ndless-chat-ui-design.md)
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
 体积门和量化误差门均通过，因此该产物保留为 diagnostic。Lesson 07 只把
@@ -25,6 +26,13 @@ dropout 从 `0.2` 提高到 `0.3`：Teacher v2 通过原质量门，正式 Quant
 训练 token，但 validation loss 为 `1.522163`，未胜过 Direct 的 `1.499790`。
 独立的 10000-step 扩展实验改善到 `1.506599`，仍未反超且不计入同预算基础比较。
 负结果与扩展结果均保留，不做事后改门槛。
+
+Lesson 08 已把三条路线导出成同一 `.ngm` 格式。Direct/Distilled FP32 和
+Quantized-Small packed W4A8 均通过 Host C logits 与 64-token 贪心对齐；
+Quantized-Small 不展开 FP32 matrix，模型加 runtime arena 为 `8,415,168 bytes`，
+固定 validation loss 为 `1.473743`。完整 runtime 也已通过 Ndless ARM
+compile/link/package，生成 `48,056-byte` smoke `.tns`。这些仍不是 CX II 真机
+速度或峰值内存；下一课将在原生像素对话界面中测量。
 
 三条可部署小模型路线与两层公平性已经冻结在
 [`small-model-comparison-design.md`](docs/plans/2026-07-27-small-model-comparison-design.md)，
@@ -43,6 +51,10 @@ python -m nanogpt_nspire.data fetch `
 python -m nanogpt_nspire.data prepare `
   --input artifacts/raw/tinyshakespeare.txt `
   --output artifacts/data/tinyshakespeare
+
+cmake -S . -B build/host -G "Visual Studio 17 2022" -A x64
+cmake --build build/host --config Release
+ctest --test-dir build/host -C Release --output-on-failure
 ```
 
 生成的数据、checkpoint、导出模型和构建产物统一放在 `artifacts/`，不会进入 Git。

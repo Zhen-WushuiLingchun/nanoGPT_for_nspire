@@ -47,6 +47,14 @@
         "n_layer": 4
       },
       "checkpoint_bytes": 5096641,
+      "deployment": {
+        "arena_bytes": 663232,
+        "export_bytes": 5046592,
+        "export_sha256": "db2adc41e2d8e60e49d6c3da54ff8a3ce21b15e49cbc8d6c62b86fab3ccd8aa1",
+        "host_c_alignment_passed": true,
+        "host_c_tokens_per_second": 2108.10811,
+        "model_plus_arena_bytes": 5709824
+      },
       "deployment_precision": "FP32",
       "experiment": "experiments/lesson05-direct-small.json",
       "parameters": 1261120,
@@ -55,12 +63,20 @@
         "selected_validation_loss": 1.4997899746894836,
         "status": "measured"
       },
-      "status": "pytorch_baseline_complete",
+      "status": "host_c_runtime_aligned",
       "training_tokens": 40960000
     },
     "Distilled-Small": {
       "architecture": "exactly Direct-Small v1",
       "checkpoint_bytes": 5097383,
+      "deployment": {
+        "arena_bytes": 663232,
+        "export_bytes": 5046592,
+        "export_sha256": "9661e3d437077672ba30ad19059886127e574235f01acd1bca1f351e707ab745",
+        "host_c_alignment_passed": true,
+        "host_c_tokens_per_second": 2108.10811,
+        "model_plus_arena_bytes": 5709824
+      },
       "deployment_precision": "FP32",
       "experiment": "experiments/lesson07-distilled-small.json",
       "objective": {
@@ -77,7 +93,7 @@
         "selected_validation_loss": 1.5221625304222106,
         "status": "measured_did_not_improve"
       },
-      "status": "base_same_budget_experiment_complete",
+      "status": "base_same_budget_and_host_c_runtime_complete",
       "training_tokens": 40960000
     },
     "Quantized-Small": {
@@ -85,8 +101,14 @@
       "deployment": {
         "candidate_gate_passed": true,
         "file_limit_bytes": 6291456,
-        "integer_C_runtime": "pending Lesson 08",
+        "arena_bytes": 2378624,
+        "export_bytes": 6036544,
+        "export_sha256": "87882cae9a098e280414df5e327253be12202f2c1f6db5ccd0e24503925647c9",
+        "host_c_alignment_passed": true,
+        "host_c_tokens_per_second": 132.879046,
+        "integer_C_runtime": "packed W4A8 with INT32 group accumulators complete",
         "logical_payload_plus_metadata_reserve_bytes": 6099160,
+        "model_plus_arena_bytes": 8415168,
         "nspire_measurement": "pending Lesson 09",
         "size_gate_passed": true
       },
@@ -99,17 +121,22 @@
         "int4_validation_loss": 1.4737991189956665,
         "loss_absolute_degradation": 0.00991249561309826,
         "quantization_quality_gate_passed": true,
-        "status": "formal_candidate_measured"
+        "status": "formal_candidate_measured",
+        "w4a8_validation_bpc": 2.126161284292571,
+        "w4a8_validation_loss": 1.473742699623108,
+        "w4a8_quality_gate_passed": true
       },
       "source_model": "teacher-v2",
-      "status": "storage_and_quality_complete_integer_runtime_pending",
+      "status": "storage_quality_and_integer_host_runtime_complete",
       "training_tokens": 81920000
     }
   },
   "runtime_measurements": {
-    "host_c": "pending Lesson 08",
+    "experiment": "experiments/lesson08-c-runtime.json",
+    "host_c": "measured and numerically aligned for all three routes",
     "nspire_cx_ii": "pending Lesson 09",
-    "unified_deployment_exporter": "pending Lesson 08"
+    "ndless": "compile_link_package_passed; true device run pending Lesson 09",
+    "unified_deployment_exporter": "complete"
   },
   "schema_version": 1,
   "teacher_candidates": {
