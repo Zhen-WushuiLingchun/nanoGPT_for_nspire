@@ -16,6 +16,13 @@ add_library(
     STATIC
     runtime/src/ng_crc32.c
     runtime/src/ng_model.c
+    runtime/src/ng_ops.c
+    runtime/src/ng_runtime.c
+)
+target_include_directories(
+    nanogpt_runtime
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/runtime/src"
 )
 target_include_directories(
     nanogpt_runtime
@@ -77,6 +84,55 @@ add_test(
     COMMAND test_model_loader "${TEST_MODEL_FIXTURE}"
 )
 
+add_executable(
+    test_ops
+    tests/c/test_ops.c
+)
+target_include_directories(
+    test_ops
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/runtime/src"
+)
+if(MSVC)
+    target_compile_options(test_ops PRIVATE /W4 /WX)
+else()
+    target_compile_options(
+        test_ops
+        PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wpedantic
+        -Wshadow
+        -Wconversion
+    )
+    target_link_libraries(test_ops PRIVATE m)
+endif()
+target_link_libraries(test_ops PRIVATE nanogpt_runtime)
+add_test(NAME scalar_ops COMMAND test_ops)
+
+add_executable(test_runtime tests/c/test_runtime.c)
+target_link_libraries(test_runtime PRIVATE nanogpt_runtime)
+add_dependencies(test_runtime test_model_fixture)
+if(MSVC)
+    target_compile_options(test_runtime PRIVATE /W4 /WX)
+else()
+    target_compile_options(
+        test_runtime
+        PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wpedantic
+        -Wshadow
+        -Wconversion
+    )
+endif()
+add_test(
+    NAME incremental_runtime
+    COMMAND test_runtime "${TEST_MODEL_FIXTURE}"
+)
+
 add_executable(model_inspect runtime/platform/host/model_inspect.c)
 target_link_libraries(model_inspect PRIVATE nanogpt_runtime)
 if(MSVC)
@@ -84,6 +140,23 @@ if(MSVC)
 else()
     target_compile_options(
         model_inspect
+        PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wpedantic
+        -Wshadow
+        -Wconversion
+    )
+endif()
+
+add_executable(run_model runtime/platform/host/run_model.c)
+target_link_libraries(run_model PRIVATE nanogpt_runtime)
+if(MSVC)
+    target_compile_options(run_model PRIVATE /W4 /WX)
+else()
+    target_compile_options(
+        run_model
         PRIVATE
         -Wall
         -Wextra

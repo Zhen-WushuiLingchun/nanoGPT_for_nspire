@@ -19,6 +19,8 @@ LDFLAGS := -Wl,--gc-sections -Wl,--no-warn-rwx-segments -lm
 SOURCES := \
 	runtime/src/ng_crc32.c \
 	runtime/src/ng_model.c \
+	runtime/src/ng_ops.c \
+	runtime/src/ng_runtime.c \
 	runtime/platform/ndless/crt_compat.c \
 	runtime/platform/ndless/main_ndless.c
 OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(SOURCES))

@@ -109,7 +109,6 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
     size_t float_scratch;
     size_t float_scratch_bytes;
     size_t mlp_width;
-    size_t attention_scores;
     size_t activation_scale_count = 0u;
     if (spec == NULL) {
         return 0u;
@@ -121,12 +120,6 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
         return 0u;
     }
     if (!ng_checked_multiply(
-            (size_t)spec->n_head,
-            (size_t)spec->block_size,
-            &attention_scores)) {
-        return 0u;
-    }
-    if (!ng_checked_multiply(
             (size_t)spec->n_layer,
             (size_t)spec->block_size,
             &kv_values)
@@ -135,7 +128,13 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
         || !ng_checked_multiply(kv_values, sizeof(float), &kv_bytes)) {
         return 0u;
     }
-    if (!ng_checked_multiply((size_t)spec->n_embd, 8u, &float_scratch)
+    /*
+     * Shared float scratch: hidden + normalized + fused QKV + attention
+     * context + projection = 7*C, followed by MLP, logits and one head's
+     * attention scores. Heads are evaluated serially, so scores need T rather
+     * than n_head*T values.
+     */
+    if (!ng_checked_multiply((size_t)spec->n_embd, 7u, &float_scratch)
         || !ng_checked_add(float_scratch, mlp_width, &float_scratch)
         || !ng_checked_add(
             float_scratch,
@@ -143,7 +142,7 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
             &float_scratch)
         || !ng_checked_add(
             float_scratch,
-            attention_scores,
+            (size_t)spec->block_size,
             &float_scratch)) {
         return 0u;
     }
