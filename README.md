@@ -12,7 +12,12 @@
 - 已完成：[第三课：单头 causal self-attention](docs/lessons/03-causal-self-attention.md)
 - 已完成：[第四课：完整训练循环与过拟合](docs/lessons/04-training-loop-and-overfitting.md)
 - 已完成：[第五课：Direct-Small 完整小 GPT](docs/lessons/05-direct-small-gpt.md)
-- 后续：Lesson 06 量化、Lesson 07 蒸馏、Lesson 08 C 对齐、Lesson 09 CX II 测量
+- 已完成：[第六课：Teacher 与 INT4 量化诊断](docs/lessons/06-int4-quantization.md)
+- 后续：Lesson 07 Teacher v2 与蒸馏、Lesson 08 C 对齐、Lesson 09 CX II 测量
+
+Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
+体积门和量化误差门均通过。因此当前产物明确标记为 diagnostic，不冒充正式
+Quantized-Small。
 
 三条可部署小模型路线与两层公平性已经冻结在
 [`small-model-comparison-design.md`](docs/plans/2026-07-27-small-model-comparison-design.md)，

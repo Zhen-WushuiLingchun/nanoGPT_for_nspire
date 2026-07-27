@@ -1,0 +1,91 @@
+{
+  "artifacts": {
+    "int4_checkpoint": {
+      "bytes": 6057219,
+      "path": "artifacts/lesson06-quantized/teacher_int4.pt",
+      "sha256": "4a67baa326232b9a6666e50460ceb47067d11717e225e5b27515b69c13c0c281"
+    },
+    "run_json": {
+      "bytes": 9031,
+      "path": "artifacts/lesson06-quantized/run.json",
+      "sha256": "d70fb5fa53e282a0cd827c8b4bacc59bb7c15eaa9c8ad4e523f1e30587865b93"
+    }
+  },
+  "comparison_to_direct_small": {
+    "direct_small_selected_validation_loss": 1.4997899746894836,
+    "loss_absolute_improvement": 0.010939145088195712,
+    "loss_relative_improvement_percent": 0.7293784645053752,
+    "status": "diagnostic_only_because_teacher_gate_failed"
+  },
+  "deployment": {
+    "actual_artifact_bytes": 6057219,
+    "actual_artifact_headroom_bytes": 234237,
+    "candidate_gate_passed": false,
+    "file_limit_bytes": 6291456,
+    "fp32_passthrough_bytes": 19968,
+    "fp32_scale_bytes": 668184,
+    "integer_C_runtime": "pending Lesson 08",
+    "logical_payload_bytes": 6033624,
+    "logical_payload_plus_65536_byte_reserve": 6099160,
+    "logical_reserved_headroom_bytes": 192296,
+    "nspire_measurement": "pending Lesson 09",
+    "packed_nibble_bytes": 5345472,
+    "size_gate_passed": true
+  },
+  "experiment_id": "lesson06-int4-diagnostic",
+  "gates": {
+    "int4_loss_degradation_at_most_0.05": true,
+    "logical_payload_plus_reserve_at_most_6_mib": true,
+    "source_teacher_quality_gate": false
+  },
+  "metrics": {
+    "fp32_teacher_validation_bpc": 2.140903936374343,
+    "fp32_teacher_validation_loss": 1.4839615273475646,
+    "int4_validation_bpc": 2.147957708489197,
+    "int4_validation_loss": 1.488850829601288,
+    "logits_max_absolute_error": 1.4777045249938965,
+    "logits_rmse": 0.23457597834342953,
+    "loss_absolute_degradation": 0.004889302253723304,
+    "loss_relative_degradation_percent": 0.3294763485184452,
+    "weight_max_absolute_error": 0.0361412838101387,
+    "weight_rmse": 0.004398165228756307
+  },
+  "quantization": {
+    "group_size": 64,
+    "nibble_order": "low_first",
+    "one_dimensional_parameters": "FP32",
+    "quantized_range": [
+      -7,
+      7
+    ],
+    "scheme": "symmetric_signed_int4_groupwise_last_dimension",
+    "shared_aliases": {
+      "lm_head.weight": "token_embedding.weight"
+    },
+    "two_dimensional_parameters": "packed INT4 plus FP32 group scales"
+  },
+  "route": "Quantized-Small-Diagnostic",
+  "runtime_interpretation": {
+    "integer_inference": false,
+    "reference": "packed weights reloaded and dequantized to FP32 in PyTorch",
+    "state": "packed_weight_and_dequantized_reference_complete"
+  },
+  "sample": {
+    "characters": 301,
+    "seed": 1340,
+    "temperature": 0.8,
+    "text": "\nBend our sovereignth of her good bosom,\nAnd best with a loving buried death.\n\nCAPULET:\nTo get him to her bed; what would you him:\nIf you are ourselves in heaven traitors and the little\nAnd which certains you take offend your honours\nWhen you shall be ta'en in our highness.\n\nLEONTES:\nWell, well well."
+  },
+  "schema_version": 1,
+  "source_commit": "79c55362771c76f6b002623ee00a2e82a382ac12",
+  "source_teacher_experiment": "experiments/lesson06-teacher.json",
+  "status": "diagnostic_complete_not_promoted",
+  "verification": {
+    "causal_future_isolation_max_error": 0.0,
+    "contains_original_fp32_matrices": false,
+    "safe_weights_only_reload": true,
+    "sample_exact_match": true,
+    "tied_weight_identity": true,
+    "validation_loss_exact_match": true
+  }
+}

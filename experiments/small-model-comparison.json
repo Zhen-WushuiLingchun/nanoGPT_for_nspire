@@ -91,14 +91,27 @@
       "training_tokens": 40960000
     },
     "Quantized-Small": {
-      "deployment_precision": "provisional INT4",
+      "deployment": {
+        "actual_diagnostic_artifact_bytes": 6057219,
+        "file_limit_bytes": 6291456,
+        "integer_C_runtime": "pending Lesson 08",
+        "logical_payload_plus_metadata_reserve_bytes": 6099160,
+        "nspire_measurement": "pending Lesson 09",
+        "size_gate_passed": true
+      },
+      "deployment_precision": "groupwise signed INT4 weights with FP32 scales and LayerNorm",
+      "diagnostic_experiment": "experiments/lesson06-int4.json",
       "integer_runtime_required": true,
       "quality": {
-        "reason": "quantization and integer runtime are not yet implemented",
-        "status": "pending"
+        "int4_validation_bpc": 2.147957708489197,
+        "int4_validation_loss": 1.488850829601288,
+        "loss_absolute_degradation": 0.004889302253723304,
+        "quantization_quality_gate_passed": true,
+        "reason_not_promoted": "source Teacher v1 failed its preregistered quality gate",
+        "status": "diagnostic_measured"
       },
       "source_model": "provisional-teacher-v1",
-      "status": "pending"
+      "status": "diagnostic_complete_source_teacher_failed"
     }
   },
   "schema_version": 1,
@@ -115,10 +128,16 @@
       },
       "ideal_packed_int4_weight_bytes": 5347968,
       "parameters": 10695936,
-      "quality_gate": "selected validation loss must be materially lower than Direct-Small",
+      "quality": {
+        "best_step": 2250,
+        "selected_validation_bpc": 2.140903936374343,
+        "selected_validation_loss": 1.4839615273475646
+      },
+      "quality_gate": "selected validation loss must be at least 0.02 lower than Direct-Small",
       "quality_gate_maximum_selected_validation_loss": 1.4797899746894836,
+      "quality_gate_passed": false,
       "raw_fp32_parameter_bytes": 42783744,
-      "status": "provisional",
+      "status": "quality_gate_failed",
       "training_tokens": 81920000
     }
   }

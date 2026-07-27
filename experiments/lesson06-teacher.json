@@ -1,0 +1,93 @@
+{
+  "architecture": {
+    "bias": false,
+    "block_size": 128,
+    "dropout": 0.2,
+    "mlp_ratio": 4,
+    "n_embd": 384,
+    "n_head": 6,
+    "n_layer": 6,
+    "parameters": 10695936,
+    "raw_fp32_parameter_bytes": 42783744,
+    "tie_embeddings": true,
+    "vocab_size": 65
+  },
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 42897451,
+      "path": "artifacts/lesson06-teacher/teacher_gpt.pt",
+      "sha256": "24d47b3da7e140044d10cd18daedf81be05bd8d9de3783e335ff489f92cdf034"
+    },
+    "run_json": {
+      "bytes": 29257,
+      "path": "artifacts/lesson06-teacher/run.json",
+      "sha256": "8e244a3f8f7de4789881febca9cbd144bc9dbccb9abe2297ee10a02da1a21734"
+    }
+  },
+  "comparison_to_direct_small": {
+    "direct_small_selected_validation_loss": 1.4997899746894836,
+    "loss_absolute_improvement": 0.015828447341919016,
+    "loss_relative_improvement_percent": 1.0553775934657876,
+    "parameter_ratio": 8.481295465116279,
+    "training_token_ratio": 2.0
+  },
+  "dataset": {
+    "schema_version": 1,
+    "source_sha256": "86c4e6aa9db7c042ec79f339dcb96d42b0075e16b8fc2e86bf0ca57e2dc565ed",
+    "train_sha256": "6ec305602a99ac2802745a134e1f5e33e2231b4855525b00b9aebb730ac2626f",
+    "train_tokens": 1003854,
+    "validation_sha256": "d37d30cc0c8327c270d493299c3dca54135f6d5f1c9ef60cda78076e311204b1",
+    "validation_tokens": 111540,
+    "vocab_size": 65
+  },
+  "experiment_id": "lesson06-teacher-v1",
+  "history_rewrite": {
+    "identical_source_tree": "4f425c11303fe8bb0436f998f59d2e563af3a5a6",
+    "source_commit_after_flatten": "3365ecfbd1c85cee14435d202037e03fa67d9fd5",
+    "source_commit_before_flatten": "d39bc4ffb60e7c4d0089b7ac4d01137b890cdb48",
+    "weights_and_metrics_changed": false
+  },
+  "metrics": {
+    "best_step": 2250,
+    "final_step_validation_bpc": 2.5594376684816265,
+    "final_step_validation_loss": 1.7740670037269592,
+    "initial_validation_bpc": 5.976137341128125,
+    "initial_validation_loss": 4.142342748641968,
+    "selected_validation_bpc": 2.140903936374343,
+    "selected_validation_loss": 1.4839615273475646
+  },
+  "quality_gate": {
+    "maximum_selected_validation_loss": 1.4797899746894836,
+    "passed": false,
+    "shortfall": 0.004171552658081001,
+    "status": "failed"
+  },
+  "route": "Teacher",
+  "sample": {
+    "characters": 301,
+    "seed": 1340,
+    "temperature": 0.8,
+    "text": "\nBend our sovereignth of retire:\nThe sweet souls is the air sway with edge\nAnd not let me much die to hear this thoughts.\n\nDUKE OF AUMERLE:\nYou know here is for the comfort into your master wordships.\nI have weary offended wars a loudy breathes;\nAnd says themselves in death; with the treading glory c"
+  },
+  "schema_version": 1,
+  "source_commit": "3365ecfbd1c85cee14435d202037e03fa67d9fd5",
+  "status": "quality_gate_failed",
+  "training": {
+    "batch_size": 64,
+    "evaluation_seconds": 50.32235169998603,
+    "optimizer_update_seconds": 643.860808199941,
+    "peak_cuda_memory_allocated_bytes": 1813156352,
+    "steps": 10000,
+    "training_tokens": 81920000,
+    "update_tokens_per_second": 127232.46850359779
+  },
+  "verification": {
+    "causal_future_isolation_max_error": 0.0,
+    "derived_masks_in_checkpoint": false,
+    "sample_exact_match": true,
+    "selected_validation_loss_exact_match": true,
+    "strict_missing_keys": [],
+    "strict_unexpected_keys": [],
+    "tied_weight_identity": true
+  }
+}
