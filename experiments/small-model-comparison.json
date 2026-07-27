@@ -40,39 +40,17 @@
   "routes": {
     "Direct-Small": {
       "architecture": {
-        "bias": false,
         "block_size": 128,
         "dropout": 0.1,
-        "gelu_approximation": "tanh",
-        "mlp_ratio": 4,
         "n_embd": 160,
         "n_head": 5,
-        "n_layer": 4,
-        "tie_embeddings": true,
-        "vocab_size": 65
+        "n_layer": 4
       },
-      "deployment": {
-        "actual_file_bytes": {
-          "reason": "unified exporter is implemented in Lesson 08",
-          "status": "pending"
-        },
-        "estimated_file_bytes": 5110016,
-        "estimated_kv_cache_fp32_bytes": 655360,
-        "host_peak_ram": {
-          "reason": "Host C runtime is implemented in Lesson 08",
-          "status": "pending"
-        },
-        "nspire_peak_ram": {
-          "reason": "CX II measurement is performed in Lesson 09",
-          "status": "pending"
-        },
-        "raw_fp32_parameter_bytes": 5044480
-      },
+      "checkpoint_bytes": 5096641,
+      "deployment_precision": "FP32",
       "experiment": "experiments/lesson05-direct-small.json",
-      "implementation_source_commit": "b4878b45099fb868aef856543f3048d4f66ead07",
       "parameters": 1261120,
       "quality": {
-        "sample_seed": 1340,
         "selected_validation_bpc": 2.163739558859502,
         "selected_validation_loss": 1.4997899746894836,
         "status": "measured"
@@ -82,17 +60,30 @@
     },
     "Distilled-Small": {
       "architecture": "exactly Direct-Small v1",
+      "checkpoint_bytes": 5097383,
       "deployment_precision": "FP32",
-      "quality": {
-        "reason": "teacher and distillation training are implemented in Lesson 07",
-        "status": "pending"
+      "experiment": "experiments/lesson07-distilled-small.json",
+      "objective": {
+        "alpha": 0.5,
+        "temperature": 2.0
       },
-      "status": "pending",
+      "parameters": 1261120,
+      "quality": {
+        "comparison_to_direct_small": {
+          "loss_absolute_improvement": -0.022372555732727006,
+          "loss_relative_improvement_percent": -1.4917125804470734
+        },
+        "selected_validation_bpc": 2.196016334067119,
+        "selected_validation_loss": 1.5221625304222106,
+        "status": "measured_did_not_improve"
+      },
+      "status": "base_same_budget_experiment_complete",
       "training_tokens": 40960000
     },
     "Quantized-Small": {
+      "checkpoint_bytes": 6057283,
       "deployment": {
-        "actual_diagnostic_artifact_bytes": 6057219,
+        "candidate_gate_passed": true,
         "file_limit_bytes": 6291456,
         "integer_C_runtime": "pending Lesson 08",
         "logical_payload_plus_metadata_reserve_bytes": 6099160,
@@ -100,45 +91,55 @@
         "size_gate_passed": true
       },
       "deployment_precision": "groupwise signed INT4 weights with FP32 scales and LayerNorm",
-      "diagnostic_experiment": "experiments/lesson06-int4.json",
+      "experiment": "experiments/lesson07-int4.json",
       "integer_runtime_required": true,
+      "parameters": 10695936,
       "quality": {
-        "int4_validation_bpc": 2.147957708489197,
-        "int4_validation_loss": 1.488850829601288,
-        "loss_absolute_degradation": 0.004889302253723304,
+        "int4_validation_bpc": 2.1262426802415715,
+        "int4_validation_loss": 1.4737991189956665,
+        "loss_absolute_degradation": 0.00991249561309826,
         "quantization_quality_gate_passed": true,
-        "reason_not_promoted": "source Teacher v1 failed its preregistered quality gate",
-        "status": "diagnostic_measured"
+        "status": "formal_candidate_measured"
       },
-      "source_model": "provisional-teacher-v1",
-      "status": "diagnostic_complete_source_teacher_failed"
+      "source_model": "teacher-v2",
+      "status": "storage_and_quality_complete_integer_runtime_pending",
+      "training_tokens": 81920000
     }
+  },
+  "runtime_measurements": {
+    "host_c": "pending Lesson 08",
+    "nspire_cx_ii": "pending Lesson 09",
+    "unified_deployment_exporter": "pending Lesson 08"
   },
   "schema_version": 1,
   "teacher_candidates": {
     "provisional-teacher-v1": {
-      "architecture": {
-        "bias": false,
-        "block_size": 128,
-        "n_embd": 384,
-        "n_head": 6,
-        "n_layer": 6,
-        "tie_embeddings": true,
-        "vocab_size": 65
-      },
-      "ideal_packed_int4_weight_bytes": 5347968,
+      "dropout": 0.2,
       "parameters": 10695936,
-      "quality": {
-        "best_step": 2250,
-        "selected_validation_bpc": 2.140903936374343,
-        "selected_validation_loss": 1.4839615273475646
-      },
-      "quality_gate": "selected validation loss must be at least 0.02 lower than Direct-Small",
       "quality_gate_maximum_selected_validation_loss": 1.4797899746894836,
       "quality_gate_passed": false,
-      "raw_fp32_parameter_bytes": 42783744,
+      "selected_validation_loss": 1.4839615273475646,
       "status": "quality_gate_failed",
       "training_tokens": 81920000
+    },
+    "teacher-v2": {
+      "dropout": 0.3,
+      "experiment": "experiments/lesson07-teacher-v2.json",
+      "parameters": 10695936,
+      "quality_gate_maximum_selected_validation_loss": 1.4797899746894836,
+      "quality_gate_passed": true,
+      "selected_validation_loss": 1.4638866233825683,
+      "status": "quality_gate_passed",
+      "training_tokens": 81920000
+    }
+  },
+  "training_extensions": {
+    "Distilled-Small-Extended": {
+      "comparison_scope": "not part of base same-token comparison",
+      "experiment": "experiments/lesson07-distilled-small-extended.json",
+      "selected_validation_loss": 1.5065994238853455,
+      "status": "improved_base_distillation_but_still_behind_direct",
+      "student_training_tokens": 81920000
     }
   }
 }

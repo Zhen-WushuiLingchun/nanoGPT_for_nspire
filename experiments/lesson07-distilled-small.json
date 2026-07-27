@@ -1,0 +1,120 @@
+{
+  "architecture": {
+    "bias": false,
+    "block_size": 128,
+    "dropout": 0.1,
+    "mlp_ratio": 4,
+    "n_embd": 160,
+    "n_head": 5,
+    "n_layer": 4,
+    "parameters": 1261120,
+    "raw_fp32_parameter_bytes": 5044480,
+    "tie_embeddings": true,
+    "vocab_size": 65
+  },
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 5097383,
+      "path": "artifacts/lesson07-distilled-small/distilled_small_gpt.pt",
+      "sha256": "447b094524c89a8d756ebbaec1c154fb5a58285ea05dde5df63b4050909b3eb7"
+    },
+    "run_json": {
+      "bytes": 23359,
+      "path": "artifacts/lesson07-distilled-small/run.json",
+      "sha256": "7aab14dee9aa16a267b771b354a38b34f066470e7032c4d2df07c2428ac5b324"
+    }
+  },
+  "comparison_to_direct_small": {
+    "direct_small_selected_validation_loss": 1.4997899746894836,
+    "loss_absolute_improvement": -0.022372555732727006,
+    "loss_relative_improvement_percent": -1.4917125804470734,
+    "same_initial_parameters": true,
+    "same_student_architecture": true,
+    "same_student_training_tokens": true,
+    "status": "distillation_did_not_improve_validation_loss"
+  },
+  "dataset": {
+    "schema_version": 1,
+    "source_sha256": "86c4e6aa9db7c042ec79f339dcb96d42b0075e16b8fc2e86bf0ca57e2dc565ed",
+    "train_sha256": "6ec305602a99ac2802745a134e1f5e33e2231b4855525b00b9aebb730ac2626f",
+    "train_tokens": 1003854,
+    "validation_sha256": "d37d30cc0c8327c270d493299c3dca54135f6d5f1c9ef60cda78076e311204b1",
+    "validation_tokens": 111540,
+    "vocab_size": 65
+  },
+  "experiment_id": "lesson07-distilled-small-v1",
+  "metrics": {
+    "best_step": 5000,
+    "final_step_validation_bpc": 2.196016334067119,
+    "final_step_validation_loss": 1.5221625304222106,
+    "initial_validation_bpc": 6.073122485533284,
+    "initial_validation_loss": 4.209567728042603,
+    "selected_validation_bpc": 2.196016334067119,
+    "selected_validation_loss": 1.5221625304222106
+  },
+  "objective": {
+    "alpha": 0.5,
+    "hard_label_weight": 0.5,
+    "name": "temperature_scaled_logit_distillation",
+    "soft_target_direction": "KL(teacher || student)",
+    "soft_target_weight": 0.5,
+    "temperature": 2.0,
+    "temperature_squared_gradient_correction": true
+  },
+  "observations": {
+    "best_checkpoint_is_final_step": true,
+    "interpretation": "under the fixed 5000-step budget the distilled student is still improving but converges more slowly than Direct-Small",
+    "negative_result_preserved": true,
+    "next_hypotheses_are_not_part_of_this_result": [
+      "a preregistered longer-training ablation",
+      "a preregistered smaller-alpha ablation"
+    ]
+  },
+  "route": "Distilled-Small",
+  "source_commit": "3c214cbfbc53baf77655451646957e47b34589f6",
+  "source_teacher": {
+    "checkpoint_bytes": 42898093,
+    "checkpoint_sha256": "5f69bf7b510462d26d64effdc9de77a3a5f92c2e499a2cb0074a8c7fafa27c82",
+    "route": "Teacher-v2",
+    "selected_validation_loss": 1.4638866233825683,
+    "source_commit": "8c5f6ee82dcc6c45660158997371a92c7b1d41f1"
+  },
+  "status": "measured_quality_gate_failed",
+  "training": {
+    "batch_size": 64,
+    "evaluation_seconds": 6.477967799990438,
+    "optimizer_update_seconds": 195.81782879994716,
+    "peak_cuda_memory_allocated_bytes": 770766848,
+    "steps": 5000,
+    "teacher_forward_benchmark_tokens_per_second": 400669.59557990055,
+    "training_tokens": 40960000,
+    "update_tokens_per_second": 209174.00755089492
+  },
+  "validation_curve_sample": [
+    {
+      "step": 0,
+      "validation_loss": 4.209567728042603
+    },
+    {
+      "step": 2500,
+      "validation_loss": 1.5881839752197267
+    },
+    {
+      "step": 4000,
+      "validation_loss": 1.5373285245895385
+    },
+    {
+      "step": 5000,
+      "validation_loss": 1.5221625304222106
+    }
+  ],
+  "verification": {
+    "causal_future_isolation_max_error": 0.0,
+    "contains_teacher_weights": false,
+    "sample_exact_match": true,
+    "selected_validation_loss_exact_match": true,
+    "strict_missing_keys": [],
+    "strict_unexpected_keys": [],
+    "tied_weight_identity": true
+  }
+}

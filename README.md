@@ -13,11 +13,18 @@
 - 已完成：[第四课：完整训练循环与过拟合](docs/lessons/04-training-loop-and-overfitting.md)
 - 已完成：[第五课：Direct-Small 完整小 GPT](docs/lessons/05-direct-small-gpt.md)
 - 已完成：[第六课：Teacher 与 INT4 量化诊断](docs/lessons/06-int4-quantization.md)
-- 后续：Lesson 07 Teacher v2 与蒸馏、Lesson 08 C 对齐、Lesson 09 CX II 测量
+- 已完成：[第七课：Teacher v2、正式量化与蒸馏](docs/lessons/07-teacher-v2-distillation-and-comparison.md)
+- 后续：Lesson 08 C 对齐、Lesson 09 CX II 测量
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
-体积门和量化误差门均通过。因此当前产物明确标记为 diagnostic，不冒充正式
-Quantized-Small。
+体积门和量化误差门均通过，因此该产物保留为 diagnostic。Lesson 07 只把
+dropout 从 `0.2` 提高到 `0.3`：Teacher v2 通过原质量门，正式 Quantized-Small
+的存储与质量门也通过。
+
+基础 5000-step Distilled-Small 与 Direct-Small 使用相同架构、初始参数和 student
+训练 token，但 validation loss 为 `1.522163`，未胜过 Direct 的 `1.499790`。
+独立的 10000-step 扩展实验改善到 `1.506599`，仍未反超且不计入同预算基础比较。
+负结果与扩展结果均保留，不做事后改门槛。
 
 三条可部署小模型路线与两层公平性已经冻结在
 [`small-model-comparison-design.md`](docs/plans/2026-07-27-small-model-comparison-design.md)，

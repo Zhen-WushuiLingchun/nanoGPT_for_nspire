@@ -1,0 +1,91 @@
+{
+  "artifacts": {
+    "int4_checkpoint": {
+      "bytes": 6057283,
+      "path": "artifacts/lesson07-quantized-v2/teacher_int4.pt",
+      "sha256": "70d024a45a82542600da88ad76d7054e9689971251187185cca875ff3e444dca"
+    },
+    "run_json": {
+      "bytes": 9083,
+      "path": "artifacts/lesson07-quantized-v2/run.json",
+      "sha256": "73d02bd1de0bf7b3144bcdf3e45abcaff5a0260c507275cb3a3a4e3039f381cb"
+    }
+  },
+  "comparison_to_direct_small": {
+    "direct_small_selected_validation_loss": 1.4997899746894836,
+    "loss_absolute_improvement": 0.0259908556938171,
+    "loss_relative_improvement_percent": 1.7329663574526986,
+    "status": "better_validation_loss_within_same_file_budget"
+  },
+  "deployment": {
+    "actual_artifact_bytes": 6057283,
+    "actual_artifact_headroom_bytes": 234173,
+    "candidate_gate_passed": true,
+    "file_limit_bytes": 6291456,
+    "fp32_passthrough_bytes": 19968,
+    "fp32_scale_bytes": 668184,
+    "logical_payload_bytes": 6033624,
+    "logical_payload_plus_65536_byte_reserve": 6099160,
+    "logical_reserved_headroom_bytes": 192296,
+    "packed_nibble_bytes": 5345472,
+    "size_gate_passed": true
+  },
+  "experiment_id": "lesson07-int4-teacher-v2",
+  "gates": {
+    "candidate_gate_passed": true,
+    "int4_loss_degradation_at_most_0.05": true,
+    "logical_payload_plus_reserve_at_most_6_mib": true,
+    "source_teacher_quality_gate": true
+  },
+  "metrics": {
+    "fp32_teacher_validation_bpc": 2.111941971977721,
+    "fp32_teacher_validation_loss": 1.4638866233825683,
+    "int4_validation_bpc": 2.1262426802415715,
+    "int4_validation_loss": 1.4737991189956665,
+    "logits_max_absolute_error": 1.6682469844818115,
+    "logits_rmse": 0.3089411271769611,
+    "loss_absolute_degradation": 0.00991249561309826,
+    "loss_relative_degradation_percent": 0.6771354731142833,
+    "weight_max_absolute_error": 0.05503563582897186,
+    "weight_rmse": 0.005349113239649182
+  },
+  "quantization": {
+    "group_size": 64,
+    "nibble_order": "low_first",
+    "one_dimensional_parameters": "FP32",
+    "quantized_range": [
+      -7,
+      7
+    ],
+    "scheme": "symmetric_signed_int4_groupwise_last_dimension",
+    "shared_aliases": {
+      "lm_head.weight": "token_embedding.weight"
+    },
+    "two_dimensional_parameters": "packed INT4 plus FP32 group scales"
+  },
+  "route": "Quantized-Small",
+  "runtime_interpretation": {
+    "integer_inference": false,
+    "integer_runtime_required_for_final_claim": true,
+    "reference": "packed weights reloaded and dequantized to FP32 in PyTorch",
+    "state": "formal_storage_and_quality_candidate_runtime_pending_lesson08"
+  },
+  "schema_version": 1,
+  "source_commit": "70763fd1f00f6151a0b9bc4896284a5ad4e3614e",
+  "source_teacher": {
+    "checkpoint_sha256": "5f69bf7b510462d26d64effdc9de77a3a5f92c2e499a2cb0074a8c7fafa27c82",
+    "experiment": "experiments/lesson07-teacher-v2.json",
+    "route": "Teacher-v2",
+    "selected_validation_loss": 1.4638866233825683,
+    "source_commit": "8c5f6ee82dcc6c45660158997371a92c7b1d41f1"
+  },
+  "status": "formal_candidate_storage_and_quality_complete_runtime_pending",
+  "verification": {
+    "causal_future_isolation_max_error": 0.0,
+    "contains_original_fp32_matrices": false,
+    "safe_weights_only_reload": true,
+    "sample_exact_match": true,
+    "tied_weight_identity": true,
+    "validation_loss_exact_match": true
+  }
+}

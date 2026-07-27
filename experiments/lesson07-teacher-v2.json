@@ -1,0 +1,135 @@
+{
+  "architecture": {
+    "bias": false,
+    "block_size": 128,
+    "dropout": 0.3,
+    "mlp_ratio": 4,
+    "n_embd": 384,
+    "n_head": 6,
+    "n_layer": 6,
+    "parameters": 10695936,
+    "raw_fp32_parameter_bytes": 42783744,
+    "tie_embeddings": true,
+    "vocab_size": 65
+  },
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 42898093,
+      "path": "artifacts/lesson07-teacher-v2/teacher_v2_gpt.pt",
+      "sha256": "5f69bf7b510462d26d64effdc9de77a3a5f92c2e499a2cb0074a8c7fafa27c82"
+    },
+    "run_json": {
+      "bytes": 28948,
+      "path": "artifacts/lesson07-teacher-v2/run.json",
+      "sha256": "a4a46ac35f4a2f251df606cbbcb41f173fe7fc5344deb2a018ae3526888d6ef3"
+    }
+  },
+  "comparison": {
+    "direct_small_selected_validation_loss": 1.4997899746894836,
+    "loss_improvement_over_direct_small": 0.0359033513069153,
+    "teacher_v1_selected_validation_loss": 1.4839615273475646,
+    "v2_loss_improvement_over_v1": 0.0200749039649963
+  },
+  "dataset": {
+    "schema_version": 1,
+    "source_sha256": "86c4e6aa9db7c042ec79f339dcb96d42b0075e16b8fc2e86bf0ca57e2dc565ed",
+    "train_sha256": "6ec305602a99ac2802745a134e1f5e33e2231b4855525b00b9aebb730ac2626f",
+    "train_tokens": 1003854,
+    "validation_sha256": "d37d30cc0c8327c270d493299c3dca54135f6d5f1c9ef60cda78076e311204b1",
+    "validation_tokens": 111540,
+    "vocab_size": 65
+  },
+  "experiment_id": "lesson07-teacher-v2",
+  "metrics": {
+    "best_step": 4500,
+    "final_step_validation_bpc": 2.2310968254835504,
+    "final_step_validation_loss": 1.5464784741401671,
+    "initial_validation_bpc": 5.976137341128125,
+    "initial_validation_loss": 4.142342748641968,
+    "selected_validation_bpc": 2.111941971977721,
+    "selected_validation_loss": 1.4638866233825683
+  },
+  "quality_gate": {
+    "margin": 0.0159033513069153,
+    "maximum_selected_validation_loss": 1.4797899746894836,
+    "passed": true,
+    "status": "passed"
+  },
+  "route": "Teacher-v2",
+  "single_variable_comparison": {
+    "changed": {
+      "dropout": {
+        "teacher_v1": 0.2,
+        "teacher_v2": 0.3
+      },
+      "output_identity": "separate artifact path and route"
+    },
+    "identical_initial_loss": true,
+    "identical_initial_parameters": true,
+    "unchanged": [
+      "architecture except dropout",
+      "initialization seed",
+      "dataset and batch order",
+      "optimizer and schedule",
+      "training tokens",
+      "evaluation windows",
+      "quality gate"
+    ]
+  },
+  "source_commit": "8c5f6ee82dcc6c45660158997371a92c7b1d41f1",
+  "status": "quality_gate_passed",
+  "training": {
+    "batch_size": 64,
+    "evaluation_seconds": 45.69288889999734,
+    "optimizer_update_seconds": 574.6582118999213,
+    "peak_cuda_memory_allocated_bytes": 1813156352,
+    "steps": 10000,
+    "training_tokens": 81920000,
+    "update_tokens_per_second": 142554.30150238008
+  },
+  "validation_curve_comparison": [
+    {
+      "step": 0,
+      "teacher_v1_loss": 4.142342748641968,
+      "teacher_v2_loss": 4.142342748641968
+    },
+    {
+      "step": 2250,
+      "teacher_v1_loss": 1.4839615273475646,
+      "teacher_v2_loss": 1.5089129614830017
+    },
+    {
+      "step": 3000,
+      "teacher_v1_loss": 1.4874471616744995,
+      "teacher_v2_loss": 1.4885687685012818
+    },
+    {
+      "step": 3250,
+      "teacher_v1_loss": 1.486702435016632,
+      "teacher_v2_loss": 1.479078357219696
+    },
+    {
+      "step": 4000,
+      "teacher_v1_loss": 1.497527413368225,
+      "teacher_v2_loss": 1.4731494426727294
+    },
+    {
+      "step": 4500,
+      "teacher_v1_loss": 1.5095794248580932,
+      "teacher_v2_loss": 1.4638866233825683
+    },
+    {
+      "step": 10000,
+      "teacher_v1_loss": 1.7740670037269592,
+      "teacher_v2_loss": 1.5464784741401671
+    }
+  ],
+  "verification": {
+    "causal_future_isolation_max_error": 0.0,
+    "sample_exact_match": true,
+    "selected_validation_loss_exact_match": true,
+    "strict_missing_keys": [],
+    "strict_unexpected_keys": [],
+    "tied_weight_identity": true
+  }
+}

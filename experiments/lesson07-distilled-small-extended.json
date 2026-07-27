@@ -1,0 +1,93 @@
+{
+  "architecture": "exactly Direct-Small v1 and Distilled-Small v1",
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 5097753,
+      "path": "artifacts/lesson07-distilled-small-extended/distilled_small_extended_gpt.pt",
+      "sha256": "f9eeb1f25be4bef0f037d2789537165318090d14360990db23a3390f543e6209"
+    },
+    "run_json": {
+      "bytes": 39500,
+      "path": "artifacts/lesson07-distilled-small-extended/run.json",
+      "sha256": "85bf2e0168039e8f5b280aa6a46f39af07dd80bff85e1a84e25aecfd66d1da99"
+    }
+  },
+  "comparison": {
+    "base_distilled_selected_validation_loss": 1.5221625304222106,
+    "direct_small_selected_validation_loss": 1.4997899746894836,
+    "extended_improvement_over_base_distilled": 0.015563106536865101,
+    "extended_loss_gap_behind_direct_small": 0.006809449195861905,
+    "extended_relative_gap_behind_direct_small_percent": 0.45402685114438995,
+    "same_student_architecture": true,
+    "same_student_training_tokens_as_direct": false,
+    "student_training_token_ratio_to_direct": 2.0
+  },
+  "continuation_control": {
+    "base_step_5000_validation_loss": 1.5221625304222106,
+    "extended_step_5000_validation_loss": 1.5221625304222106,
+    "exact_match": true,
+    "implementation": "replay from the same initialization with the original schedule through step 5000, preserve AdamW state, then continue at minimum LR",
+    "learning_rate_decay_steps": 5000,
+    "total_steps": 10000
+  },
+  "experiment_id": "lesson07-distilled-small-extended",
+  "metrics": {
+    "best_step": 9750,
+    "final_step_validation_bpc": 2.1820893372242876,
+    "final_step_validation_loss": 1.5125090718269347,
+    "selected_validation_bpc": 2.173563517445557,
+    "selected_validation_loss": 1.5065994238853455
+  },
+  "objective": {
+    "alpha": 0.5,
+    "name": "temperature_scaled_logit_distillation",
+    "temperature": 2.0
+  },
+  "route": "Distilled-Small-Extended",
+  "scope": "extension_ablation_not_part_of_base_three_route_fair_comparison",
+  "source_commit": "1b79eb4d8d68c25db74091f0cff4d25365753a69",
+  "status": "measured_improves_base_distillation_but_still_behind_direct",
+  "training": {
+    "evaluation_seconds": 12.144005699956324,
+    "optimizer_update_seconds": 428.17283859994495,
+    "peak_cuda_memory_allocated_bytes": 770766848,
+    "training_tokens": 81920000,
+    "update_tokens_per_second": 191324.60682902022
+  },
+  "validation_curve_extension": [
+    {
+      "step": 5000,
+      "validation_loss": 1.5221625304222106
+    },
+    {
+      "step": 7000,
+      "validation_loss": 1.5164316892623901
+    },
+    {
+      "step": 9000,
+      "validation_loss": 1.5136367464065552
+    },
+    {
+      "step": 9500,
+      "validation_loss": 1.508343539237976
+    },
+    {
+      "step": 9750,
+      "validation_loss": 1.5065994238853455
+    },
+    {
+      "step": 10000,
+      "validation_loss": 1.5125090718269347
+    }
+  ],
+  "verification": {
+    "causal_future_isolation_max_error": 0.0,
+    "contains_teacher_weights": false,
+    "sample_exact_match": true,
+    "selected_validation_loss_exact_match": true,
+    "step_5000_exactly_matches_base_run": true,
+    "strict_missing_keys": [],
+    "strict_unexpected_keys": [],
+    "tied_weight_identity": true
+  }
+}
