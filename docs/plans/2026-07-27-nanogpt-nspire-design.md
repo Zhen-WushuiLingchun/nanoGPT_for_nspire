@@ -49,7 +49,10 @@ Phy-nspire 英文文档、监督后训练和 RL 属于第二阶段。只有基�
 - Tiny Shakespeare 原始文本；
 - 按字符排序得到的 65 字符词表；
 - 90%/10% 的顺序训练/验证切分；
-- 相同的上下文长度、训练 token 预算、随机种子和采样提示；
+- 相同的上下文长度、随机种子、validation windows 和采样提示；
+- Direct-Small 与 Distilled-Small 使用相同 student 训练 token 预算；
+- Quantized-Small source/teacher 的训练 token 和成本完整记录，但不伪装成
+  student 同训练预算比较；
 - 带 SHA-256 的原始数据和配置清单；
 - 验证集 loss 和 bits-per-character 作为主要质量指标。
 

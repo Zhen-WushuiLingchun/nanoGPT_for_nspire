@@ -1,0 +1,341 @@
+{
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 5096641,
+      "path": "artifacts\\lesson05-direct-small\\direct_small_gpt.pt",
+      "sha256": "de4afc656310dab0e5d8d8ec13aaa6e47a9e2aa4ac0f02eed1202ea5f2ee7e20"
+    },
+    "run_json": {
+      "bytes": 16423,
+      "path": "artifacts\\lesson05-direct-small\\run.json",
+      "sha256": "c7d006e2c4095ce7c6a38b5a95583bd654d9682a401470d3a3603213d3a65e6a"
+    }
+  },
+  "comparison_to_lesson03": {
+    "bpc_absolute_improvement": 1.0305008885422966,
+    "comparison_is_size_or_compute_matched": false,
+    "loss_absolute_improvement": 0.7142887854576112,
+    "loss_relative_improvement_percent": 32.26121844961634,
+    "parameter_ratio": 43.78888888888889,
+    "raw_fp32_parameter_bytes_ratio": 43.78888888888889,
+    "training_token_ratio": 5.0
+  },
+  "configuration": {
+    "batch_size": 64,
+    "beta1": 0.9,
+    "beta2": 0.99,
+    "bias": false,
+    "block_size": 128,
+    "device": "auto",
+    "dropout": 0.1,
+    "eval_batches": 50,
+    "eval_interval": 250,
+    "learning_rate": 0.001,
+    "log_interval": 100,
+    "max_grad_norm": 1.0,
+    "min_learning_rate": 0.0001,
+    "mlp_ratio": 4,
+    "n_embd": 160,
+    "n_head": 5,
+    "n_layer": 4,
+    "sample_tokens": 300,
+    "seed": 1337,
+    "steps": 5000,
+    "temperature": 0.8,
+    "tie_embeddings": true,
+    "warmup_steps": 100,
+    "weight_decay": 0.1
+  },
+  "dataset": {
+    "schema_version": 1,
+    "source_sha256": "86c4e6aa9db7c042ec79f339dcb96d42b0075e16b8fc2e86bf0ca57e2dc565ed",
+    "train_sha256": "6ec305602a99ac2802745a134e1f5e33e2231b4855525b00b9aebb730ac2626f",
+    "train_tokens": 1003854,
+    "validation_sha256": "d37d30cc0c8327c270d493299c3dca54135f6d5f1c9ef60cda78076e311204b1",
+    "validation_tokens": 111540,
+    "vocab_size": 65
+  },
+  "deployment": {
+    "actual_deployment_file": {
+      "reason": "unified model exporter is implemented in Lesson 08",
+      "status": "pending"
+    },
+    "estimated_deployment_file_bytes": 5110016,
+    "estimated_file_headroom_bytes": 1181440,
+    "estimated_file_eligible": true,
+    "file_limit_bytes": 6291456,
+    "host_c_alignment": {
+      "reason": "Host C runtime is implemented in Lesson 08",
+      "status": "pending"
+    },
+    "host_peak_ram": {
+      "reason": "Host C runtime is implemented in Lesson 08",
+      "status": "pending"
+    },
+    "kv_cache_fp32_bytes": 655360,
+    "metadata_reserve_bytes": 65536,
+    "nspire_peak_ram": {
+      "reason": "CX II measurement is performed in Lesson 09",
+      "status": "pending"
+    },
+    "raw_fp32_parameter_bytes": 5044480
+  },
+  "environment": {
+    "cuda_version": "13.0",
+    "device": "cuda",
+    "gpu_name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "peak_cuda_memory_allocated_bytes": 606734848,
+    "python": "3.13.5",
+    "torch": "2.10.0+cu130"
+  },
+  "evaluation_history": [
+    {
+      "bits_per_character": 6.073122485533284,
+      "is_new_best": true,
+      "step": 0,
+      "validation_loss": 4.209567728042603
+    },
+    {
+      "bits_per_character": 3.2929294308083605,
+      "is_new_best": true,
+      "step": 250,
+      "validation_loss": 2.2824847507476806
+    },
+    {
+      "bits_per_character": 2.9036839795397946,
+      "is_new_best": true,
+      "step": 500,
+      "validation_loss": 2.0126803636550905
+    },
+    {
+      "bits_per_character": 2.6659255766740886,
+      "is_new_best": true,
+      "step": 750,
+      "validation_loss": 1.8478787970542907
+    },
+    {
+      "bits_per_character": 2.5368962085621565,
+      "is_new_best": true,
+      "step": 1000,
+      "validation_loss": 1.7584424543380737
+    },
+    {
+      "bits_per_character": 2.470467975019804,
+      "is_new_best": true,
+      "step": 1250,
+      "validation_loss": 1.7123979115486145
+    },
+    {
+      "bits_per_character": 2.3867452073825235,
+      "is_new_best": true,
+      "step": 1500,
+      "validation_loss": 1.6543657112121581
+    },
+    {
+      "bits_per_character": 2.336444172252715,
+      "is_new_best": true,
+      "step": 1750,
+      "validation_loss": 1.6194996905326844
+    },
+    {
+      "bits_per_character": 2.3051573704593,
+      "is_new_best": true,
+      "step": 2000,
+      "validation_loss": 1.597813332080841
+    },
+    {
+      "bits_per_character": 2.267282085293982,
+      "is_new_best": true,
+      "step": 2250,
+      "validation_loss": 1.571560184955597
+    },
+    {
+      "bits_per_character": 2.2488621792834804,
+      "is_new_best": true,
+      "step": 2500,
+      "validation_loss": 1.5587924790382386
+    },
+    {
+      "bits_per_character": 2.24086907920545,
+      "is_new_best": true,
+      "step": 2750,
+      "validation_loss": 1.5532520842552184
+    },
+    {
+      "bits_per_character": 2.2311807633361305,
+      "is_new_best": true,
+      "step": 3000,
+      "validation_loss": 1.5465366554260254
+    },
+    {
+      "bits_per_character": 2.207586645765872,
+      "is_new_best": true,
+      "step": 3250,
+      "validation_loss": 1.5301824593544007
+    },
+    {
+      "bits_per_character": 2.20191483336272,
+      "is_new_best": true,
+      "step": 3500,
+      "validation_loss": 1.5262510585784912
+    },
+    {
+      "bits_per_character": 2.1865780190584,
+      "is_new_best": true,
+      "step": 3750,
+      "validation_loss": 1.5156203889846802
+    },
+    {
+      "bits_per_character": 2.1791334576452965,
+      "is_new_best": true,
+      "step": 4000,
+      "validation_loss": 1.5104602122306823
+    },
+    {
+      "bits_per_character": 2.176524535866156,
+      "is_new_best": true,
+      "step": 4250,
+      "validation_loss": 1.5086518454551696
+    },
+    {
+      "bits_per_character": 2.171373428455716,
+      "is_new_best": true,
+      "step": 4500,
+      "validation_loss": 1.5050813698768615
+    },
+    {
+      "bits_per_character": 2.164476666182141,
+      "is_new_best": true,
+      "step": 4750,
+      "validation_loss": 1.5003008985519408
+    },
+    {
+      "bits_per_character": 2.163739558859502,
+      "is_new_best": true,
+      "step": 5000,
+      "validation_loss": 1.4997899746894836
+    }
+  ],
+  "experiment_id": "lesson05-direct-small",
+  "limitations": [
+    "The actual unified deployment file, Host C alignment, and measured Host/Nspire peak RAM are pending.",
+    "PyTorch checkpoint size is not a substitute for the future versioned deployment format.",
+    "CUDA peak allocation is a training measurement and says nothing about Nspire inference RAM.",
+    "The comparison with Lesson 03 is neither size-matched nor compute-matched.",
+    "Validation uses 50 deterministic sampled windows rather than an exhaustive sweep of every validation position.",
+    "The provisional 6x384 teacher has not been trained or passed its quality gate."
+  ],
+  "metrics": {
+    "best_step": 5000,
+    "evaluation_seconds": 5.621297199948458,
+    "final_step_validation_bpc": 2.163739558859502,
+    "final_step_validation_loss": 1.4997899746894836,
+    "initial_validation_bpc": 6.073122485533284,
+    "initial_validation_loss": 4.209567728042603,
+    "loss_reduction": 2.7097777533531193,
+    "loss_reduction_percent": 64.37187683907707,
+    "optimizer_update_seconds": 74.67640469997423,
+    "selected_validation_bpc": 2.163739558859502,
+    "selected_validation_loss": 1.4997899746894836,
+    "training_tokens": 40960000,
+    "update_tokens_per_second": 548499.8931665779
+  },
+  "model": {
+    "bias": false,
+    "block_size": 128,
+    "dropout": 0.1,
+    "head_dim": 32,
+    "mlp_ratio": 4,
+    "n_embd": 160,
+    "n_head": 5,
+    "n_layer": 4,
+    "parameters": 1261120,
+    "raw_fp32_parameter_bytes": 5044480,
+    "tie_embeddings": true,
+    "type": "direct_small_gpt",
+    "vocab_size": 65
+  },
+  "optimizer": {
+    "beta1": 0.9,
+    "beta2": 0.99,
+    "gradient_norm_cap": 1.0,
+    "maximum_learning_rate": 0.001,
+    "minimum_learning_rate": 0.0001,
+    "name": "AdamW",
+    "schedule": "linear_warmup_then_cosine",
+    "warmup_steps": 100,
+    "weight_decay": 0.1,
+    "weight_decay_rule": "parameter.ndim >= 2"
+  },
+  "route": "Direct-Small",
+  "sample": {
+    "characters": 301,
+    "seed": 1340,
+    "temperature": 0.8,
+    "text": "\nBenvy thy strike of a torment have stands\nOf his wife's house! Here's death the prove\nWhom I can could to think the gods.\n\nQUEEN:\nI am not whose most crown'd with a swall, and I like thee,\nwhich consul moved: and they had lay thee.\n\nROMEO:\nMarry, my lord, they know me form here?\n\nProvost:\nOr the god"
+  },
+  "schema_version": 1,
+  "source_commit": "b4878b45099fb868aef856543f3048d4f66ead07",
+  "training_history_sample": [
+    {
+      "gradient_l2_norm_before_clip": 3.35835862159729,
+      "learning_rate": 1e-05,
+      "step": 1,
+      "training_loss": 4.212578773498535
+    },
+    {
+      "gradient_l2_norm_before_clip": 0.6009580492973328,
+      "learning_rate": 0.001,
+      "step": 100,
+      "training_loss": 2.53002667427063
+    },
+    {
+      "gradient_l2_norm_before_clip": 0.7312724590301514,
+      "learning_rate": 0.0009852826883675631,
+      "step": 500,
+      "training_loss": 2.0074124336242676
+    },
+    {
+      "gradient_l2_norm_before_clip": 0.6711198091506958,
+      "learning_rate": 0.0009271396472013282,
+      "step": 1000,
+      "training_loss": 1.6719353199005127
+    },
+    {
+      "gradient_l2_norm_before_clip": 0.5299052000045776,
+      "learning_rate": 0.0007054142744895884,
+      "step": 2000,
+      "training_loss": 1.47139310836792
+    },
+    {
+      "gradient_l2_norm_before_clip": 0.5331324338912964,
+      "learning_rate": 0.0004219625860160354,
+      "step": 3000,
+      "training_loss": 1.3777625560760498
+    },
+    {
+      "gradient_l2_norm_before_clip": 0.5534681081771851,
+      "learning_rate": 0.00018936387015941957,
+      "step": 4000,
+      "training_loss": 1.3714765310287476
+    },
+    {
+      "gradient_l2_norm_before_clip": 0.577475905418396,
+      "learning_rate": 0.0001,
+      "step": 5000,
+      "training_loss": 1.2930285930633545
+    }
+  ],
+  "verification": {
+    "artifacts_ignored_by_git": true,
+    "causal_future_isolation_rechecked": true,
+    "checkpoint_loaded_strictly": true,
+    "checkpoint_source_commit_matches_run": true,
+    "derived_masks_absent_from_checkpoint": true,
+    "fixed_seed_sample_reproduced": true,
+    "selected_validation_loss_reproduced": true,
+    "state_dict_tensor_count": 28,
+    "tied_parameter_identity_preserved": true,
+    "unique_parameter_count_reproduced": true
+  }
+}

@@ -201,9 +201,21 @@ temperature: 0.8
 定期评估选择 validation loss 最低的 checkpoint。最终实验同时记录最后一步模型
 和被选 checkpoint，避免把“训练到最后”等同于“验证最好”。
 
-Quantized-Small 的较大 FP32 source model也使用相同数据、context、训练 token
-预算、validation windows 和采样协议。若计算成本迫使协议变化，必须新增一项
-明确标记的非同训练预算实验。
+Quantized-Small 的较大 FP32 source model使用相同数据、context、validation
+windows 和采样协议，但它不属于“同架构”比较，可以使用单独记录的训练 token
+预算。基础 teacher 候选暂定 `81,920,000` token；Direct/Distilled student
+仍固定 `40,960,000` token。最终表必须显式展示这个训练成本差异。若需要研究
+同训练预算，则作为补充对照，不能覆盖同部署预算主比较。
+
+Direct-Small 实测 selected validation loss 为 `1.4997899746894836` 后、teacher
+训练开始前，teacher 质量门冻结为至少低 `0.02`：
+
+```text
+teacher selected validation loss <= 1.4797899746894836
+```
+
+未通过时，它既不能作为基础蒸馏 teacher，也不能因“参数更多”就自动升级为
+Quantized-Small 候选。
 
 ## 8. 固定评价表
 

@@ -15,7 +15,6 @@
     "sample_seed": 1340,
     "sample_temperature": 0.8,
     "training_batch_seed": 1339,
-    "training_tokens": 40960000,
     "validation_batches": 50,
     "validation_seed": 1338
   },
@@ -26,7 +25,8 @@
         "Direct-Small",
         "Distilled-Small"
       ],
-      "only_primary_variable": "training objective"
+      "only_primary_variable": "training objective",
+      "student_training_tokens": 40960000
     },
     "same_deployment_budget": {
       "fixed_between": [
@@ -68,12 +68,17 @@
         },
         "raw_fp32_parameter_bytes": 5044480
       },
+      "experiment": "experiments/lesson05-direct-small.json",
+      "implementation_source_commit": "b4878b45099fb868aef856543f3048d4f66ead07",
       "parameters": 1261120,
       "quality": {
-        "reason": "CUDA baseline has not run from the implementation commit",
-        "status": "pending"
+        "sample_seed": 1340,
+        "selected_validation_bpc": 2.163739558859502,
+        "selected_validation_loss": 1.4997899746894836,
+        "status": "measured"
       },
-      "status": "implementation_pending"
+      "status": "pytorch_baseline_complete",
+      "training_tokens": 40960000
     },
     "Distilled-Small": {
       "architecture": "exactly Direct-Small v1",
@@ -82,7 +87,8 @@
         "reason": "teacher and distillation training are implemented in Lesson 07",
         "status": "pending"
       },
-      "status": "pending"
+      "status": "pending",
+      "training_tokens": 40960000
     },
     "Quantized-Small": {
       "deployment_precision": "provisional INT4",
@@ -110,8 +116,10 @@
       "ideal_packed_int4_weight_bytes": 5347968,
       "parameters": 10695936,
       "quality_gate": "selected validation loss must be materially lower than Direct-Small",
+      "quality_gate_maximum_selected_validation_loss": 1.4797899746894836,
       "raw_fp32_parameter_bytes": 42783744,
-      "status": "provisional"
+      "status": "provisional",
+      "training_tokens": 81920000
     }
   }
 }

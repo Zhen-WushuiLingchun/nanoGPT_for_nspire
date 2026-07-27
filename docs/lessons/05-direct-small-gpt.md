@@ -466,6 +466,16 @@ INT8 裸权重约 10.2 MiB，无法进入 6 MiB 档。INT4 的 scale、例外 te
 teacher 目前状态是 provisional。若它没有稳定优于 Direct-Small，就没有资格
 进入蒸馏实验。
 
+Direct-Small 实验完成、teacher 训练开始前，质量门进一步冻结为：
+
+```text
+teacher selected validation loss <= 1.4797899746894836
+```
+
+即至少比 Direct-Small 的 `1.4997899746894836` 低 `0.02`。teacher 暂定训练
+`81,920,000` token；这是部署预算比较中的额外训练成本，必须记录。Direct 与
+Distilled student 仍严格使用相同的 `40,960,000` token。
+
 ## 18. 测试证据
 
 Direct-Small 模型测试覆盖：
@@ -534,14 +544,100 @@ artifacts/lesson05-direct-small/
 
 ## 20. 真实实验结果
 
-实现提交后，本节将记录：
+实验使用实现提交 `b4878b4`，完整摘要位于
+[`lesson05-direct-small.json`](../../experiments/lesson05-direct-small.json)。
 
-- initial、final-step 和 selected validation loss/BPC；
-- best step 和固定 seed 样例；
-- checkpoint 大小/hash 与严格回载；
-- 实际 CUDA 时间和 peak allocated memory；
-- 5,110,016-byte 初步部署估算是否通过；
-- Host C、统一模型文件和 Nspire 指标仍为 pending 的边界。
+### 质量结果
+
+| 指标 | 初始化 | selected checkpoint |
+|---|---:|---:|
+| validation loss | 4.209568 | 1.499790 |
+| validation BPC | 6.073122 | 2.163740 |
+
+loss 降低 `2.709778`，相对下降 `64.37%`。所有 250-step validation 记录都
+继续创出新低，因此：
+
+```text
+best step = final step = 5000
+```
+
+这次没有出现需要回退到较早 checkpoint 的过拟合反弹，但保留 best-selection
+机制仍然必要。
+
+和 Lesson 03 的单头教学模型相比：
+
+| 指标 | Lesson 03 | Direct-Small |
+|---|---:|---:|
+| validation loss | 2.214079 | 1.499790 |
+| validation BPC | 3.194240 | 2.163740 |
+| 参数量 | 28,800 | 1,261,120 |
+| 训练 token | 8,192,000 | 40,960,000 |
+
+Direct-Small loss 相对低 `32.26%`，但参数为 `43.79×`、训练 token 为 `5×`，
+而且完整 MLP、多头、LayerNorm、context 和优化协议都不同。这只能说明正式配置
+建立了更强基线，不能隔离某一个部件的贡献。
+
+### 固定 seed 样例
+
+```text
+Benvy thy strike of a torment have stands
+Of his wife's house! Here's death the prove
+Whom I can could to think the gods.
+
+QUEEN:
+I am not whose most crown'd with a swall, and I like thee,
+which consul moved: and they had lay thee.
+
+ROMEO:
+Marry, my lord, they know me form here?
+
+Provost:
+Or the god
+```
+
+它仍有明显语法错误，但角色标签、换行和较长句式比前三课稳定。生成文本仅作定性
+辅助，路线比较仍以固定 validation loss/BPC 为主。
+
+### 文件预算
+
+| 项目 | bytes |
+|---|---:|
+| FP32 原始唯一参数 | 5,044,480 |
+| 加 64 KiB metadata 的估算 | 5,110,016 |
+| PyTorch checkpoint 实际大小 | 5,096,641 |
+| 6 MiB 硬上限 | 6,291,456 |
+| 估算剩余空间 | 1,181,440 |
+
+估算门通过，甚至当前 PyTorch checkpoint 也小于 6 MiB。但 checkpoint 不是
+versioned deployment file：它没有我们要求的固定 tensor table、端序、offset
+和完整性协议，因此“实际部署文件”仍为 pending。
+
+### CUDA 训练记录
+
+```text
+optimizer update time = 74.676 s
+evaluation time       = 5.621 s
+update throughput     = 548,500 token/s
+peak CUDA allocated   = 606,734,848 bytes
+```
+
+这些是 PyTorch FP32 训练数字，不是 C 推理内存或 Nspire 速度。
+
+### 独立复核
+
+- checkpoint：`5,096,641 bytes`；
+- checkpoint SHA-256：
+  `de4afc656310dab0e5d8d8ec13aaa6e47a9e2aa4ac0f02eed1202ea5f2ee7e20`；
+- 严格回载 28 个 state-dict tensor，无 missing/unexpected key；
+- 唯一参数量重新计算为 `1,261,120`；
+- token embedding 与 lm head 回载后仍是同一 Parameter；
+- CUDA 固定窗口复算 validation loss，与记录逐位一致；
+- 固定 seed 的 301 字符样例完全一致；
+- future-token isolation 再次精确通过；
+- derived causal masks 未进入 checkpoint；
+- checkpoint 与 `run.json` 均由 Git 忽略；
+- actual deployment file、Host C alignment、Host/Nspire peak RAM 继续明确
+  标记为 pending。
 
 ## 21. 下一课：Quantized-Small
 
