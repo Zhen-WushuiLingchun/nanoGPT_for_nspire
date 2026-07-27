@@ -1,0 +1,31 @@
+# Generated datasets, checkpoints, exports, and device packages
+/artifacts/
+/build/
+/dist/
+/out*/
+/training/out*/
+*.pt
+*.pth
+*.ckpt
+*.tns
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Native builds and editors
+*.o
+*.obj
+*.elf
+*.exe
+.vs/
+.vscode/
+.idea/

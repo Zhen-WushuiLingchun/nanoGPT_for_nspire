@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nanogpt-for-nspire"
+version = "0.1.0"
+description = "Learning-oriented nanoGPT training and TI-Nspire inference tools"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+package-dir = {"" = "training"}
+
+[tool.setuptools.packages.find]
+where = ["training"]
+
+[tool.pytest.ini_options]
+pythonpath = ["training"]
+testpaths = ["tests/python"]
+addopts = "-ra"
