@@ -7,6 +7,10 @@ name = "nanogpt-for-nspire"
 version = "0.1.0"
 description = "Learning-oriented nanoGPT training and TI-Nspire inference tools"
 requires-python = ">=3.10"
+dependencies = ["torch>=2.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
 
 [tool.setuptools]
 package-dir = {"" = "training"}

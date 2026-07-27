@@ -7,12 +7,13 @@
 ## 当前进度
 
 - 已确认：[总体设计](docs/plans/2026-07-27-nanogpt-nspire-design.md)
-- 正在实施：[Lesson 01 数据管线计划](docs/plans/2026-07-27-lesson-01-data-pipeline.md)
-- 第一课：[字符、token 与数据集](docs/lessons/01-tokenization-and-dataset.md)
+- 已完成：[第一课：字符、token 与数据集](docs/lessons/01-tokenization-and-dataset.md)
+- 正在实施：[Lesson 02 embedding 基线计划](docs/plans/2026-07-27-lesson-02-embedding-baseline.md)
+- 第二课：[batch、embedding、logits 与 loss](docs/lessons/02-batches-embeddings-and-loss.md)
 
 ## 快速开始
 
-需要 Python 3.10 或更新版本，以及 pytest。
+需要 Python 3.10 或更新版本、PyTorch 2 或更新版本，以及 pytest。
 
 ```powershell
 python -m pip install -e .
