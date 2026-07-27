@@ -37,6 +37,7 @@ from nanogpt_nspire.training_support import (
 
 
 DIRECT_SMALL_SELECTED_VALIDATION_LOSS = 1.4997899746894836
+DIRECT_SMALL_TRAINING_TOKENS = 40_960_000
 DISTILLATION_TEMPERATURE = 2.0
 DISTILLATION_ALPHA = 0.5
 DISTILLED_SMALL_RUN_IDENTITY = TrainingRunIdentity(
@@ -44,6 +45,16 @@ DISTILLED_SMALL_RUN_IDENTITY = TrainingRunIdentity(
     checkpoint_filename="distilled_small_gpt.pt",
     deployment_interpretation=(
         "fp32_student_trained_with_teacher_v2_soft_targets"
+    ),
+    quality_gate_maximum_selected_validation_loss=(
+        DIRECT_SMALL_SELECTED_VALIDATION_LOSS
+    ),
+)
+DISTILLED_SMALL_EXTENDED_RUN_IDENTITY = TrainingRunIdentity(
+    route="Distilled-Small-Extended",
+    checkpoint_filename="distilled_small_extended_gpt.pt",
+    deployment_interpretation=(
+        "fp32_student_extended_training_ablation_not_same_token_budget"
     ),
     quality_gate_maximum_selected_validation_loss=(
         DIRECT_SMALL_SELECTED_VALIDATION_LOSS
@@ -68,6 +79,25 @@ def frozen_distilled_student_config(
     )
 
 
+def frozen_extended_distilled_student_config(
+    *,
+    data_dir: Path,
+    output_dir: Path,
+    source_commit: str,
+    device: str = "auto",
+) -> TrainingConfig:
+    """Reproduce the base trajectory, then continue 5,000 minimum-LR steps."""
+
+    return TrainingConfig(
+        data_dir=data_dir,
+        output_dir=output_dir,
+        device=device,
+        source_commit=source_commit,
+        steps=10_000,
+        learning_rate_decay_steps=5_000,
+    )
+
+
 def run_distilled_training(
     config: TrainingConfig,
     *,
@@ -75,6 +105,7 @@ def run_distilled_training(
     teacher_provenance: Mapping[str, object],
     temperature: float = DISTILLATION_TEMPERATURE,
     alpha: float = DISTILLATION_ALPHA,
+    run_identity: TrainingRunIdentity = DISTILLED_SMALL_RUN_IDENTITY,
 ) -> dict[str, object]:
     """Run the shared student engine with a frozen distillation objective."""
 
@@ -90,11 +121,22 @@ def run_distilled_training(
     )
     summary = run_training(
         config,
-        run_identity=DISTILLED_SMALL_RUN_IDENTITY,
+        run_identity=run_identity,
         training_objective=objective,
     )
     selected_loss = float(summary["metrics"]["selected_validation_loss"])
+    student_training_tokens = (
+        config.steps * config.batch_size * config.block_size
+    )
+    same_training_tokens = (
+        student_training_tokens == DIRECT_SMALL_TRAINING_TOKENS
+    )
     summary["comparison_to_direct_small"] = {
+        "comparison_scope": (
+            "base_same_student_token_budget"
+            if same_training_tokens
+            else "extended_training_ablation_not_same_token_budget"
+        ),
         "direct_small_selected_validation_loss": (
             DIRECT_SMALL_SELECTED_VALIDATION_LOSS
         ),
@@ -107,11 +149,14 @@ def run_distilled_training(
             / DIRECT_SMALL_SELECTED_VALIDATION_LOSS
         ),
         "same_student_architecture": True,
-        "same_student_training_tokens": True,
+        "same_student_training_tokens": same_training_tokens,
         "status": (
             "distillation_improved_validation_loss"
             if selected_loss < DIRECT_SMALL_SELECTED_VALIDATION_LOSS
             else "distillation_did_not_improve_validation_loss"
+        ),
+        "student_training_token_ratio": (
+            student_training_tokens / DIRECT_SMALL_TRAINING_TOKENS
         ),
     }
     write_json_atomic(config.output_dir / "run.json", summary)
@@ -130,6 +175,7 @@ class DistilledExperimentConfig:
     temperature: float = DISTILLATION_TEMPERATURE
     alpha: float = DISTILLATION_ALPHA
     teacher_benchmark_batches: int = 50
+    student_profile: str = "base"
 
     def validate(self) -> None:
         if not self.source_commit:
@@ -149,6 +195,8 @@ class DistilledExperimentConfig:
             raise ValueError(
                 "teacher_benchmark_batches must be a positive integer"
             )
+        if self.student_profile not in {"base", "extended"}:
+            raise ValueError("student_profile must be 'base' or 'extended'")
 
 
 def _mapping(value: Any, name: str) -> Mapping[str, Any]:
@@ -254,18 +302,29 @@ def run_distilled_experiment(
         ],
         "source_commit": checkpoint["source_commit"],
     }
-    student_config = frozen_distilled_student_config(
-        data_dir=experiment.data_dir,
-        output_dir=experiment.output_dir,
-        device=experiment.device,
-        source_commit=experiment.source_commit,
-    )
+    if experiment.student_profile == "base":
+        student_config = frozen_distilled_student_config(
+            data_dir=experiment.data_dir,
+            output_dir=experiment.output_dir,
+            device=experiment.device,
+            source_commit=experiment.source_commit,
+        )
+        run_identity = DISTILLED_SMALL_RUN_IDENTITY
+    else:
+        student_config = frozen_extended_distilled_student_config(
+            data_dir=experiment.data_dir,
+            output_dir=experiment.output_dir,
+            device=experiment.device,
+            source_commit=experiment.source_commit,
+        )
+        run_identity = DISTILLED_SMALL_EXTENDED_RUN_IDENTITY
     summary = run_distilled_training(
         student_config,
         teacher=teacher,
         teacher_provenance=teacher_provenance,
         temperature=experiment.temperature,
         alpha=experiment.alpha,
+        run_identity=run_identity,
     )
     device = resolve_device(experiment.device)
     teacher_benchmark = _benchmark_teacher(
@@ -283,6 +342,7 @@ def run_distilled_experiment(
             * student_config.batch_size
             * student_config.block_size
         ),
+        "student_profile": experiment.student_profile,
         "teacher_forward_benchmark": teacher_benchmark,
         "teacher_provenance": teacher_provenance,
         "temperature": experiment.temperature,
@@ -309,6 +369,14 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--source-commit", required=True)
+    parser.add_argument(
+        "--extended-training",
+        action="store_true",
+        help=(
+            "run the separately labelled 10,000-step ablation: reproduce "
+            "the base 5,000-step schedule, then continue at minimum LR"
+        ),
+    )
     return parser
 
 
@@ -320,6 +388,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         output_dir=arguments.output_dir,
         device=arguments.device,
         source_commit=arguments.source_commit,
+        student_profile=(
+            "extended" if arguments.extended_training else "base"
+        ),
     )
     try:
         summary = run_distilled_experiment(experiment)

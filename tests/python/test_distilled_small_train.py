@@ -7,7 +7,9 @@ from nanogpt_nspire.data import prepare_dataset
 from nanogpt_nspire.direct_small_train import TrainingConfig
 from nanogpt_nspire.distilled_small_train import (
     DIRECT_SMALL_SELECTED_VALIDATION_LOSS,
+    DISTILLED_SMALL_EXTENDED_RUN_IDENTITY,
     DISTILLED_SMALL_RUN_IDENTITY,
+    frozen_extended_distilled_student_config,
     frozen_distilled_student_config,
     run_distilled_training,
 )
@@ -82,6 +84,34 @@ def test_direct_and_distilled_students_start_identically(tmp_path) -> None:
     ):
         assert direct_name == distilled_name
         assert torch.equal(direct_parameter, distilled_parameter)
+
+
+def test_extended_profile_only_adds_post_base_training(tmp_path) -> None:
+    base = frozen_distilled_student_config(
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "base",
+        device="cpu",
+        source_commit="base",
+    )
+    extended = frozen_extended_distilled_student_config(
+        data_dir=tmp_path / "data",
+        output_dir=tmp_path / "extended",
+        device="cpu",
+        source_commit="extended",
+    )
+
+    assert extended.steps == 10_000
+    assert extended.learning_rate_decay_steps == 5_000
+    assert extended.model_config(vocab_size=65) == base.model_config(
+        vocab_size=65
+    )
+    assert DISTILLED_SMALL_EXTENDED_RUN_IDENTITY.route == (
+        "Distilled-Small-Extended"
+    )
+    assert (
+        DISTILLED_SMALL_EXTENDED_RUN_IDENTITY.checkpoint_filename
+        == "distilled_small_extended_gpt.pt"
+    )
 
 
 def test_distilled_cpu_smoke_records_objective_and_teacher(tmp_path) -> None:

@@ -114,6 +114,7 @@ class TrainingConfig:
     tie_embeddings: bool = True
     learning_rate: float = 0.001
     min_learning_rate: float = 0.0001
+    learning_rate_decay_steps: int | None = None
     warmup_steps: int = 100
     weight_decay: float = 0.1
     beta1: float = 0.9
@@ -177,6 +178,17 @@ class TrainingConfig:
             raise ValueError("seed must be a non-negative integer")
         if self.warmup_steps >= self.steps:
             raise ValueError("warmup_steps must be smaller than steps")
+        if self.learning_rate_decay_steps is not None:
+            if (
+                isinstance(self.learning_rate_decay_steps, bool)
+                or not isinstance(self.learning_rate_decay_steps, int)
+                or self.learning_rate_decay_steps <= self.warmup_steps
+                or self.learning_rate_decay_steps > self.steps
+            ):
+                raise ValueError(
+                    "learning_rate_decay_steps must be an integer greater "
+                    "than warmup_steps and no greater than steps, or None"
+                )
         for name in (
             "learning_rate",
             "min_learning_rate",
@@ -395,12 +407,17 @@ def run_training(
     final_step_validation_loss = initial_validation_loss
     model.train()
     for step in range(1, config.steps + 1):
+        learning_rate_decay_steps = (
+            config.steps
+            if config.learning_rate_decay_steps is None
+            else config.learning_rate_decay_steps
+        )
         learning_rate = learning_rate_at_step(
             step,
             max_learning_rate=config.learning_rate,
             min_learning_rate=config.min_learning_rate,
             warmup_steps=config.warmup_steps,
-            max_steps=config.steps,
+            max_steps=learning_rate_decay_steps,
         )
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
@@ -670,6 +687,7 @@ def run_training(
             "beta1": config.beta1,
             "beta2": config.beta2,
             "gradient_norm_cap": config.max_grad_norm,
+            "learning_rate_decay_steps": learning_rate_decay_steps,
             "maximum_learning_rate": config.learning_rate,
             "minimum_learning_rate": config.min_learning_rate,
             "name": "AdamW",
@@ -713,6 +731,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--learning-rate", type=float, default=0.001)
     parser.add_argument("--min-learning-rate", type=float, default=0.0001)
+    parser.add_argument("--learning-rate-decay-steps", type=int)
     parser.add_argument("--warmup-steps", type=int, default=100)
     parser.add_argument("--weight-decay", type=float, default=0.1)
     parser.add_argument("--beta1", type=float, default=0.9)
@@ -757,6 +776,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         dropout=arguments.dropout,
         learning_rate=arguments.learning_rate,
         min_learning_rate=arguments.min_learning_rate,
+        learning_rate_decay_steps=arguments.learning_rate_decay_steps,
         warmup_steps=arguments.warmup_steps,
         weight_decay=arguments.weight_decay,
         beta1=arguments.beta1,

@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 
 import pytest
 import torch
@@ -31,6 +32,29 @@ def test_learning_rate_warms_up_then_cosine_decays():
     assert learning_rate_at_step(6000, **arguments) == pytest.approx(1e-4)
     middle = learning_rate_at_step(2550, **arguments)
     assert 1e-4 < middle < 1e-3
+
+
+def test_explicit_decay_horizon_can_end_before_training() -> None:
+    config = TrainingConfig(
+        data_dir=Path("data"),
+        output_dir=Path("out"),
+        steps=10_000,
+        learning_rate_decay_steps=5_000,
+    )
+    config.validate()
+
+    arguments = {
+        "max_learning_rate": config.learning_rate,
+        "min_learning_rate": config.min_learning_rate,
+        "warmup_steps": config.warmup_steps,
+        "max_steps": config.learning_rate_decay_steps,
+    }
+    assert learning_rate_at_step(5_000, **arguments) == pytest.approx(
+        config.min_learning_rate
+    )
+    assert learning_rate_at_step(10_000, **arguments) == pytest.approx(
+        config.min_learning_rate
+    )
 
 
 @pytest.mark.parametrize(
