@@ -9,8 +9,9 @@
 - 已确认：[总体设计](docs/plans/2026-07-27-nanogpt-nspire-design.md)
 - 已完成：[第一课：字符、token 与数据集](docs/lessons/01-tokenization-and-dataset.md)
 - 已完成：[第二课：batch、embedding、logits 与 loss](docs/lessons/02-batches-embeddings-and-loss.md)
-- 正在实施：[Lesson 03 causal self-attention 计划](docs/plans/2026-07-27-lesson-03-causal-self-attention.md)
-- 第三课：[单头 causal self-attention](docs/lessons/03-causal-self-attention.md)
+- 已完成：[第三课：单头 causal self-attention](docs/lessons/03-causal-self-attention.md)
+- 正在实施：[Lesson 04 完整训练循环与过拟合计划](docs/plans/2026-07-27-lesson-04-training-loop-overfit.md)
+- 第四课：[完整训练循环与过拟合](docs/lessons/04-training-loop-and-overfitting.md)
 
 ## 快速开始
 
