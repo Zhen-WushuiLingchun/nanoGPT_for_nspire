@@ -44,3 +44,9 @@ python -m nanogpt_nspire.data prepare `
 - `experiments/`：可提交的小型实验配置和结果摘要。
 - `docs/lessons/`：与代码同步的中文课程。
 - `docs/plans/`：经确认的设计和逐阶段实施计划。
+
+## 许可证
+
+本项目自己的代码与文档采用根目录的 [MIT License](LICENSE)。
+`upstream/nanoGPT/` 是官方 nanoGPT 源码快照，继续保留其作者 Andrej
+Karpathy 与原始 [MIT License](upstream/nanoGPT/LICENSE)；两份版权声明各自适用。
