@@ -399,7 +399,7 @@ python -m nanogpt_nspire.lesson04_overfit `
   --record-every 100 `
   --eval-batches 50 `
   --target-training-loss 0.05 `
-  --source-commit <implementation-commit>
+  --source-commit c9efdafe1a93427246ffab5b2194c4b9576ccd80
 ```
 
 生成：
@@ -414,15 +414,90 @@ artifacts/lesson04/
 
 ## 18. 真实实验结果
 
-实现提交后，本节将记录：
+实验使用提交 `c9efdaf`，结果保存在
+[`lesson04-overfit.json`](../../experiments/lesson04-overfit.json)。
+固定 batch 解码为：
 
-- 固定 batch 的初始/最终 loss、BPC 和 accuracy；
-- validation loss 以及 generalization gap；
-- 每个记录点的梯度范数和参数更新范数；
-- 是否达到 `loss <= 0.05` 的预先门槛；
-- checkpoint 严格回载和固定 batch 精确复算；
-- artifact 大小和 SHA-256；
-- CUDA 训练数字不能替代 Nspire 推理测量的边界。
+```text
+h of mankind
+Would hang themselve
+```
+
+它是训练集中由 seed `1338` 选中的连续 33 个字符：前 32 个构成 input，
+后 32 个构成右移一位的 target。
+
+### 过拟合结果
+
+| 指标 | 训练前 | 1000 步后 |
+|---|---:|---:|
+| fixed-batch loss | 4.470628 | 0.000008911 |
+| fixed-batch BPC | 6.449753 | 0.000012856 |
+| fixed-batch token accuracy | 0% | 100% |
+| validation loss | 4.433673 | 17.774596 |
+| validation BPC | 6.396438 | 25.643322 |
+
+预先规定的成功门槛是：
+
+```text
+final_fixed_batch_loss <= 0.05
+```
+
+最终 loss 为 `8.91×10⁻⁶`，降低 `99.9998%`，门槛通过。到第一个间隔记录点
+step 100 时，loss 已为 `7.52×10⁻⁵` 且 accuracy 已达 100%。由于我们只每
+100 步记录一次，不能从该记录判断首次达到 100% 的精确 step。
+
+### 梯度和参数更新
+
+| step | clip 前梯度范数 | clip 后梯度范数 | 单步参数更新范数 |
+|---:|---:|---:|---:|
+| 1 | 2.111147 | 1.000000 | 1.542897 |
+| 100 | 0.000363 | 0.000363 | 0.002499 |
+| 500 | 0.000090 | 0.000090 | 0.001419 |
+| 1000 | 0.000038 | 0.000038 | 0.000977 |
+
+第一步梯度超过阈值并被裁剪到约 1.0。随着正确字符概率接近 1，loss 和梯度信号
+同时变小，但 step 1000 的参数更新仍为有限正数。初始到最终参数向量的总 L2
+位移为 `13.983730`。
+
+### 这次“失败”正是实验成功
+
+最终 generalization gap 为：
+
+```text
+17.774596 - 0.000008911 = 17.774588
+```
+
+validation loss 相比训练前反而增加 `13.340923`。模型用 26,752 个参数记住了
+32 个 target，并把概率分布推得非常尖锐；这些特化参数在随机 validation
+窗口上给错误字符很低概率，于是交叉熵大幅恶化。
+
+因此本实验同时给出两条证据：
+
+1. forward、loss、backward、clipping 和 optimizer update 确实连通；
+2. 最小化训练例子的 loss 不等于学习可泛化的语言规律。
+
+这个 checkpoint 是故意制造的反例，不应作为 Lesson 03 正常 checkpoint 的
+升级版，也不进入后续量化质量比较。
+
+### 性能边界
+
+1000 步共处理 32,000 token，CUDA 计时 `6.073 s`，表观吞吐量约
+`5,269 token/s`。这个数字远低于 Lesson 03，主要因为本课每一步都同步读取
+梯度范数，并复制参数计算更新范数；它是可观察性成本，不能拿来比较模型训练
+速度，更不能推断 Nspire 推理性能。
+
+### 独立复核
+
+- checkpoint：`112,332 bytes`；
+- checkpoint SHA-256：
+  `b4b8426eaec4a24ca16c62aa95c9334cc0ea479a6e8ff19e463f4590b3216245`；
+- 严格回载 7 个 state-dict tensor，无 missing/unexpected key；
+- checkpoint 中的 fixed inputs/targets 与 `run.json` 完全一致；
+- CUDA 复算 fixed-batch loss 和 100% accuracy，与记录逐位一致；
+- 固定 validation windows 复算 loss `17.774596443176268`，逐位一致；
+- 所有记录点的 loss、梯度范数和参数更新范数均有限；
+- clip 后梯度范数均不超过 `1.0 + 10⁻⁶`；
+- checkpoint 与 `run.json` 均由 Git 忽略。
 
 ## 19. 下一课：量化
 

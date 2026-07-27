@@ -1,0 +1,298 @@
+{
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 112332,
+      "path": "artifacts\\lesson04\\overfit_attention_lm.pt",
+      "sha256": "b4b8426eaec4a24ca16c62aa95c9334cc0ea479a6e8ff19e463f4590b3216245"
+    },
+    "run_json": {
+      "bytes": 7830,
+      "path": "artifacts\\lesson04\\run.json",
+      "sha256": "b33ef291a4c840c5683607a5448cf6621e8151624cc937d217a8a8a2eaaf1ae0"
+    }
+  },
+  "configuration": {
+    "batch_size": 1,
+    "block_size": 32,
+    "device": "auto",
+    "embedding_dim": 64,
+    "eval_batches": 50,
+    "learning_rate": 0.01,
+    "max_grad_norm": 1.0,
+    "record_every": 100,
+    "seed": 1337,
+    "steps": 1000,
+    "target_training_loss": 0.05
+  },
+  "dataset": {
+    "schema_version": 1,
+    "source_sha256": "86c4e6aa9db7c042ec79f339dcb96d42b0075e16b8fc2e86bf0ca57e2dc565ed",
+    "train_sha256": "6ec305602a99ac2802745a134e1f5e33e2231b4855525b00b9aebb730ac2626f",
+    "train_tokens": 1003854,
+    "validation_sha256": "d37d30cc0c8327c270d493299c3dca54135f6d5f1c9ef60cda78076e311204b1",
+    "validation_tokens": 111540,
+    "vocab_size": 65
+  },
+  "environment": {
+    "cuda_version": "13.0",
+    "device": "cuda",
+    "gpu_name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "peak_cuda_memory_allocated_bytes": 18327552,
+    "python": "3.13.5",
+    "torch": "2.10.0+cu130"
+  },
+  "experiment": {
+    "purpose": "Verify optimization wiring by memorizing one deterministic batch; this is not a generalization benchmark.",
+    "type": "fixed_batch_overfit"
+  },
+  "experiment_id": "lesson04-overfit",
+  "fixed_batch": {
+    "decoded_text": "h of mankind\nWould hang themselve",
+    "input_token_ids": [
+      [
+        46,
+        1,
+        53,
+        44,
+        1,
+        51,
+        39,
+        52,
+        49,
+        47,
+        52,
+        42,
+        0,
+        35,
+        53,
+        59,
+        50,
+        42,
+        1,
+        46,
+        39,
+        52,
+        45,
+        1,
+        58,
+        46,
+        43,
+        51,
+        57,
+        43,
+        50,
+        60
+      ]
+    ],
+    "selection_seed": 1338,
+    "shape": [
+      1,
+      32
+    ],
+    "target_token_ids": [
+      [
+        1,
+        53,
+        44,
+        1,
+        51,
+        39,
+        52,
+        49,
+        47,
+        52,
+        42,
+        0,
+        35,
+        53,
+        59,
+        50,
+        42,
+        1,
+        46,
+        39,
+        52,
+        45,
+        1,
+        58,
+        46,
+        43,
+        51,
+        57,
+        43,
+        50,
+        60,
+        43
+      ]
+    ],
+    "tokens": 32
+  },
+  "history": [
+    {
+      "fixed_batch_loss": 4.470628261566162,
+      "fixed_batch_token_accuracy": 0.0,
+      "gradient_l2_norm_after_clip": null,
+      "gradient_l2_norm_before_clip": null,
+      "loss_before_update": null,
+      "parameter_update_l2_norm": null,
+      "step": 0
+    },
+    {
+      "fixed_batch_loss": 3.338254451751709,
+      "fixed_batch_token_accuracy": 0.25,
+      "gradient_l2_norm_after_clip": 0.9999995728273849,
+      "gradient_l2_norm_before_clip": 2.1111469530765667,
+      "loss_before_update": 4.470628261566162,
+      "parameter_update_l2_norm": 1.5428969956007852,
+      "step": 1
+    },
+    {
+      "fixed_batch_loss": 7.52030173316598e-05,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 0.0003633314173020826,
+      "gradient_l2_norm_before_clip": 0.0003633314173020826,
+      "loss_before_update": 7.5582938734442e-05,
+      "parameter_update_l2_norm": 0.0024989100822602286,
+      "step": 100
+    },
+    {
+      "fixed_batch_loss": 5.2500890888040885e-05,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 0.0002188917247376306,
+      "gradient_l2_norm_before_clip": 0.0002188917247376306,
+      "loss_before_update": 5.269085522741079e-05,
+      "parameter_update_l2_norm": 0.002055921089801156,
+      "step": 200
+    },
+    {
+      "fixed_batch_loss": 3.481138628558256e-05,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 0.0001447676152138441,
+      "gradient_l2_norm_before_clip": 0.0001447676152138441,
+      "loss_before_update": 3.491195820970461e-05,
+      "parameter_update_l2_norm": 0.0017272114382847425,
+      "step": 300
+    },
+    {
+      "fixed_batch_loss": 2.720493466767948e-05,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 0.00011216773182214615,
+      "gradient_l2_norm_before_clip": 0.00011216773182214615,
+      "loss_before_update": 2.7275709726382047e-05,
+      "parameter_update_l2_norm": 0.0015418796500290782,
+      "step": 400
+    },
+    {
+      "fixed_batch_loss": 2.1833386199432425e-05,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 8.974443298995295e-05,
+      "gradient_l2_norm_before_clip": 8.974443298995295e-05,
+      "loss_before_update": 2.187063728342764e-05,
+      "parameter_update_l2_norm": 0.0014191597590419497,
+      "step": 500
+    },
+    {
+      "fixed_batch_loss": 1.7825159375206567e-05,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 7.350842928757405e-05,
+      "gradient_l2_norm_before_clip": 7.350842928757405e-05,
+      "loss_before_update": 1.7869861039798707e-05,
+      "parameter_update_l2_norm": 0.001337652239396049,
+      "step": 600
+    },
+    {
+      "fixed_batch_loss": 1.4573094631487038e-05,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 6.139754205068023e-05,
+      "gradient_l2_norm_before_clip": 6.139754205068023e-05,
+      "loss_before_update": 1.4591720173484646e-05,
+      "parameter_update_l2_norm": 0.0012837977654700638,
+      "step": 700
+    },
+    {
+      "fixed_batch_loss": 1.2185255400254391e-05,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 5.142139991191322e-05,
+      "gradient_l2_norm_before_clip": 5.142139991191322e-05,
+      "loss_before_update": 1.2192705980851315e-05,
+      "parameter_update_l2_norm": 0.0011298965124268833,
+      "step": 800
+    },
+    {
+      "fixed_batch_loss": 1.0337558705941774e-05,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 4.388638135386663e-05,
+      "gradient_l2_norm_before_clip": 4.388638135386663e-05,
+      "loss_before_update": 1.0356185157434084e-05,
+      "parameter_update_l2_norm": 0.0010450536895099266,
+      "step": 900
+    },
+    {
+      "fixed_batch_loss": 8.910805263440125e-06,
+      "fixed_batch_token_accuracy": 1.0,
+      "gradient_l2_norm_after_clip": 3.7881634721755487e-05,
+      "gradient_l2_norm_before_clip": 3.7881634721755487e-05,
+      "loss_before_update": 8.92198113433551e-06,
+      "parameter_update_l2_norm": 0.0009770027054100132,
+      "step": 1000
+    }
+  ],
+  "limitations": [
+    "The checkpoint intentionally memorizes one 32-token batch and is not a useful language-model checkpoint.",
+    "The experiment measures optimization wiring, not held-out language-model quality.",
+    "Per-step gradient measurement and parameter copying make throughput incomparable with the Lesson 03 training run.",
+    "The model still has no LayerNorm, MLP, multi-head attention, dropout, or stacked blocks.",
+    "CUDA allocation and throughput are not Nspire inference measurements."
+  ],
+  "metrics": {
+    "final_fixed_batch_bpc": 1.2855574563892342e-05,
+    "final_fixed_batch_loss": 8.910805263440125e-06,
+    "final_fixed_batch_token_accuracy": 1.0,
+    "final_validation_bpc": 25.64332214237301,
+    "final_validation_loss": 17.774596443176268,
+    "fixed_batch_loss_reduction": 4.470619350760899,
+    "fixed_batch_loss_reduction_percent": 99.9998006811405,
+    "generalization_gap": 17.774587532371005,
+    "initial_fixed_batch_bpc": 6.44975322261955,
+    "initial_fixed_batch_loss": 4.470628261566162,
+    "initial_fixed_batch_token_accuracy": 0.0,
+    "initial_validation_bpc": 6.396438477024571,
+    "initial_validation_loss": 4.433673295974732,
+    "parameter_displacement_l2_norm": 13.983730057153124,
+    "target_training_loss": 0.05,
+    "target_training_loss_reached": true,
+    "tokens_per_second": 5269.275801281329,
+    "tokens_processed": 32000,
+    "training_seconds": 6.072940799989738,
+    "validation_loss_change": 13.340923147201536
+  },
+  "model": {
+    "block_size": 32,
+    "embedding_dim": 64,
+    "parameters": 26752,
+    "raw_fp32_parameter_bytes": 107008,
+    "type": "single_head_causal_attention_lm",
+    "vocab_size": 65
+  },
+  "schema_version": 1,
+  "source_commit": "c9efdafe1a93427246ffab5b2194c4b9576ccd80",
+  "verification": {
+    "artifacts_ignored_by_git": true,
+    "checkpoint_loaded_strictly": true,
+    "checkpoint_source_commit_matches_run": true,
+    "final_fixed_batch_accuracy_reproduced": true,
+    "final_fixed_batch_loss_reproduced": true,
+    "final_validation_loss_reproduced": true,
+    "history_gradients_finite_and_clipped": true,
+    "state_dict_keys": [
+      "attention.key.weight",
+      "attention.output.weight",
+      "attention.query.weight",
+      "attention.value.weight",
+      "lm_head.weight",
+      "position_embedding.weight",
+      "token_embedding.weight"
+    ],
+    "stored_batch_matches_run_record": true
+  }
+}
