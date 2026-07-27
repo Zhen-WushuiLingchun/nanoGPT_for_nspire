@@ -346,7 +346,7 @@ python -m nanogpt_nspire.lesson03_train `
   --eval-batches 50 `
   --sample-tokens 300 `
   --temperature 0.8 `
-  --source-commit <implementation-commit>
+  --source-commit 4825e045393bc647240699cbbba669cbaa945213
 ```
 
 生成：
@@ -361,14 +361,68 @@ artifacts/lesson03/
 
 ## 16. 真实实验结果
 
-实现提交后，本节将记录：
+实验使用与 Lesson 02 相同的 Tiny Shakespeare 数据、字符词表、
+`block_size=64` 和 validation 采样规则。结果已保存为可提交的
+[`lesson03-causal-attention.json`](../../experiments/lesson03-causal-attention.json)。
 
-- 初始与最终 validation loss/BPC；
-- 与 Lesson 02 `2.497522 / 3.603162 BPC` 的同窗口比较；
-- 参数量和训练成本差异；
-- checkpoint 严格重载与固定 seed 复现；
-- 生成文本是否出现更长结构；
-- 结论边界：这不是 size-matched 部署比较。
+### 本课训练前后
+
+| 指标 | 训练前 | 训练后 | 变化 |
+|---|---:|---:|---:|
+| validation loss | 4.505240 | 2.214079 | 降低 50.86% |
+| validation BPC | 6.499688 | 3.194240 | 降低 50.86% |
+
+`uniform_random_loss = ln(65) = 4.174387`。初始模型略差于均匀随机基线并不矛盾：
+随机初始化的 logits 不必恰好均匀。训练后的 loss 明显低于该基线。
+
+### 和 Lesson 02 的教学对比
+
+| 指标 | Lesson 02：无 attention | Lesson 03：单头 causal attention |
+|---|---:|---:|
+| 最终 validation loss | 2.497522 | 2.214079 |
+| 最终 validation BPC | 3.603162 | 3.194240 |
+| 参数量 | 4,160 | 28,800 |
+| FP32 原始参数 | 16,640 bytes | 115,200 bytes |
+| 训练 token | 4,096,000 | 8,192,000 |
+| 训练时间 | 1.599 s | 5.729 s |
+| 吞吐量 | 2,561,294 token/s | 1,429,940 token/s |
+| peak CUDA allocated | 21,942,272 bytes | 29,161,472 bytes |
+
+Lesson 03 的最终 loss 相对降低 `11.35%`，BPC 从 `3.603162` 降至
+`3.194240`。这说明模型加入上下文机制后，至少在当前训练方案中学到了比
+“只看当前字符”更好的预测分布。
+
+但这不是 size-matched 或 compute-matched 比较：Lesson 03 有 `6.923×`
+参数，训练 token 为 `2×`，训练时间为 `3.582×`。因此现在只能把提升归于
+“包含 attention 的整套新配置”，不能把全部差异严格归因于 attention，
+更不能由 CUDA 数字推断 Nspire 真机速度。
+
+### 生成样例
+
+固定 `seed=1340`、`temperature=0.8`：
+
+```text
+LAnd or comere
+And han oret gher bes whis some aiste I a thad your to dusem tent pleave ven: ther's ingen:
+Andst, hagod as sonith with pon whou surs and mane ther ar wald,
+FORKINGBRHARCAPEDWARD ICILAUTh:
+I mot thavench
+Siglant wall therngeaste thim stor peris of her han kno with the the dnett me and
+```
+
+它仍然不是通顺英语，但比 Lesson 02 更常出现较长的类单词片段、空格和换行结构。
+这只是定性观察；模型优劣仍以 held-out validation loss/BPC 为主要证据。
+
+### 独立复核
+
+- checkpoint 大小：`119,534 bytes`；
+- checkpoint SHA-256：
+  `137bb4c3bf50c21e145ba1e3138a0449e3f851c0fb55c8022f1ece4b720fb901`；
+- 严格回载全部 7 个 state-dict tensor，无 missing/unexpected key；
+- CUDA 上固定 validation batches 复算得到 `2.214078760147095`，与记录逐位一致；
+- 从 checkpoint 固定 seed 重采样，301 字符与记录完全一致；
+- 再次改变序列最后一个 token，较早位置 logits 完全不变；
+- checkpoint 和 `run.json` 均由 `.gitignore` 排除。
 
 ## 17. 还缺什么才是完整 Transformer block
 

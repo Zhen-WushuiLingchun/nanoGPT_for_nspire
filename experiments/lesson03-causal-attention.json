@@ -1,0 +1,117 @@
+{
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 119534,
+      "path": "artifacts\\lesson03\\single_head_attention_lm.pt",
+      "sha256": "137bb4c3bf50c21e145ba1e3138a0449e3f851c0fb55c8022f1ece4b720fb901"
+    },
+    "run_json": {
+      "bytes": 3335,
+      "path": "artifacts\\lesson03\\run.json",
+      "sha256": "7b138cd0cac81550f93db6732debac3db56cad3f1b4f15dcfa1605c7769a72fd"
+    }
+  },
+  "baseline_comparison": {
+    "baseline_experiment": "lesson02-embedding-baseline",
+    "bpc_absolute_improvement": 0.4089220001123923,
+    "bpc_relative_improvement_percent": 11.348974853867778,
+    "checkpoint_bytes_ratio": 6.180342278062148,
+    "loss_absolute_improvement": 0.2834431314468384,
+    "loss_relative_improvement_percent": 11.348974853867782,
+    "parameter_ratio": 6.923076923076923,
+    "peak_cuda_memory_ratio": 1.329008773567295,
+    "raw_fp32_parameter_bytes_ratio": 6.923076923076923,
+    "tokens_processed_ratio": 2.0,
+    "training_seconds_ratio": 3.582379882746757,
+    "throughput_ratio": 0.5582880837490966
+  },
+  "configuration": {
+    "batch_size": 64,
+    "block_size": 64,
+    "device": "auto",
+    "embedding_dim": 64,
+    "eval_batches": 50,
+    "learning_rate": 0.003,
+    "sample_tokens": 300,
+    "seed": 1337,
+    "steps": 2000,
+    "temperature": 0.8
+  },
+  "dataset": {
+    "schema_version": 1,
+    "source_sha256": "86c4e6aa9db7c042ec79f339dcb96d42b0075e16b8fc2e86bf0ca57e2dc565ed",
+    "train_sha256": "6ec305602a99ac2802745a134e1f5e33e2231b4855525b00b9aebb730ac2626f",
+    "train_tokens": 1003854,
+    "validation_sha256": "d37d30cc0c8327c270d493299c3dca54135f6d5f1c9ef60cda78076e311204b1",
+    "validation_tokens": 111540,
+    "vocab_size": 65
+  },
+  "environment": {
+    "cuda_version": "13.0",
+    "device": "cuda",
+    "gpu_name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "peak_cuda_memory_allocated_bytes": 29161472,
+    "python": "3.13.5",
+    "torch": "2.10.0+cu130"
+  },
+  "experiment_id": "lesson03-causal-attention",
+  "limitations": [
+    "This is an educational comparison on the same dataset and evaluation setup, not a size-matched or compute-matched benchmark.",
+    "Lesson 03 uses 6.923 times as many parameters and processes twice as many training tokens as Lesson 02.",
+    "The model has one attention head and no LayerNorm, MLP, dropout, multi-head attention, block stacking, weight tying, or KV cache.",
+    "CUDA training memory and throughput are not Nspire inference measurements.",
+    "Generated text is qualitative evidence only."
+  ],
+  "metrics": {
+    "final_validation_bpc": 3.1942404474017985,
+    "final_validation_loss": 2.214078760147095,
+    "initial_validation_bpc": 6.499687724884186,
+    "initial_validation_loss": 4.505240221023559,
+    "loss_reduction": 2.2911614608764643,
+    "loss_reduction_percent": 50.85547825363081,
+    "tokens_per_second": 1429940.150410451,
+    "tokens_processed": 8192000,
+    "training_seconds": 5.728911099984543,
+    "uniform_random_loss": 4.174387269895637
+  },
+  "model": {
+    "block_size": 64,
+    "components": [
+      "token_embedding",
+      "position_embedding",
+      "single_head_causal_self_attention",
+      "residual_connection",
+      "lm_head"
+    ],
+    "embedding_dim": 64,
+    "parameters": 28800,
+    "raw_fp32_parameter_bytes": 115200,
+    "type": "single_head_causal_attention_lm",
+    "vocab_size": 65
+  },
+  "sample": {
+    "characters": 301,
+    "seed": 1340,
+    "temperature": 0.8,
+    "text": "\nLAnd or comere\nAnd han oret gher bes whis some aiste I a thad your to dusem tent pleave ven: ther's ingen:\nAndst, hagod as sonith with pon whou surs and mane ther ar wald,\nFORKINGBRHARCAPEDWARD ICILAUTh:\nI mot thavench\nSiglant wall therngeaste thim stor peris of her han kno with the the dnett me and"
+  },
+  "schema_version": 1,
+  "source_commit": "4825e045393bc647240699cbbba669cbaa945213",
+  "verification": {
+    "artifacts_ignored_by_git": true,
+    "causal_future_isolation_rechecked": true,
+    "checkpoint_loaded_strictly": true,
+    "checkpoint_source_commit_matches_run": true,
+    "fixed_seed_final_loss_reproduced": true,
+    "fixed_seed_sample_reproduced": true,
+    "state_dict_keys": [
+      "attention.key.weight",
+      "attention.output.weight",
+      "attention.query.weight",
+      "attention.value.weight",
+      "lm_head.weight",
+      "position_embedding.weight",
+      "token_embedding.weight"
+    ]
+  }
+}
