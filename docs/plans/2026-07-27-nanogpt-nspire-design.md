@@ -3,6 +3,10 @@
 日期：2026-07-27  
 状态：已由用户确认
 
+2026-07-27 补充：在量化前加入正式 Direct-Small 基线，课程扩展为九课；
+三路线详细协议见
+[`2026-07-27-small-model-comparison-design.md`](2026-07-27-small-model-comparison-design.md)。
+
 ## 1. 项目目标
 
 本项目用一条可以逐步验证的学习路线，把 nanoGPT 从 PyTorch 训练程序变成能在 TI-Nspire CX II CAS 上生成文本的原生推理程序。
@@ -56,6 +60,10 @@ Phy-nspire 英文文档、监督后训练和 RL 属于第二阶段。只有基�
 ### 4.1 Direct-Small
 
 选择能在设备预算内运行的 student 架构，从随机参数直接训练。它给出“少量高精度参数”的基础结果。
+
+首个冻结架构为 `4 layers / 5 heads / 160 embedding / context 128`，
+共 `1,261,120` 个 tied、bias-free 参数，FP32 原始权重
+`5,044,480 bytes`。Distilled-Small 必须复用该架构。
 
 ### 4.2 Quantized-Small
 
@@ -155,10 +163,11 @@ Tiny Shakespeare
 2. embedding、logits 与交叉熵；
 3. causal self-attention 和张量形状；
 4. 完整训练循环与过拟合；
-5. 量化；
-6. 蒸馏；
-7. C 推理与 PyTorch 对齐；
-8. CX II 内存与性能测量。
+5. Direct-Small 完整小 GPT；
+6. 量化；
+7. 蒸馏；
+8. C 推理与 PyTorch 对齐；
+9. CX II 内存与性能测量。
 
 课程代码优先保持小、可读和可测试。优化版实现必须保留一个容易理解的参考路径，除非设备约束明确要求删除。
 
