@@ -47,9 +47,12 @@ FROZEN_TEACHER_ARCHITECTURE = {
     "n_head": 6,
     "n_embd": 384,
     "mlp_ratio": 4,
-    "dropout": 0.2,
     "bias": False,
     "tie_embeddings": True,
+}
+FROZEN_TEACHER_ROUTE_DROPOUT = {
+    "Teacher": 0.2,
+    "Teacher-v2": 0.3,
 }
 
 
@@ -155,8 +158,15 @@ def validate_teacher_source_metadata(
         raise ValueError("teacher checkpoint schema_version must be 1")
     if checkpoint.get("model_type") != "direct_small_gpt":
         raise ValueError("teacher checkpoint model type is not direct_small_gpt")
-    if checkpoint.get("route") != "Teacher" or teacher_run.get("route") != "Teacher":
-        raise ValueError("teacher source route must be Teacher")
+    source_route = checkpoint.get("route")
+    if (
+        not isinstance(source_route, str)
+        or source_route not in FROZEN_TEACHER_ROUTE_DROPOUT
+        or teacher_run.get("route") != source_route
+    ):
+        raise ValueError(
+            "teacher source route must be a matching Teacher or Teacher-v2"
+        )
     if not isinstance(require_quality_gate_passed, bool):
         raise ValueError("require_quality_gate_passed must be boolean")
     checkpoint_gate = checkpoint.get("quality_gate_passed")
@@ -222,6 +232,11 @@ def validate_teacher_source_metadata(
             raise ValueError(
                 f"teacher {field} does not match the frozen teacher architecture"
             )
+    expected_dropout = FROZEN_TEACHER_ROUTE_DROPOUT[source_route]
+    if model_config.dropout != expected_dropout:
+        raise ValueError(
+            "teacher dropout does not match its frozen source route"
+        )
 
     vocabulary = checkpoint.get("vocabulary")
     if (
@@ -441,6 +456,7 @@ def run_teacher_quantization(
         "model_type": "direct_small_gpt_int4",
         "provenance": {
             "dataset": current_dataset,
+            "teacher_route": checkpoint["route"],
             "teacher_checkpoint_bytes": (
                 config.teacher_checkpoint.stat().st_size
             ),
@@ -544,6 +560,7 @@ def run_teacher_quantization(
             "type": "direct_small_gpt",
         },
         "provenance": {
+            "teacher_route": checkpoint["route"],
             "teacher_run_json": str(teacher_run_path),
             "teacher_source_commit": checkpoint["source_commit"],
         },

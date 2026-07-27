@@ -91,6 +91,22 @@ def test_validate_teacher_source_accepts_frozen_passing_teacher(tmp_path) -> Non
     assert validated.tie_embeddings
 
 
+def test_validate_teacher_source_accepts_passing_teacher_v2(tmp_path) -> None:
+    checkpoint, run, checkpoint_sha256 = _valid_source_metadata(tmp_path)
+    checkpoint["route"] = "Teacher-v2"
+    checkpoint["model_config"]["dropout"] = 0.3
+    run["route"] = "Teacher-v2"
+    run["model"]["dropout"] = 0.3
+
+    validated = validate_teacher_source_metadata(
+        checkpoint,
+        run,
+        checkpoint_sha256=checkpoint_sha256,
+    )
+
+    assert validated.dropout == 0.3
+
+
 def test_validate_teacher_source_allows_explicit_failed_diagnostic(
     tmp_path,
 ) -> None:
