@@ -333,13 +333,82 @@ artifacts/lesson02/
 
 ## 14. 真实实验结果
 
-真实 CUDA 实验将在实现提交后运行。本节随后记录：
+实验使用实现提交：
 
-- 准确的实现提交；
-- RTX/CUDA/PyTorch 环境；
-- 初始和最终 validation loss/BPC；
-- 4,160 参数 checkpoint 的实际大小与哈希；
-- 固定 seed 生成样例；
-- 本课“无 attention 基线”的明确结论边界。
+```text
+38653f82e01265baf863391fa1e6d0ac4b1fdb74
+```
+
+完整有界摘要位于 [`experiments/lesson02-embedding-baseline.json`](../../experiments/lesson02-embedding-baseline.json)。
+
+### 14.1 配置与环境
+
+| 项目 | 观测值 |
+|---|---:|
+| GPU | NVIDIA GeForce RTX 5080 Laptop GPU |
+| PyTorch / CUDA | 2.10.0+cu130 / 13.0 |
+| Python | 3.13.5 |
+| Steps | 1,000 |
+| Batch / block | 64 / 64 |
+| Embedding dimension | 32 |
+| 参数量 | 4,160 |
+| 训练 token | 4,096,000 |
+| 训练时间 | 1.5992 s |
+| 本机训练吞吐 | 2,561,294 token/s |
+
+吞吐只描述这台电脑上的极小 CUDA 训练，不是 Nspire 推理速度。该模型非常小，GPU 启动和框架开销占比很高。
+
+### 14.2 验证指标
+
+训练前后使用相同 seed 选出的 50 个 validation batch：
+
+| 指标 | 训练前 | 训练后 |
+|---|---:|---:|
+| Validation loss | 4.343535 | 2.497522 |
+| BPC | 6.266397 | 3.603162 |
+
+uniform random loss 为 `4.174387`。随机初始化模型最初略差于均匀猜测，训练后 loss 降低 `1.846013`，相对下降约 `42.50%`。
+
+这证明仅根据当前字符，模型已经能学习有用的局部转移，例如空格后更可能出现字母、某些辅音后更可能出现特定元音。但它无法区分相同字符在不同长上下文中的作用。
+
+### 14.3 固定 seed 样例
+
+采样 seed 为 `1340`，temperature 为 `0.8`：
+
+```text
+Ben ad my.
+tre
+A:
+Thareoret mp heres whis s f s iste II irerd t nd toed a misengomy win veg: ther thingenghe asthen godis:
+HENioves mesporowh s meral.
+
+
+ARIf th t an sag andetherore? t s p wot f cere I LAn m:
+Angathelere glantha lousthengeasss t wore orers melongher hanoume piere wh ten dnd th w ang
+```
+
+它出现了类似姓名、换行、冒号和英文局部拼写的结构，但句子没有稳定语义。这与模型只能学习单字符转移的能力一致。
+
+### 14.4 checkpoint 与复核
+
+| 项目 | 观测值 |
+|---|---|
+| FP32 参数原始大小 | 16,640 bytes |
+| PyTorch checkpoint | 19,341 bytes |
+| Checkpoint SHA-256 | `e528154ebd969c049e48345f9521a1a67ac951a5739bec9c71ecec22c7d1707a` |
+| Peak CUDA allocated | 21,942,272 bytes |
+
+checkpoint 比原始参数多出的字节来自格式和元数据，不代表部署格式开销。Peak CUDA allocation 是 PyTorch 训练内存，也不是未来 C/Nspire 推理内存。
+
+独立复核已经完成：
+
+- checkpoint 以 strict state-dict 方式重新加载；
+- state dict 只有 `token_embedding.weight` 和 `lm_head.weight`；
+- checkpoint 与 `run.json` 的 source commit 一致；
+- 相同验证窗口复现出完全相同的最终 loss；
+- 相同 seed 逐字复现 301 字符样例；
+- checkpoint 和 `run.json` 都位于被 Git 忽略的 `artifacts/`。
+
+本课结论只到这里：embedding 基线已学习字符级局部统计。它不是 Transformer，也没有证明任何长上下文理解能力。
 
 下一课会在保留相同数据、batch 和评价代码的前提下加入 causal self-attention。

@@ -1,0 +1,87 @@
+{
+  "artifacts": {
+    "checkpoint": {
+      "bytes": 19341,
+      "path": "artifacts\\lesson02\\embedding_lm.pt",
+      "sha256": "e528154ebd969c049e48345f9521a1a67ac951a5739bec9c71ecec22c7d1707a"
+    },
+    "run_json": {
+      "bytes": 2981,
+      "path": "artifacts\\lesson02\\run.json",
+      "sha256": "74906834f62ad663337cb664858da54de43005472562cb2132650e51b6442c8d"
+    }
+  },
+  "configuration": {
+    "batch_size": 64,
+    "block_size": 64,
+    "device": "auto",
+    "embedding_dim": 32,
+    "eval_batches": 50,
+    "learning_rate": 0.05,
+    "sample_tokens": 300,
+    "seed": 1337,
+    "steps": 1000
+  },
+  "dataset": {
+    "schema_version": 1,
+    "source_sha256": "86c4e6aa9db7c042ec79f339dcb96d42b0075e16b8fc2e86bf0ca57e2dc565ed",
+    "train_sha256": "6ec305602a99ac2802745a134e1f5e33e2231b4855525b00b9aebb730ac2626f",
+    "train_tokens": 1003854,
+    "validation_sha256": "d37d30cc0c8327c270d493299c3dca54135f6d5f1c9ef60cda78076e311204b1",
+    "validation_tokens": 111540,
+    "vocab_size": 65
+  },
+  "environment": {
+    "cuda_version": "13.0",
+    "device": "cuda",
+    "gpu_name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "peak_cuda_memory_allocated_bytes": 21942272,
+    "python": "3.13.5",
+    "torch": "2.10.0+cu130"
+  },
+  "experiment_id": "lesson02-embedding-baseline",
+  "limitations": [
+    "The model has no attention, position encoding, MLP, residual connection, or LayerNorm.",
+    "Each prediction depends only on the current character.",
+    "CUDA training memory and throughput are not Nspire inference measurements.",
+    "Generated text is qualitative evidence only."
+  ],
+  "metrics": {
+    "final_validation_bpc": 3.603162447514191,
+    "final_validation_loss": 2.4975218915939332,
+    "initial_validation_bpc": 6.2663968087107005,
+    "initial_validation_loss": 4.343535280227661,
+    "loss_reduction": 1.8460133886337275,
+    "loss_reduction_percent": 42.50025082188284,
+    "tokens_processed": 4096000,
+    "tokens_per_second": 2561294.4141811356,
+    "training_seconds": 1.5991913999896497,
+    "uniform_random_loss": 4.174387269895637
+  },
+  "model": {
+    "embedding_dim": 32,
+    "parameters": 4160,
+    "raw_fp32_parameter_bytes": 16640,
+    "type": "embedding_lm_no_attention",
+    "vocab_size": 65
+  },
+  "sample": {
+    "characters": 301,
+    "seed": 1340,
+    "temperature": 0.8,
+    "text": "\nBen ad my.\ntre\nA:\nThareoret mp heres whis s f s iste II irerd t nd toed a misengomy win veg: ther thingenghe asthen godis:\nHENioves mesporowh s meral.\n\n\nARIf th t an sag andetherore? t s p wot f cere I LAn m:\nAngathelere glantha lousthengeasss t wore orers melongher hanoume piere wh ten dnd th w ang"
+  },
+  "schema_version": 1,
+  "source_commit": "38653f82e01265baf863391fa1e6d0ac4b1fdb74",
+  "verification": {
+    "artifacts_ignored_by_git": true,
+    "checkpoint_loaded_strictly": true,
+    "checkpoint_source_commit_matches_run": true,
+    "fixed_seed_final_loss_reproduced": true,
+    "fixed_seed_sample_reproduced": true,
+    "state_dict_keys": [
+      "lm_head.weight",
+      "token_embedding.weight"
+    ]
+  }
+}
