@@ -132,6 +132,16 @@ def _mapping(value: Any, name: str) -> Mapping[str, Any]:
     return value
 
 
+def experiment_id_for_teacher_route(teacher_route: str) -> str:
+    """Keep the reusable quantizer's evidence tied to its source lesson."""
+
+    if teacher_route == "Teacher":
+        return "lesson06-int4-diagnostic"
+    if teacher_route == "Teacher-v2":
+        return "lesson07-int4-teacher-v2"
+    raise ValueError(f"unsupported teacher route {teacher_route!r}")
+
+
 def _finite_loss(value: Any, name: str) -> float:
     if (
         isinstance(value, bool)
@@ -534,7 +544,9 @@ def run_teacher_quantization(
             device,
             peak_cuda_memory_allocated_bytes=peak_cuda_bytes,
         ),
-        "experiment_id": "lesson06-int4",
+        "experiment_id": experiment_id_for_teacher_route(
+            checkpoint["route"]
+        ),
         "metrics": {
             "fp32_teacher_validation_bpc": bits_per_character(fp32_loss),
             "fp32_teacher_validation_loss": fp32_loss,

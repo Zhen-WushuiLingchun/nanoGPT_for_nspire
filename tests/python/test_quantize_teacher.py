@@ -8,6 +8,7 @@ import torch
 from nanogpt_nspire.quantize_teacher import (
     INT4_MAXIMUM_LOSS_DEGRADATION,
     QuantizeTeacherConfig,
+    experiment_id_for_teacher_route,
     validate_teacher_source_metadata,
 )
 from nanogpt_nspire.teacher_train import (
@@ -229,3 +230,14 @@ def test_quantize_teacher_defaults_freeze_fairness_gates(tmp_path) -> None:
     assert config.validation_seed == 1338
     assert config.sample_seed == 1340
     assert not config.diagnostic_allow_failed_teacher
+
+
+def test_quantization_experiment_id_tracks_teacher_route() -> None:
+    assert experiment_id_for_teacher_route("Teacher") == (
+        "lesson06-int4-diagnostic"
+    )
+    assert experiment_id_for_teacher_route("Teacher-v2") == (
+        "lesson07-int4-teacher-v2"
+    )
+    with pytest.raises(ValueError, match="unsupported teacher route"):
+        experiment_id_for_teacher_route("Teacher-v3")
