@@ -8,7 +8,7 @@ import json
 import math
 from pathlib import Path
 import time
-from typing import Sequence
+from typing import Mapping, Protocol, Sequence
 
 import torch
 from torch import nn
@@ -69,6 +69,29 @@ class TrainingRunIdentity:
 
 
 DEFAULT_DIRECT_RUN_IDENTITY = TrainingRunIdentity()
+
+
+@dataclass(frozen=True)
+class TrainingObjectiveStep:
+    """One differentiable scalar objective plus finite logging components."""
+
+    loss: torch.Tensor
+    metrics: Mapping[str, float]
+
+
+class TrainingObjective(Protocol):
+    """Replace hard-only training while preserving the shared engine."""
+
+    def __call__(
+        self,
+        model: DirectSmallGPT,
+        inputs: torch.Tensor,
+        targets: torch.Tensor,
+    ) -> TrainingObjectiveStep:
+        ...
+
+    def summary(self) -> dict[str, object]:
+        ...
 
 
 @dataclass(frozen=True)
@@ -289,12 +312,26 @@ def run_training(
     config: TrainingConfig,
     *,
     run_identity: TrainingRunIdentity | None = None,
+    training_objective: TrainingObjective | None = None,
 ) -> dict[str, object]:
     """Train, select, sample, checkpoint, and summarize Direct-Small."""
 
     config.validate()
     identity = run_identity or DEFAULT_DIRECT_RUN_IDENTITY
     identity.validate()
+    objective_summary = (
+        {"name": "hard_label_cross_entropy"}
+        if training_objective is None
+        else training_objective.summary()
+    )
+    if (
+        not isinstance(objective_summary, dict)
+        or not isinstance(objective_summary.get("name"), str)
+        or not objective_summary["name"]
+    ):
+        raise ValueError(
+            "training objective summary must be a dict with a non-empty name"
+        )
     device = resolve_device(config.device)
     dataset = load_token_dataset(config.data_dir)
     if dataset.train.numel() < config.block_size + 1:
@@ -375,8 +412,26 @@ def run_training(
             device=device,
         )
         optimizer.zero_grad(set_to_none=True)
-        _, loss = model(inputs, targets)
-        assert loss is not None
+        objective_metrics: Mapping[str, float] = {}
+        if training_objective is None:
+            _, loss = model(inputs, targets)
+            assert loss is not None
+        else:
+            objective_step = training_objective(model, inputs, targets)
+            if not isinstance(objective_step, TrainingObjectiveStep):
+                raise TypeError(
+                    "training objective must return TrainingObjectiveStep"
+                )
+            loss = objective_step.loss
+            objective_metrics = objective_step.metrics
+        if (
+            not isinstance(loss, torch.Tensor)
+            or loss.ndim != 0
+            or not loss.requires_grad
+        ):
+            raise TypeError(
+                "training objective loss must be a differentiable scalar tensor"
+            )
         if not bool(torch.isfinite(loss).item()):
             raise FloatingPointError(
                 f"training loss became non-finite at step {step}"
@@ -393,6 +448,31 @@ def run_training(
         optimizer.step()
 
         if step == 1 or step % config.log_interval == 0 or step == config.steps:
+            reserved_metrics = {
+                "gradient_l2_norm_before_clip",
+                "learning_rate",
+                "step",
+                "training_loss",
+            }
+            logged_objective_metrics: dict[str, float] = {}
+            for name, value in objective_metrics.items():
+                if not isinstance(name, str) or not name:
+                    raise ValueError(
+                        "training objective metric names must be non-empty strings"
+                    )
+                if name in reserved_metrics:
+                    raise ValueError(
+                        f"training objective metric {name!r} is reserved"
+                    )
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(value)
+                ):
+                    raise ValueError(
+                        f"training objective metric {name!r} must be finite"
+                    )
+                logged_objective_metrics[name] = float(value)
             training_history.append(
                 {
                     "gradient_l2_norm_before_clip": float(
@@ -401,6 +481,7 @@ def run_training(
                     "learning_rate": learning_rate,
                     "step": step,
                     "training_loss": float(loss.detach().item()),
+                    **logged_objective_metrics,
                 }
             )
 
@@ -481,6 +562,7 @@ def run_training(
         "schema_version": 1,
         "selected_validation_loss": selected_validation_loss,
         "source_commit": config.source_commit,
+        "training_objective": objective_summary,
         "training_seed": config.seed,
         "vocabulary": list(dataset.vocabulary),
     }
@@ -606,6 +688,7 @@ def run_training(
         },
         "schema_version": 1,
         "source_commit": config.source_commit,
+        "training_objective": objective_summary,
         "training_history": training_history,
     }
     write_json_atomic(config.output_dir / "run.json", summary)
