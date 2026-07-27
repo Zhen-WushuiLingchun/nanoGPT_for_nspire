@@ -37,6 +37,41 @@ DEPLOYMENT_METADATA_RESERVE_BYTES = 64 * 1024
 
 
 @dataclass(frozen=True)
+class TrainingRunIdentity:
+    """Name one use of the shared GPT training engine."""
+
+    route: str = "Direct-Small"
+    checkpoint_filename: str = "direct_small_gpt.pt"
+    deployment_interpretation: str = "fp32_deployment_candidate"
+    quality_gate_maximum_selected_validation_loss: float | None = None
+
+    def validate(self) -> None:
+        if not self.route.strip():
+            raise ValueError("route must not be empty")
+        checkpoint_path = Path(self.checkpoint_filename)
+        if (
+            not self.checkpoint_filename
+            or checkpoint_path.name != self.checkpoint_filename
+            or checkpoint_path.suffix.lower() != ".pt"
+        ):
+            raise ValueError(
+                "checkpoint_filename must be a basename ending in .pt"
+            )
+        if not self.deployment_interpretation.strip():
+            raise ValueError("deployment_interpretation must not be empty")
+        threshold = self.quality_gate_maximum_selected_validation_loss
+        if threshold is not None and (
+            not math.isfinite(threshold) or threshold <= 0.0
+        ):
+            raise ValueError(
+                "quality_gate maximum loss must be finite and positive or None"
+            )
+
+
+DEFAULT_DIRECT_RUN_IDENTITY = TrainingRunIdentity()
+
+
+@dataclass(frozen=True)
 class TrainingConfig:
     """Frozen Direct-Small architecture and reproducible training protocol."""
 
@@ -250,10 +285,16 @@ def _timed_validation_loss(
     return loss, time.perf_counter() - started
 
 
-def run_training(config: TrainingConfig) -> dict[str, object]:
+def run_training(
+    config: TrainingConfig,
+    *,
+    run_identity: TrainingRunIdentity | None = None,
+) -> dict[str, object]:
     """Train, select, sample, checkpoint, and summarize Direct-Small."""
 
     config.validate()
+    identity = run_identity or DEFAULT_DIRECT_RUN_IDENTITY
+    identity.validate()
     device = resolve_device(config.device)
     dataset = load_token_dataset(config.data_dir)
     if dataset.train.numel() < config.block_size + 1:
@@ -413,14 +454,30 @@ def run_training(config: TrainingConfig) -> dict[str, object]:
         device=device,
     )
     sample_text = decode_tokens(generated_tokens, dataset.vocabulary)
+    quality_threshold = (
+        identity.quality_gate_maximum_selected_validation_loss
+    )
+    quality_gate_passed = (
+        None
+        if quality_threshold is None
+        else selected_validation_loss <= quality_threshold
+    )
 
     config.output_dir.mkdir(parents=True, exist_ok=True)
-    checkpoint_path = config.output_dir / "direct_small_gpt.pt"
+    checkpoint_path = config.output_dir / identity.checkpoint_filename
     checkpoint = {
         "best_step": best_step,
+        "deployment_interpretation": (
+            identity.deployment_interpretation
+        ),
         "model_config": asdict(model_config),
         "model_state_dict": _cpu_state_dict(model),
         "model_type": "direct_small_gpt",
+        "quality_gate_maximum_selected_validation_loss": (
+            quality_threshold
+        ),
+        "quality_gate_passed": quality_gate_passed,
+        "route": identity.route,
         "schema_version": 1,
         "selected_validation_loss": selected_validation_loss,
         "source_commit": config.source_commit,
@@ -486,6 +543,9 @@ def run_training(config: TrainingConfig) -> dict[str, object]:
             "raw_fp32_parameter_bytes": (
                 model.raw_fp32_parameter_bytes
             ),
+            "route_interpretation": (
+                identity.deployment_interpretation
+            ),
         },
         "environment": environment_summary(
             device,
@@ -504,6 +564,10 @@ def run_training(config: TrainingConfig) -> dict[str, object]:
             ),
             "initial_validation_loss": initial_validation_loss,
             "optimizer_update_seconds": optimizer_update_seconds,
+            "quality_gate_maximum_selected_validation_loss": (
+                quality_threshold
+            ),
+            "quality_gate_passed": quality_gate_passed,
             "selected_validation_bpc": bits_per_character(
                 selected_validation_loss
             ),
@@ -532,7 +596,8 @@ def run_training(config: TrainingConfig) -> dict[str, object]:
             "weight_decay": config.weight_decay,
             "weight_decay_rule": "parameter.ndim >= 2",
         },
-        "route": "Direct-Small",
+        "route": identity.route,
+        "run_identity": asdict(identity),
         "sample": {
             "characters": len(sample_text),
             "seed": config.seed + 3,

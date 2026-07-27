@@ -6,6 +6,7 @@ import torch
 from nanogpt_nspire.data import prepare_dataset
 from nanogpt_nspire.direct_small_train import (
     TrainingConfig,
+    TrainingRunIdentity,
     configure_adamw,
     learning_rate_at_step,
     run_training,
@@ -100,6 +101,27 @@ def test_configure_adamw_groups_each_unique_parameter_once():
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
+        ("route", "", "route"),
+        ("checkpoint_filename", "../model.pt", "checkpoint_filename"),
+        ("checkpoint_filename", "model.bin", "checkpoint_filename"),
+        ("deployment_interpretation", "", "deployment_interpretation"),
+        (
+            "quality_gate_maximum_selected_validation_loss",
+            0.0,
+            "quality_gate",
+        ),
+    ],
+)
+def test_training_run_identity_rejects_invalid_values(field, value, message):
+    identity = TrainingRunIdentity(**{field: value})
+
+    with pytest.raises(ValueError, match=message):
+        identity.validate()
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
         ("steps", 0, "steps"),
         ("eval_interval", 0, "eval_interval"),
         ("log_interval", 0, "log_interval"),
@@ -160,6 +182,9 @@ def test_run_training_writes_selected_checkpoint_and_summary(tmp_path):
 
     assert summary["source_commit"] == "test-commit"
     assert summary["route"] == "Direct-Small"
+    assert summary["run_identity"]["deployment_interpretation"] == (
+        "fp32_deployment_candidate"
+    )
     assert summary["model"]["type"] == "direct_small_gpt"
     assert summary["model"]["parameters"] == 3_312
     assert summary["metrics"]["selected_validation_loss"] < (
@@ -182,6 +207,7 @@ def test_run_training_writes_selected_checkpoint_and_summary(tmp_path):
         weights_only=True,
     )
     assert checkpoint["source_commit"] == "test-commit"
+    assert checkpoint["route"] == "Direct-Small"
     restored = DirectSmallGPT(DirectSmallConfig(**checkpoint["model_config"]))
     restored.load_state_dict(checkpoint["model_state_dict"], strict=True)
     assert restored.token_embedding.weight is restored.lm_head.weight
