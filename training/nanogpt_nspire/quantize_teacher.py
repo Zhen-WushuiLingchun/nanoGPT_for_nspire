@@ -78,6 +78,7 @@ class QuantizeTeacherConfig:
     file_limit_bytes: int = DEPLOYMENT_FILE_LIMIT_BYTES
     metadata_reserve_bytes: int = DEPLOYMENT_METADATA_RESERVE_BYTES
     source_commit: str = "uncommitted"
+    diagnostic_allow_failed_teacher: bool = False
 
     def validate(self) -> None:
         for name in (
@@ -116,6 +117,10 @@ class QuantizeTeacherConfig:
             )
         if not self.source_commit:
             raise ValueError("source_commit must not be empty")
+        if not isinstance(self.diagnostic_allow_failed_teacher, bool):
+            raise ValueError(
+                "diagnostic_allow_failed_teacher must be boolean"
+            )
 
 
 def _mapping(value: Any, name: str) -> Mapping[str, Any]:
@@ -140,6 +145,7 @@ def validate_teacher_source_metadata(
     teacher_run: Mapping[str, Any],
     *,
     checkpoint_sha256: str,
+    require_quality_gate_passed: bool = True,
 ) -> DirectSmallConfig:
     """Reject any source that is not the preregistered passing Teacher."""
 
@@ -151,13 +157,20 @@ def validate_teacher_source_metadata(
         raise ValueError("teacher checkpoint model type is not direct_small_gpt")
     if checkpoint.get("route") != "Teacher" or teacher_run.get("route") != "Teacher":
         raise ValueError("teacher source route must be Teacher")
+    if not isinstance(require_quality_gate_passed, bool):
+        raise ValueError("require_quality_gate_passed must be boolean")
+    checkpoint_gate = checkpoint.get("quality_gate_passed")
+    run_gate = _mapping(
+        teacher_run.get("metrics"),
+        "teacher metrics",
+    ).get("quality_gate_passed")
     if (
-        checkpoint.get("quality_gate_passed") is not True
-        or _mapping(teacher_run.get("metrics"), "teacher metrics").get(
-            "quality_gate_passed"
-        )
-        is not True
+        not isinstance(checkpoint_gate, bool)
+        or not isinstance(run_gate, bool)
+        or checkpoint_gate != run_gate
     ):
+        raise ValueError("teacher quality gate metadata disagrees")
+    if require_quality_gate_passed and not checkpoint_gate:
         raise ValueError("teacher quality gate must have passed")
 
     checkpoint_threshold = _finite_loss(
@@ -183,7 +196,10 @@ def validate_teacher_source_metadata(
         run_metrics.get("selected_validation_loss"),
         "teacher run selected validation loss",
     )
-    if selected_loss > TEACHER_QUALITY_GATE_MAXIMUM_LOSS:
+    if (
+        require_quality_gate_passed
+        and selected_loss > TEACHER_QUALITY_GATE_MAXIMUM_LOSS
+    ):
         raise ValueError("teacher selected validation loss exceeds its gate")
     if selected_loss != run_selected_loss:
         raise ValueError(
@@ -302,7 +318,11 @@ def run_teacher_quantization(
         checkpoint,
         teacher_run,
         checkpoint_sha256=checkpoint_sha256,
+        require_quality_gate_passed=(
+            not config.diagnostic_allow_failed_teacher
+        ),
     )
+    teacher_quality_gate_passed = bool(checkpoint["quality_gate_passed"])
     original_state = _mapping(
         checkpoint.get("model_state_dict"),
         "teacher model_state_dict",
@@ -405,7 +425,16 @@ def run_teacher_quantization(
     quality_gate_passed = (
         loss_degradation <= config.maximum_loss_degradation
     )
-    candidate_gate_passed = size_gate_passed and quality_gate_passed
+    candidate_gate_passed = (
+        teacher_quality_gate_passed
+        and size_gate_passed
+        and quality_gate_passed
+    )
+    route = (
+        "Quantized-Small"
+        if teacher_quality_gate_passed
+        else "Quantized-Small-Diagnostic"
+    )
 
     artifact = {
         "model_config": asdict(model_config),
@@ -420,7 +449,7 @@ def run_teacher_quantization(
             "teacher_source_commit": checkpoint["source_commit"],
         },
         "quantized_model_state": quantized_state,
-        "route": "Quantized-Small",
+        "route": route,
         "runtime_status": {
             "integer_C_runtime": "pending Lesson 08",
             "nspire_measurement": "pending Lesson 09",
@@ -483,6 +512,7 @@ def run_teacher_quantization(
             ),
             "size_gate_passed": size_gate_passed,
             "storage": storage,
+            "teacher_quality_gate_passed": teacher_quality_gate_passed,
         },
         "environment": environment_summary(
             device,
@@ -517,7 +547,7 @@ def run_teacher_quantization(
             "teacher_run_json": str(teacher_run_path),
             "teacher_source_commit": checkpoint["source_commit"],
         },
-        "route": "Quantized-Small",
+        "route": route,
         "runtime_status": artifact["runtime_status"],
         "sample": {
             "characters": len(sample_text),
@@ -536,8 +566,9 @@ def run_teacher_quantization(
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Pack the preregistered passing Teacher as groupwise signed INT4 "
-            "and evaluate a dequantized PyTorch reference."
+            "Pack the preregistered Teacher as groupwise signed INT4 and "
+            "evaluate a dequantized PyTorch reference; failed teachers "
+            "require explicit diagnostic mode."
         )
     )
     parser.add_argument("--data-dir", type=Path, required=True)
@@ -545,6 +576,14 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--source-commit", required=True)
+    parser.add_argument(
+        "--diagnostic-allow-failed-teacher",
+        action="store_true",
+        help=(
+            "measure a failed teacher without promoting it to the "
+            "Quantized-Small candidate route"
+        ),
+    )
     return parser
 
 
@@ -556,6 +595,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         output_dir=arguments.output_dir,
         device=arguments.device,
         source_commit=arguments.source_commit,
+        diagnostic_allow_failed_teacher=(
+            arguments.diagnostic_allow_failed_teacher
+        ),
     )
     try:
         summary = run_teacher_quantization(config)

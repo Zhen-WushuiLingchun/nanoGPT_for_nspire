@@ -91,6 +91,25 @@ def test_validate_teacher_source_accepts_frozen_passing_teacher(tmp_path) -> Non
     assert validated.tie_embeddings
 
 
+def test_validate_teacher_source_allows_explicit_failed_diagnostic(
+    tmp_path,
+) -> None:
+    checkpoint, run, checkpoint_sha256 = _valid_source_metadata(tmp_path)
+    checkpoint["quality_gate_passed"] = False
+    checkpoint["selected_validation_loss"] = 1.483
+    run["metrics"]["quality_gate_passed"] = False
+    run["metrics"]["selected_validation_loss"] = 1.483
+
+    validated = validate_teacher_source_metadata(
+        checkpoint,
+        run,
+        checkpoint_sha256=checkpoint_sha256,
+        require_quality_gate_passed=False,
+    )
+
+    assert validated.n_layer == 6
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [
@@ -153,6 +172,11 @@ def test_validate_teacher_source_rejects_invalid_provenance(
         ("temperature", 0.0, "temperature"),
         ("maximum_loss_degradation", -0.1, "maximum_loss_degradation"),
         ("metadata_reserve_bytes", -1, "metadata_reserve_bytes"),
+        (
+            "diagnostic_allow_failed_teacher",
+            "yes",
+            "diagnostic_allow_failed_teacher",
+        ),
     ],
 )
 def test_quantize_teacher_config_rejects_invalid_values(
@@ -188,3 +212,4 @@ def test_quantize_teacher_defaults_freeze_fairness_gates(tmp_path) -> None:
     assert config.metadata_reserve_bytes == 64 * 1024
     assert config.validation_seed == 1338
     assert config.sample_seed == 1340
+    assert not config.diagnostic_allow_failed_teacher
