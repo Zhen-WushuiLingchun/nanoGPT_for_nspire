@@ -1,0 +1,117 @@
+{
+  "budgets": {
+    "context_tokens": 128,
+    "deployment_weight_file_limit_bytes": 6291456,
+    "deployment_weight_target_band_bytes": {
+      "maximum": 6291456,
+      "minimum": 4194304
+    },
+    "peak_inference_ram_limit_bytes": 25165824
+  },
+  "common_evaluation": {
+    "dataset": "Tiny Shakespeare character-level",
+    "sample_new_tokens": 300,
+    "sample_prompt_token_id": 0,
+    "sample_seed": 1340,
+    "sample_temperature": 0.8,
+    "training_batch_seed": 1339,
+    "training_tokens": 40960000,
+    "validation_batches": 50,
+    "validation_seed": 1338
+  },
+  "comparison_id": "deployable-small-v1",
+  "fairness": {
+    "same_architecture": {
+      "fixed_between": [
+        "Direct-Small",
+        "Distilled-Small"
+      ],
+      "only_primary_variable": "training objective"
+    },
+    "same_deployment_budget": {
+      "fixed_between": [
+        "Direct-Small",
+        "Quantized-Small",
+        "Distilled-Small"
+      ],
+      "integer_runtime_required_for_quantized_route": true
+    }
+  },
+  "routes": {
+    "Direct-Small": {
+      "architecture": {
+        "bias": false,
+        "block_size": 128,
+        "dropout": 0.1,
+        "gelu_approximation": "tanh",
+        "mlp_ratio": 4,
+        "n_embd": 160,
+        "n_head": 5,
+        "n_layer": 4,
+        "tie_embeddings": true,
+        "vocab_size": 65
+      },
+      "deployment": {
+        "actual_file_bytes": {
+          "reason": "unified exporter is implemented in Lesson 08",
+          "status": "pending"
+        },
+        "estimated_file_bytes": 5110016,
+        "estimated_kv_cache_fp32_bytes": 655360,
+        "host_peak_ram": {
+          "reason": "Host C runtime is implemented in Lesson 08",
+          "status": "pending"
+        },
+        "nspire_peak_ram": {
+          "reason": "CX II measurement is performed in Lesson 09",
+          "status": "pending"
+        },
+        "raw_fp32_parameter_bytes": 5044480
+      },
+      "parameters": 1261120,
+      "quality": {
+        "reason": "CUDA baseline has not run from the implementation commit",
+        "status": "pending"
+      },
+      "status": "implementation_pending"
+    },
+    "Distilled-Small": {
+      "architecture": "exactly Direct-Small v1",
+      "deployment_precision": "FP32",
+      "quality": {
+        "reason": "teacher and distillation training are implemented in Lesson 07",
+        "status": "pending"
+      },
+      "status": "pending"
+    },
+    "Quantized-Small": {
+      "deployment_precision": "provisional INT4",
+      "integer_runtime_required": true,
+      "quality": {
+        "reason": "quantization and integer runtime are not yet implemented",
+        "status": "pending"
+      },
+      "source_model": "provisional-teacher-v1",
+      "status": "pending"
+    }
+  },
+  "schema_version": 1,
+  "teacher_candidates": {
+    "provisional-teacher-v1": {
+      "architecture": {
+        "bias": false,
+        "block_size": 128,
+        "n_embd": 384,
+        "n_head": 6,
+        "n_layer": 6,
+        "tie_embeddings": true,
+        "vocab_size": 65
+      },
+      "ideal_packed_int4_weight_bytes": 5347968,
+      "parameters": 10695936,
+      "quality_gate": "selected validation loss must be materially lower than Direct-Small",
+      "raw_fp32_parameter_bytes": 42783744,
+      "status": "provisional"
+    }
+  }
+}
