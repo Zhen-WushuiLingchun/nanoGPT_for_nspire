@@ -17,6 +17,7 @@ import torch
 
 from nanogpt_nspire.export_format import (
     MODEL_STORAGE_FP32,
+    MODEL_STORAGE_W4A8,
     STORAGE_FP32,
     ModelFormatError,
     ParsedModel,
@@ -101,6 +102,13 @@ def torch_greedy_probe(
     with torch.inference_mode():
         token_tensor = torch.tensor([all_tokens], dtype=torch.long)
         logits, _ = model(token_tensor)
+        prompt_logits = (
+            logits[0, -1]
+            .detach()
+            .cpu()
+            .numpy()
+            .astype(np.float32, copy=True)
+        )
         for _ in range(generate_count):
             next_token = int(torch.argmax(logits[0, -1]).item())
             generated.append(next_token)
@@ -108,19 +116,13 @@ def torch_greedy_probe(
             token_tensor = torch.tensor([all_tokens], dtype=torch.long)
             logits, _ = model(token_tensor)
     elapsed = time.perf_counter() - started
-    final_logits = (
-        logits[0, -1]
-        .detach()
-        .cpu()
-        .numpy()
-        .astype(np.float32, copy=True)
-    )
     return ProbeResult(
-        logits=final_logits,
+        logits=prompt_logits,
         generated_tokens=tuple(generated),
         metrics={
             "elapsed_seconds": elapsed,
             "full_prefix_evaluations": generate_count + 1,
+            "logits_checkpoint": "after_prompt",
         },
     )
 
@@ -250,7 +252,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--generate", type=int, default=64)
     parser.add_argument("--output", type=Path, required=True)
     arguments = parser.parse_args(argv)
-    model, parsed = load_fp32_export(arguments.model)
+    parsed = parse_model_file(arguments.model.read_bytes())
+    if parsed.spec.model_storage == MODEL_STORAGE_FP32:
+        model, parsed = load_fp32_export(arguments.model)
+        reference_engine = "pytorch_fp32_full_prefix"
+    elif parsed.spec.model_storage == MODEL_STORAGE_W4A8:
+        from nanogpt_nspire.w4a8_reference import (
+            W4A8Reference,
+            w4a8_greedy_probe,
+        )
+
+        model = W4A8Reference(parsed)
+        reference_engine = "pytorch_packed_w4a8_incremental"
+    else:
+        raise ModelFormatError("alignment model storage is unsupported")
     if arguments.prompt is not None:
         prompt_tokens = encode_text(
             arguments.prompt,
@@ -259,11 +274,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         assert arguments.prompt_tokens is not None
         prompt_tokens = _parse_token_list(arguments.prompt_tokens)
-    reference = torch_greedy_probe(
-        model,
-        prompt_tokens,
-        arguments.generate,
-    )
+    if parsed.spec.model_storage == MODEL_STORAGE_FP32:
+        assert isinstance(model, DirectSmallGPT)
+        reference = torch_greedy_probe(
+            model,
+            prompt_tokens,
+            arguments.generate,
+        )
+    else:
+        reference = w4a8_greedy_probe(
+            model,
+            prompt_tokens,
+            arguments.generate,
+        )
     candidate = host_greedy_probe(
         arguments.runner,
         arguments.model,
@@ -274,6 +297,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     result = {
         "schema_version": 1,
         "model": str(arguments.model),
+        "reference_engine": reference_engine,
         "prompt_tokens": list(prompt_tokens),
         "generated_tokens": list(candidate.generated_tokens),
         "generated_text": "".join(

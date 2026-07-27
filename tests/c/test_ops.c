@@ -1,6 +1,7 @@
 #include "ng_ops.h"
 
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 
 static int failures = 0;
@@ -90,12 +91,69 @@ static void check_residual(void) {
     check_close(destination[2], -1.0f, 1.0e-6f);
 }
 
+static void check_dynamic_int8_and_w4a8(void) {
+    static const float input[] = {0.5f, -1.0f, 0.0f, 2.0f};
+    static const uint8_t packed[] = {0xe1u, 0x03u, 0x79u, 0xf1u};
+    static const float weight_scales[] = {
+        0.5f, 0.25f,
+        0.1f, 2.0f
+    };
+    int8_t quantized[4] = {0, 0, 0, 0};
+    float activation_scales[2] = {0.0f, 0.0f};
+    float output[2] = {0.0f, 0.0f};
+    ng_quantize_activation_int8(
+        quantized,
+        activation_scales,
+        input,
+        4u,
+        2u);
+    CHECK(quantized[0] == 64);
+    CHECK(quantized[1] == -127);
+    CHECK(quantized[2] == 0);
+    CHECK(quantized[3] == 127);
+    check_close(activation_scales[0], 1.0f / 127.0f, 1.0e-8f);
+    check_close(activation_scales[1], 2.0f / 127.0f, 1.0e-8f);
+    ng_matvec_w4a8(
+        output,
+        packed,
+        weight_scales,
+        input,
+        2u,
+        4u,
+        4u,
+        2u,
+        quantized,
+        activation_scales);
+    check_close(output[0], 159.0f / 127.0f, 2.0e-6f);
+    check_close(
+        output[1],
+        -4.0f - 133.7f / 127.0f,
+        2.0e-6f);
+}
+
+static void check_zero_activation_group(void) {
+    static const float input[] = {0.0f, 0.0f};
+    int8_t quantized[2] = {1, 1};
+    float scale[1] = {0.0f};
+    ng_quantize_activation_int8(
+        quantized,
+        scale,
+        input,
+        2u,
+        2u);
+    CHECK(quantized[0] == 0);
+    CHECK(quantized[1] == 0);
+    check_close(scale[0], 1.0f, 0.0f);
+}
+
 int main(void) {
     check_matvec();
     check_layer_norm();
     check_softmax();
     check_gelu();
     check_residual();
+    check_dynamic_int8_and_w4a8();
+    check_zero_activation_group();
     if (failures != 0) {
         fprintf(stderr, "%d scalar operator checks failed\n", failures);
         return 1;

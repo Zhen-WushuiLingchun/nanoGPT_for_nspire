@@ -25,6 +25,8 @@ typedef struct ng_runtime {
     float *mlp;
     float *logits;
     float *scores;
+    float *activation_scales;
+    int8_t *quantized_activation;
 } ng_runtime;
 
 ng_status ng_runtime_init(

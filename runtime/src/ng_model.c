@@ -109,6 +109,7 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
     size_t float_scratch;
     size_t float_scratch_bytes;
     size_t mlp_width;
+    size_t padded_mlp_width;
     size_t activation_scale_count = 0u;
     if (spec == NULL) {
         return 0u;
@@ -119,6 +120,7 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
             &mlp_width)) {
         return 0u;
     }
+    padded_mlp_width = mlp_width;
     if (!ng_checked_multiply(
             (size_t)spec->n_layer,
             (size_t)spec->block_size,
@@ -150,8 +152,18 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
         if (spec->activation_group_size == 0u) {
             return 0u;
         }
+        if (!ng_checked_add(
+                mlp_width,
+                (size_t)spec->activation_group_size - 1u,
+                &padded_mlp_width)) {
+            return 0u;
+        }
+        padded_mlp_width = (
+            padded_mlp_width
+            / (size_t)spec->activation_group_size
+            * (size_t)spec->activation_group_size);
         activation_scale_count = (
-            mlp_width + (size_t)spec->activation_group_size - 1u)
+            padded_mlp_width)
             / (size_t)spec->activation_group_size;
         if (!ng_checked_add(
                 float_scratch,
@@ -171,7 +183,7 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
         return 0u;
     }
     if (spec->model_storage == (uint32_t)NG_MODEL_STORAGE_W4A8
-        && !ng_add_arena_region(&total, mlp_width)) {
+        && !ng_add_arena_region(&total, padded_mlp_width)) {
         return 0u;
     }
     if (!ng_align_size(total, &total)) {

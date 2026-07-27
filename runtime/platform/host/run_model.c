@@ -207,6 +207,19 @@ int main(int argument_count, char **arguments) {
         }
         forward_count += 1u;
     }
+    /*
+     * The numerical probe is the last-token distribution for the fixed
+     * prompt. Generation continues from it, but must not replace it with a
+     * later recurrent state.
+     */
+    if (!write_bytes(
+            options.logits_path,
+            logits,
+            sizeof(float),
+            (size_t)model.spec.vocab_size)) {
+        fputs("failed to write prompt logits\n", stderr);
+        goto cleanup_runtime;
+    }
     for (index = 0u; index < options.generate_count; ++index) {
         uint32_t next = argmax(logits, (size_t)model.spec.vocab_size);
         generated[index] = next;
@@ -224,11 +237,6 @@ int main(int argument_count, char **arguments) {
     finished = clock();
     elapsed = (double)(finished - started) / (double)CLOCKS_PER_SEC;
     if (!write_bytes(
-            options.logits_path,
-            logits,
-            sizeof(float),
-            (size_t)model.spec.vocab_size)
-        || !write_bytes(
             options.generated_path,
             generated,
             sizeof(uint32_t),
@@ -240,7 +248,8 @@ int main(int argument_count, char **arguments) {
         "{\"prompt_tokens\":%lu,\"generated_tokens\":%lu,"
         "\"forward_tokens\":%lu,\"elapsed_seconds\":%.9g,"
         "\"tokens_per_second\":%.9g,\"context_length\":%lu,"
-        "\"arena_bytes\":%lu,\"vocab_size\":%lu}\n",
+        "\"arena_bytes\":%lu,\"vocab_size\":%lu,"
+        "\"logits_checkpoint\":\"after_prompt\"}\n",
         (unsigned long)prompt_count,
         (unsigned long)options.generate_count,
         (unsigned long)forward_count,
