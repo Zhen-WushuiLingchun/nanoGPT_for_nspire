@@ -21,6 +21,17 @@ static int failures = 0;
         }                                                                      \
     } while (0)
 
+static int bytes_are_zero(const void *pointer, size_t length) {
+    const unsigned char *bytes = (const unsigned char *)pointer;
+    size_t index;
+    for (index = 0u; index < length; ++index) {
+        if (bytes[index] != 0u) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 static void test_incremental_session(const char *model_path) {
     ng_model model;
     ng_runtime runtime;
@@ -158,6 +169,91 @@ static void test_rejections_and_cancel(const char *model_path) {
     ng_model_free(&model);
 }
 
+static void test_repeated_private_lifecycle(const char *model_path) {
+    ng_model model;
+    ng_runtime runtime;
+    ng_chat chat;
+    ng_error error;
+    uint8_t *arena;
+    size_t cycle;
+    const size_t tracked_model = 1600u;
+    const size_t tracked_framebuffer = 153600u;
+
+    CHECK(
+        ng_model_load_file(
+            model_path,
+            (size_t)NG_INFERENCE_MEMORY_LIMIT_BYTES,
+            &model,
+            &error)
+        == NG_STATUS_OK);
+    if (failures != 0) {
+        return;
+    }
+    arena = (uint8_t *)malloc(model.required_arena_bytes);
+    CHECK(arena != NULL);
+    if (arena == NULL) {
+        ng_model_free(&model);
+        return;
+    }
+    CHECK(
+        ng_runtime_init(
+            &runtime,
+            &model,
+            arena,
+            model.required_arena_bytes,
+            &error)
+        == NG_STATUS_OK);
+    ng_chat_init(&chat, &model, &runtime);
+    chat.max_generation_tokens = 2u;
+    chat.tracked_model_bytes = tracked_model;
+    chat.tracked_arena_bytes = model.required_arena_bytes;
+    chat.tracked_framebuffer_bytes = tracked_framebuffer;
+    chat.tracked_peak_bytes =
+        tracked_model + model.required_arena_bytes + tracked_framebuffer;
+
+    for (cycle = 0u; cycle < 8u; ++cycle) {
+        CHECK(ng_chat_input_insert(&chat, 'a') == NG_CHAT_OK);
+        CHECK(ng_chat_submit(&chat, (uint32_t)(cycle * 10u)) == NG_CHAT_OK);
+        CHECK(
+            ng_chat_step(&chat, (uint32_t)(cycle * 10u + 1u))
+            == NG_CHAT_OK);
+        CHECK(
+            ng_chat_step(&chat, (uint32_t)(cycle * 10u + 2u))
+            == NG_CHAT_OK);
+        CHECK(
+            ng_chat_step(&chat, (uint32_t)(cycle * 10u + 3u))
+            == NG_CHAT_OK);
+        CHECK(
+            ng_chat_step(&chat, (uint32_t)(cycle * 10u + 4u))
+            == NG_CHAT_OK);
+        CHECK(chat.phase == NG_CHAT_PHASE_DONE);
+        CHECK(!bytes_are_zero(arena, model.required_arena_bytes));
+
+        ng_chat_new_chat(&chat);
+        CHECK(bytes_are_zero(arena, model.required_arena_bytes));
+        CHECK(bytes_are_zero(chat.input, sizeof(chat.input)));
+        CHECK(bytes_are_zero(chat.transcript_text, sizeof(chat.transcript_text)));
+        CHECK(bytes_are_zero(chat.cells, sizeof(chat.cells)));
+        CHECK(bytes_are_zero(chat.pending_tokens, sizeof(chat.pending_tokens)));
+        CHECK(chat.model == &model);
+        CHECK(chat.runtime == &runtime);
+        CHECK(chat.tracked_model_bytes == tracked_model);
+        CHECK(chat.tracked_arena_bytes == model.required_arena_bytes);
+        CHECK(chat.tracked_framebuffer_bytes == tracked_framebuffer);
+        CHECK(
+            chat.tracked_peak_bytes
+            == tracked_model
+                + model.required_arena_bytes
+                + tracked_framebuffer);
+        CHECK(ng_runtime_context_length(&runtime) == 0u);
+    }
+    ng_chat_shutdown(&chat);
+    CHECK(bytes_are_zero(&chat, sizeof(chat)));
+    CHECK(bytes_are_zero(arena, model.required_arena_bytes));
+    free(arena);
+    ng_model_free(&model);
+}
+
 int main(int argument_count, char **arguments) {
     if (argument_count != 2) {
         fputs("usage: test_chat_session MODEL.ngm\n", stderr);
@@ -165,6 +261,7 @@ int main(int argument_count, char **arguments) {
     }
     test_incremental_session(arguments[1]);
     test_rejections_and_cancel(arguments[1]);
+    test_repeated_private_lifecycle(arguments[1]);
     if (failures != 0) {
         fprintf(stderr, "%d chat session checks failed\n", failures);
         return 1;
