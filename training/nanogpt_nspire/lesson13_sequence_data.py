@@ -526,7 +526,7 @@ def assemble_fixed_evaluation_sft(
     reference_sft_dir: str | Path,
     output_dir: str | Path,
 ) -> dict[str, object]:
-    """Replace only SFT train data while preserving reference val/test bytes."""
+    """Augment SFT train data while preserving reference val/test bytes."""
 
     sequence_root = Path(sequence_corpus_dir)
     reference = load_packed_dataset(reference_sft_dir)
@@ -534,8 +534,12 @@ def assemble_fixed_evaluation_sft(
         sequence_root
     )
     payloads: dict[str, bytes] = {
-        "train.tokens.bin": train_tokens,
-        "train.loss.bin": train_mask,
+        "train.tokens.bin": (
+            reference.train.token_path.read_bytes() + train_tokens
+        ),
+        "train.loss.bin": (
+            reference.train.mask_path.read_bytes() + train_mask
+        ),
         "validation.tokens.bin": (
             reference.validation.token_path.read_bytes()
         ),
@@ -554,7 +558,9 @@ def assemble_fixed_evaluation_sft(
     manifest: dict[str, object] = {
         "comparison_contract": {
             "test_split": "byte_identical_to_reference_sft",
-            "training_split": "verified_external_sequences",
+            "training_split": (
+                "reference_sft_plus_verified_external_sequences"
+            ),
             "validation_split": "byte_identical_to_reference_sft",
         },
         "eligible_targets": {

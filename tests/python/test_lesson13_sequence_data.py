@@ -271,11 +271,12 @@ def test_assembled_corpus_replaces_only_training_split(
     reference_loaded = load_packed_dataset(reference)
 
     assert manifest["comparison_contract"]["training_split"] == (
-        "verified_external_sequences"
+        "reference_sft_plus_verified_external_sequences"
     )
     assert assembled.train.token_path.read_bytes() == (
-        external / "train.tokens.bin"
-    ).read_bytes()
+        reference_loaded.train.token_path.read_bytes()
+        + (external / "train.tokens.bin").read_bytes()
+    )
     assert assembled.validation.token_path.read_bytes() == (
         reference_loaded.validation.token_path.read_bytes()
     )

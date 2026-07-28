@@ -84,8 +84,10 @@ security: isolate Lesson 13 teacher credentials
 4. Accept math only when the final numeric answer matches exact project ground
    truth. Accept physics only when the numeric answer and canonical unit match.
 5. Quarantine malformed, disagreeing, duplicate, over-context, or role-leaking
-   responses. Build deterministic `<USER>`/`<ASSISTANT>` packed shards from
-   accepted outputs.
+   responses. Augment the reference SFT training split with deterministic
+   `<USER>`/`<ASSISTANT>` shards from accepted outputs; keep reference
+   validation/test byte-identical so a 512-record teacher pilot does not turn
+   into a tiny-corpus overfit confound.
 6. Support a no-key dry run that writes only request plans and never performs
    network calls.
 
