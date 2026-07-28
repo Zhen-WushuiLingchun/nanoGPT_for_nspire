@@ -15,8 +15,8 @@
 - 已完成：[第六课：Teacher 与 INT4 量化诊断](docs/lessons/06-int4-quantization.md)
 - 已完成：[第七课：Teacher v2、正式量化与蒸馏](docs/lessons/07-teacher-v2-distillation-and-comparison.md)
 - 已完成：[第八课：统一模型文件、C 推理与 PyTorch 对齐](docs/lessons/08-c-runtime-and-pytorch-alignment.md)
-- 已完成（Host/ARM）：[第九课：Ndless 像素对话界面、隐私生命周期与真机部署](docs/lessons/09-ndless-pixel-chat-ui.md)
-- 待真机门：上传读回、启动、CX II tokens/s/峰值 RAM 与退出显示恢复
+- 已完成（Host/ARM/真机传输）：[第九课：Ndless 像素对话界面、隐私生命周期与真机部署](docs/lessons/09-ndless-pixel-chat-ui.md)
+- 待真机交互门：启动与模型打开、CX II tokens/s/峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
 体积门和量化误差门均通过，因此该产物保留为 diagnostic。Lesson 07 只把
@@ -46,9 +46,11 @@ dist/
 └── model.ngm.tns    6,036,544 bytes
 ```
 
-真实 CX II 已被检测并成功列过根目录，但第一次 6 MiB 原子同步因计算器息屏触发
-LibUSB error，失败后的远端目录尚未重新审计。因此当前只声明 Host/ARM 通过，
-不把真机上传、启动、速度或峰值内存写成已完成。
+真实 CX II 已完成两个文件的单进程原子同步：上传后完整读回的 SHA-256 与本地
+一致，设备端最终只保留正式文件。该次同步耗时 `135.2 s`。此前失败不是息屏或
+必须物理插拔，而是 USB/IP 尚未完成 WSL 枚举，以及连续启动独立 `phy-nlinkctl`
+进程造成的 TI 文件服务握手竞态。当前只把真机传输门写成通过；应用启动、模型
+打开、速度和峰值内存仍需计算器侧实测。
 
 三条可部署小模型路线与两层公平性已经冻结在
 [`small-model-comparison-design.md`](docs/plans/2026-07-27-small-model-comparison-design.md)，

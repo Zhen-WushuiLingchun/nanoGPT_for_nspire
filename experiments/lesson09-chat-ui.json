@@ -1,6 +1,6 @@
 {
   "experiment_id": "lesson09-ndless-pixel-chat-ui",
-  "schema_version": 1,
+  "schema_version": 2,
   "source_commit": "49ecfac0cd63f6fc97d70b214ccc39914b886be6",
   "portable_ui": {
     "dimensions": {
@@ -111,14 +111,38 @@
     "device_type": "TI-Nspire CX II",
     "initial_root_directory_query": "passed",
     "intended_directory": "/nanoGPT",
-    "post_failure_remote_state": "not verified",
-    "sync_attempt": {
-      "elapsed_seconds": 50.9,
-      "error": "LibUSB error",
-      "result": "failed"
-    },
+    "post_failure_remote_state": "verified by successful fresh sync; final check found only the two intended files",
+    "status": "transferred_and_verified",
+    "sync_attempts": [
+      {
+        "diagnosis": "no upload progress was emitted; a separate prior CLI process left the CX II firmware unable to accept the next TI file-service handshake immediately",
+        "elapsed_seconds": 50.9,
+        "error": "LibUSB error",
+        "result": "failed",
+        "upload_started": false
+      },
+      {
+        "diagnosis": "usbipd attach had returned, but Windows was not yet Attached and WSL had not enumerated 0451:e022",
+        "elapsed_seconds": 6.3,
+        "error": "no TI-Nspire device found",
+        "result": "failed",
+        "upload_started": false
+      },
+      {
+        "app_readback_sha256": "d1590fb4e201c0b74ea00357aa03a9c4421ec8d514715a40456f4147c813d8f8",
+        "elapsed_seconds": 135.2,
+        "final_files": {
+          "/nanoGPT/model.ngm.tns": 6036544,
+          "/nanoGPT/nanogpt-chat.tns": 59310
+        },
+        "model_readback_sha256": "87882cae9a098e280414df5e327253be12202f2c1f6db5ccd0e24503925647c9",
+        "result": "passed",
+        "temporary_or_backup_files_after_sync": false,
+        "upload_started": true
+      }
+    ],
     "transfer_tool": "phy-nlinkctl atomic multi-file sync",
-    "transport_recovery": "usbipd reattach re-enumerated the device but the TI file service still timed out; physical USB replug required",
+    "transport_recovery": "no physical USB replug: wait for usbipd Attached plus WSL 0451:e022 enumeration, then run exactly one phy-nlinkctl sync process without a separate phy-nlinkctl preflight",
     "true_app_launch": "pending",
     "true_peak_memory": "pending",
     "true_tokens_per_second": "pending"

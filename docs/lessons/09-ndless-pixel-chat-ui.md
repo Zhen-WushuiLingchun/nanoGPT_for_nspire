@@ -30,10 +30,13 @@ dist/nanogpt-chat.tns       59,310 bytes
 dist/model.ngm.tns       6,036,544 bytes  # 默认 Quantized-Small
 ```
 
-本轮也检测到了真实 CX II，并成功读取过设备根目录；第一次 6 MiB 多文件同步在
-约 50.9 秒遇到 LibUSB error。失败后设备仍能重新枚举，但 TI 文件服务握手继续
-超时，需要物理拔插 USB 后才能审计临时文件并重传。因此当前证据是
-Host 通过、ARM package 通过、真机上传未确认，不把它写成“已经在计算器运行”。
+本轮也在真实 CX II 上完成了 6 MiB 多文件同步。应用和模型都经过
+`upload -> 完整读回 SHA-256 -> atomic rename -> 最终目录检查`，总耗时
+`135.2 s`。此前约 50.9 秒的失败没有开始传输，实际卡在 TI 文件服务握手；
+另一次快速失败则发生在 USB/IP 尚未被 WSL 枚举时。正确恢复不需要物理拔插：
+等待设备达到 Windows `Attached`、WSL 枚举到 `0451:e022` 后，直接用唯一一个
+`sync` 进程完成全部 TI 协议操作。当前证据是 Host、ARM package 和真机传输均
+通过；还不能把“文件在计算器上”写成“应用已经成功启动并推理”。
 
 ## 1. 这是不是一个 ChatGPT
 
@@ -462,9 +465,22 @@ phy-nlinkctl sync \
 ```
 
 `sync` 的 `.upload -> readback SHA-256 -> atomic rename` 很重要。模型是 6 MiB；
-不能因为 upload API 返回成功就假设设备端完整。发生 LibUSB error 后先恢复物理
-连接并 `ls /nanoGPT`，再决定 fresh sync；远端状态未知时不要直接使用
-`--reuse-temporary`。
+不能因为 upload API 返回成功就假设设备端完整。CX II 固件在一个 CLI 断开后，
+可能不会立刻接受下一个独立 CLI 的 NNSE 握手，因此不要先运行一次
+`phy-nlinkctl ls` 再另起进程上传。一个 `sync` 进程会复用同一 USB handle 与
+握手，并依次完成建目录、两个文件的上传读回、原子替换和最终检查。
+
+本轮 Windows/WSL 的可靠调用顺序是：
+
+1. `usbipd attach --wsl --busid 4-1`；
+2. 等待 `usbipd list` 显示 `Attached`，且 WSL 的 `lsusb` 能看到
+   `0451:e022`；
+3. 不再启动任何预检 `phy-nlinkctl`，直接执行一次多文件 `sync`。
+
+`Shared` 只表示设备允许被 USB/IP 使用，不表示已经挂到 WSL；刚执行 attach 后
+立即运行传输，也可能因异步枚举尚未完成而得到 `no TI-Nspire device found`。
+`lsusb` 只检查 USB 枚举，不进入 TI 文件协议，因此不会制造上述双 CLI 握手竞态。
+远端状态未知时不要直接使用 `--reuse-temporary`。
 
 本轮本地 bundle：
 
@@ -472,6 +488,15 @@ phy-nlinkctl sync \
 |---|---:|---|
 | `nanogpt-chat.tns` | 59,310 | `d1590fb4…813d8f8` |
 | `model.ngm.tns` | 6,036,544 | `87882cae…5647c9` |
+
+真实 CX II 同步结果：
+
+| 项目 | 结果 |
+|---|---|
+| 总耗时 | `135.2 s` |
+| `nanogpt-chat.tns` | 上传、59,310-byte 读回、SHA-256、最终文件检查均通过 |
+| `model.ngm.tns` | 上传、6,036,544-byte 读回、SHA-256、最终文件检查均通过 |
+| 临时/备份文件 | 最终检查未发现 |
 
 ## 14. 哪些结论已经成立
 
@@ -484,6 +509,7 @@ phy-nlinkctl sync \
 - New Chat/Shutdown 私有 buffer 清零；
 - 完整 chat program 能被 ARM 工具链以 warnings-as-errors 编译、链接和封装；
 - 外部 Quantized-Small bundle 已在 Host 准备完成。
+- 两个 bundle 文件已在真实 CX II 完整上传、读回校验并原子部署。
 
 尚未成立：
 
@@ -492,28 +518,26 @@ phy-nlinkctl sync \
 - CX II 的真实 TTFT/tokens/s；
 - calculator-side peak heap；
 - 退出后 LCD/按键恢复已由人眼确认；
-- 设备端 `/nanoGPT` 没有失败上传留下的临时文件。
 
 这些边界记录在
 [`experiments/lesson09-chat-ui.json`](../../experiments/lesson09-chat-ui.json)。
 
-## 15. 真机恢复后的验收顺序
+## 15. 余下的真机交互验收顺序
 
-物理拔插 USB 后：
+上传与读回已经通过，下一步直接在计算器上：
 
-1. `ls /nanoGPT`，记录正式、`.upload` 和 `.previous` 文件；
-2. fresh `sync` 两个 bundle 文件；
-3. 对两个文件完整读回 SHA-256；
-4. 从 Documents 打开 `nanoGPT/nanogpt-chat.tns`；
-5. 输入一轮短 ASCII prompt；
-6. 生成中按 Esc；
-7. 再输入第二轮，确认 cell 连续；
-8. Menu New Chat，确认 context 回到 0；
-9. Ctrl+Esc 退出，确认 Documents 屏幕正常；
-10. 重新启动，确认没有恢复上次 transcript；
-11. 记录至少 32 个 decode token 的 wall time 与 tracked RAM；
-12. 再决定是否启用高分辨率 timer probe。
+1. 从 Documents 打开 `nanoGPT/nanogpt-chat.tns`；
+2. 确认应用找到 `/nanoGPT/model.ngm.tns`，而不是进入 model-open error；
+3. 输入一轮短 ASCII prompt；
+4. 生成中按 Esc；
+5. 再输入第二轮，确认 cell 连续；
+6. Menu New Chat，确认 context 回到 0；
+7. Ctrl+Esc 退出，确认 Documents 屏幕正常；
+8. 重新启动，确认没有恢复上次 transcript；
+9. 记录至少 32 个 decode token 的 wall time 与 tracked RAM；
+10. 再决定是否启用高分辨率 timer probe。
 
-完成这组验收后，Lesson 09 的 `physical_device` 才能从 pending 改成 measured。
+完成这组验收后，Lesson 09 的 `physical_device` 才能从
+`transferred_and_verified` 改成 `measured`。
 下一阶段则可以一边优化 W4A8 ARM kernel，一边准备真正的物理解释后训练数据；UI
 与模型能力仍保持两个可以独立验证的层。
