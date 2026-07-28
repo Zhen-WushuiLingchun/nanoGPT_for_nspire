@@ -13,6 +13,7 @@ from nanogpt_nspire.base_corpus import (
 )
 from nanogpt_nspire.base_train import (
     BaseTrainingConfig,
+    evaluate_sequential_split,
     evaluate_frequency_baseline,
     frozen_student_base_config,
     load_packed_split,
@@ -180,6 +181,55 @@ def test_frequency_baseline_is_finite_and_deterministic(tmp_path) -> None:
     assert first == second
     assert math.isfinite(first)
     assert first > 0.0
+
+
+def test_sequential_evaluation_covers_every_eligible_target(tmp_path) -> None:
+    data_dir = _training_data(tmp_path)
+    validation = load_packed_split(
+        data_dir / "validation.tokens.bin",
+        data_dir / "validation.loss.bin",
+        vocab_size=264,
+    )
+    config = BaseTrainingConfig(
+        data_dir=data_dir,
+        output_dir=tmp_path / "out",
+        source_commit="test",
+        device="cpu",
+        steps=2,
+        micro_batch_size=2,
+        gradient_accumulation_steps=1,
+        block_size=8,
+        n_layer=1,
+        n_head=2,
+        n_embd=16,
+        mlp_ratio=2,
+        dropout=0.0,
+        warmup_steps=1,
+        eval_interval=1,
+        eval_batches=1,
+        log_interval=1,
+        overfit_gate_steps=1,
+        sample_tokens=0,
+    )
+    torch.manual_seed(5)
+    from nanogpt_nspire.models.direct_small_gpt import DirectSmallGPT
+
+    model = DirectSmallGPT(config.model_config())
+
+    result = evaluate_sequential_split(
+        model,
+        validation,
+        block_size=config.block_size,
+        batch_size=config.micro_batch_size,
+        device=torch.device("cpu"),
+        use_bfloat16=False,
+    )
+
+    assert result["eligible_targets"] == int(validation.loss_mask.sum())
+    assert result["evaluated_prediction_positions"] == (
+        validation.token_count - 1
+    )
+    assert math.isfinite(result["loss"])
 
 
 def test_frozen_student_config_uses_budgeted_architecture(tmp_path) -> None:

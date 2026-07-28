@@ -511,6 +511,103 @@ def _evaluate_model(
     return weighted_loss / targets
 
 
+def evaluate_sequential_split(
+    model: DirectSmallGPT,
+    split: PackedTokenSplit,
+    *,
+    block_size: int,
+    batch_size: int,
+    device: torch.device,
+    use_bfloat16: bool,
+) -> dict[str, object]:
+    """Evaluate every target position once in deterministic packed windows."""
+
+    if not isinstance(model, DirectSmallGPT):
+        raise ValueError("model must be a DirectSmallGPT")
+    if not isinstance(split, PackedTokenSplit):
+        raise ValueError("split must be a PackedTokenSplit")
+    _positive_integer(block_size, "block_size")
+    _positive_integer(batch_size, "batch_size")
+    if not isinstance(device, torch.device):
+        raise ValueError("device must be a torch.device")
+    if not isinstance(use_bfloat16, bool):
+        raise ValueError("use_bfloat16 must be boolean")
+    prediction_positions = split.token_count - 1
+    if prediction_positions <= 0:
+        raise ValueError("split is too short to evaluate")
+
+    full_window_count = prediction_positions // block_size
+    full_starts = [
+        index * block_size
+        for index in range(full_window_count)
+    ]
+    weighted_loss = 0.0
+    eligible_targets = 0
+    evaluated_positions = 0
+    generator = torch.Generator(device="cpu").manual_seed(0)
+    was_training = model.training
+    model.eval()
+
+    def accumulate(batch: PackedBatch) -> None:
+        nonlocal weighted_loss, eligible_targets, evaluated_positions
+        with _autocast_context(
+            device,
+            enabled=use_bfloat16,
+        ):
+            logits, _ = model(batch.inputs)
+            loss = masked_cross_entropy(
+                logits,
+                batch.targets,
+                batch.target_mask,
+            )
+        eligible = int(batch.target_mask.sum().item())
+        weighted_loss += float(loss.item()) * eligible
+        eligible_targets += eligible
+        evaluated_positions += batch.targets.numel()
+
+    with torch.inference_mode():
+        for offset in range(0, len(full_starts), batch_size):
+            starts = torch.tensor(
+                full_starts[offset : offset + batch_size],
+                dtype=torch.long,
+            )
+            batch = make_packed_batch(
+                split,
+                batch_size=len(starts),
+                block_size=block_size,
+                generator=generator,
+                device=device,
+                starts=starts,
+            )
+            accumulate(batch)
+        tail_start = full_window_count * block_size
+        tail_length = prediction_positions - tail_start
+        if tail_length:
+            batch = make_packed_batch(
+                split,
+                batch_size=1,
+                block_size=tail_length,
+                generator=generator,
+                device=device,
+                starts=torch.tensor([tail_start], dtype=torch.long),
+            )
+            accumulate(batch)
+    model.train(was_training)
+    expected_eligible = int(np.asarray(split.loss_mask)[1:].sum())
+    if (
+        evaluated_positions != prediction_positions
+        or eligible_targets != expected_eligible
+    ):
+        raise RuntimeError(
+            "sequential evaluation did not cover the expected targets"
+        )
+    return {
+        "eligible_targets": eligible_targets,
+        "evaluated_prediction_positions": evaluated_positions,
+        **_loss_metrics(weighted_loss / eligible_targets),
+    }
+
+
 def evaluate_frequency_baseline(
     train: PackedTokenSplit,
     validation: PackedTokenSplit,
@@ -777,6 +874,14 @@ def run_base_training(
         device=device,
         seed=validation_seed,
     )
+    initial_full_validation = evaluate_sequential_split(
+        model,
+        dataset.validation,
+        block_size=config.block_size,
+        batch_size=config.micro_batch_size,
+        device=device,
+        use_bfloat16=config.use_bfloat16,
+    )
     synchronize(device)
     evaluation_seconds = time.perf_counter() - evaluation_started
     best_validation_loss = initial_validation_loss
@@ -904,6 +1009,22 @@ def run_base_training(
         device=device,
         seed=validation_seed,
     )
+    selected_full_validation = evaluate_sequential_split(
+        model,
+        dataset.validation,
+        block_size=config.block_size,
+        batch_size=config.micro_batch_size,
+        device=device,
+        use_bfloat16=config.use_bfloat16,
+    )
+    selected_full_test = evaluate_sequential_split(
+        model,
+        dataset.test,
+        block_size=config.block_size,
+        batch_size=config.micro_batch_size,
+        device=device,
+        use_bfloat16=config.use_bfloat16,
+    )
     samples = [
         _generate_continuation(
             model,
@@ -989,10 +1110,13 @@ def run_base_training(
             "initial_validation": _loss_metrics(
                 initial_validation_loss
             ),
+            "initial_full_validation": initial_full_validation,
             "optimizer_update_seconds": optimizer_update_seconds,
             "selected_validation": _loss_metrics(
                 selected_validation_loss
             ),
+            "selected_full_test": selected_full_test,
+            "selected_full_validation": selected_full_validation,
             "selected_validation_loss": selected_validation_loss,
             "training_tokens": training_tokens,
             "update_tokens_per_second": (
