@@ -1,0 +1,85 @@
+{
+  "claim_boundary": "A deterministic, license-gated base-pretraining pilot corpus. It is not an instruction dataset and does not prove model quality.",
+  "dependencies": {
+    "huggingface_hub": "1.25.1",
+    "pyarrow": "23.0.1"
+  },
+  "determinism": {
+    "file_metadata_equal": true,
+    "first_manifest_sha256": "408b3eea27d4f3a734ca0c8cc458e8c621d69db7394675b02cdcf30086c4a8b8",
+    "manifest_equal": true,
+    "second_manifest_sha256": "408b3eea27d4f3a734ca0c8cc458e8c621d69db7394675b02cdcf30086c4a8b8"
+  },
+  "files": {
+    "provenance.jsonl": {
+      "bytes": 685623,
+      "sha256": "52876417d87aaa08227ab5905a879dbd720b469e7fce4f7d491b828eecdfd3bb"
+    },
+    "test.tokens.bin": {
+      "bytes": 376240,
+      "sha256": "3932cbd4954c809836f65dc3570f974cebf036aeffaa060800df87e0ad718c51"
+    },
+    "train.tokens.bin": {
+      "bytes": 7818878,
+      "sha256": "532376b31d451bbd3f805f41c9b12dae3ec10266ae61bbf67c82cc2e89c4d7f9"
+    },
+    "validation.tokens.bin": {
+      "bytes": 430086,
+      "sha256": "99a8d9c3c9aae365d35fed8e49b60fbcc986f70ffbd02c7b8e1aaf6c7b4cdbcc"
+    }
+  },
+  "fineweb_edu": {
+    "accepted_rows": 481,
+    "parquet_rows": 726000,
+    "parquet_total_row_groups": 726,
+    "rejected_rows": 3519,
+    "repository": "HuggingFaceFW/fineweb-edu",
+    "revision": "92cece42bcce787ee4af4619ab449fe48d86230d",
+    "row_groups_scanned": [
+      0,
+      181,
+      363,
+      545
+    ],
+    "rows_scanned": 4000,
+    "selected_documents": 481,
+    "selected_utf8_bytes": 2213788,
+    "selection_note": "The 6 MiB cap was not filled because every row passing score >= 4, language confidence >= 0.9, UTF-8, control-character, and length gates was retained."
+  },
+  "license": "ODC-By-1.0",
+  "openwebmath": {
+    "accepted_rows": 3824,
+    "parquet_rows": 55397,
+    "parquet_total_row_groups": 56,
+    "rejected_rows": 176,
+    "repository": "open-web-math/open-web-math",
+    "revision": "c5476cfea8186f9db20fe4b45f43fa2e231aa9ba",
+    "row_groups_scanned": [
+      0,
+      14,
+      28,
+      42
+    ],
+    "rows_scanned": 4000,
+    "selected_documents": 367,
+    "selected_utf8_bytes": 2097118
+  },
+  "records": {
+    "test": 39,
+    "total": 848,
+    "train": 770,
+    "validation": 39
+  },
+  "schema_version": 1,
+  "selection": {
+    "method": "exact Parquet commit, sparse row groups, source quality gate, SHA-256 rank, normalized-text deduplication, byte cap",
+    "split_seed": "lesson11-public-v1"
+  },
+  "source_registry_sha256": "59cf0bb75a3e5441a04a77483ec65b0a866d1d1e0d1bb9e34f8b2ceb41d161f9",
+  "tokens": {
+    "test": 188120,
+    "total": 4312602,
+    "train": 3909439,
+    "validation": 215043
+  }
+}
