@@ -1,0 +1,124 @@
+{
+  "build": {
+    "first_manifest_sha256": "50e182eee4b536da9597d5212143c310821efdf9cb9f9e2548622e1c70fb7397",
+    "repeat_manifest_sha256": "50e182eee4b536da9597d5212143c310821efdf9cb9f9e2548622e1c70fb7397",
+    "repeated_builds_byte_identical": true,
+    "schema_version": 1,
+    "split_seed": "lesson12-domain-v1"
+  },
+  "corpora": {
+    "cpt": {
+      "eligible_targets": {
+        "test": 304135,
+        "train": 6064440,
+        "validation": 329052
+      },
+      "general_replay_train_fraction": 0.6426212386058082,
+      "manifest_sha256": "ae78d0c81c35a9b94951a679ec42f7971391408e8c470568bb7b00f414fe8dc5",
+      "tokens": {
+        "test": 305144,
+        "total": 6718812,
+        "train": 6083582,
+        "validation": 330086
+      }
+    },
+    "domain_cpt": {
+      "eligible_targets": {
+        "test": 116054,
+        "train": 2155771,
+        "validation": 114048
+      },
+      "families": {
+        "test": 970,
+        "total": 20337,
+        "train": 18372,
+        "validation": 995
+      },
+      "manifest_sha256": "8a32896acf3734129119e19aa4b8eda79cddd13b27789b2e705d53e94985c93a",
+      "records": {
+        "test": 970,
+        "total": 20337,
+        "train": 18372,
+        "validation": 995
+      },
+      "tokens": {
+        "test": 117024,
+        "total": 2406210,
+        "train": 2174143,
+        "validation": 115043
+      }
+    },
+    "sft": {
+      "eligible_assistant_targets": {
+        "test": 41316,
+        "train": 789938,
+        "validation": 42586
+      },
+      "families": {
+        "test": 981,
+        "total": 20592,
+        "train": 18603,
+        "validation": 1008
+      },
+      "manifest_sha256": "cce24a4cbd408dcca2bd2903229cfa09798d0e2ad4fed640783ce4e14d7ed5bf",
+      "records": {
+        "test": 1732,
+        "total": 36592,
+        "train": 33060,
+        "validation": 1800
+      },
+      "tokens": {
+        "test": 135120,
+        "total": 2793452,
+        "train": 2525068,
+        "validation": 133264
+      }
+    }
+  },
+  "evaluation": {
+    "counts": {
+      "arithmetic": 256,
+      "gsm8k": 256,
+      "physics_numeric": 200
+    },
+    "families": 712,
+    "records": 712,
+    "sha256": "2504ac92a255ac7969c97f18173cbb0d430294f22761bc45157461be76b760f4"
+  },
+  "generated": {
+    "arithmetic_families": 12000,
+    "physics_families": 4000,
+    "physics_formulas": [
+      "density",
+      "force",
+      "kinetic-energy",
+      "momentum",
+      "ohms-law",
+      "power",
+      "pressure",
+      "speed",
+      "wave-speed",
+      "weight"
+    ],
+    "seed": 20260728
+  },
+  "public_sources": {
+    "gsm8k": {
+      "eligible_test_rows": 732,
+      "eligible_train_rows": 4337,
+      "original_test_is_training_eligible": false,
+      "repository": "openai/grade-school-math",
+      "revision": "3101c7d5072418e28b9008a6636bde82a006892c",
+      "test_sha256": "3730d312f6e3440559ace48831e51066acaca737f6eabec99bccb9e4b3c39d14",
+      "train_sha256": "17f347dc51477c50d4efb83959dbb7c56297aba886e5544ee2aaed3024813465"
+    },
+    "oasst1": {
+      "eligible_selected_pairs": 255,
+      "repository": "OpenAssistant/oasst1",
+      "revision": "fdf72ae0827c1cda404aff25b6603abec9e3399b",
+      "train_parquet_sha256": "bbfadf5ed1278ba2208c837fdcad865adf65f5df55d80abadab2745db13fcb5e",
+      "validation_parquet_sha256": "24002597bb13a7edd42d92f773762f25e285f72c31a70449393d0ded1dc7b416"
+    }
+  },
+  "schema_version": 1
+}
