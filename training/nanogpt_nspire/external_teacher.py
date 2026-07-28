@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
 import json
 import math
+import threading
 import time
 from typing import Any
 from urllib import error as urllib_error
@@ -370,10 +371,12 @@ class ExternalTeacherClient:
         self._transport = transport or _default_transport
         self._sleep = sleep
         self._logical_requests = 0
+        self._request_lock = threading.Lock()
 
     @property
     def logical_requests(self) -> int:
-        return self._logical_requests
+        with self._request_lock:
+            return self._logical_requests
 
     def plan(self, problem: TeacherProblem) -> dict[str, object]:
         body = _request_body(self.config, problem)
@@ -396,8 +399,6 @@ class ExternalTeacherClient:
         return plan
 
     def generate(self, problem: TeacherProblem) -> TeacherAnswer:
-        if self._logical_requests >= self.config.max_requests:
-            raise ExternalTeacherError("external teacher request budget exhausted")
         plan = self.plan(problem)
         body = json.dumps(
             plan["body"],
@@ -405,7 +406,12 @@ class ExternalTeacherClient:
             separators=(",", ":"),
             sort_keys=True,
         ).encode("utf-8")
-        self._logical_requests += 1
+        with self._request_lock:
+            if self._logical_requests >= self.config.max_requests:
+                raise ExternalTeacherError(
+                    "external teacher request budget exhausted"
+                )
+            self._logical_requests += 1
         api_key = get_deepseek_api_key()
         headers = {
             "Authorization": f"Bearer {api_key}",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import json
 
 import pytest
@@ -220,3 +221,27 @@ def test_request_budget_is_enforced(
     client.generate(arithmetic_problem())
     with pytest.raises(ExternalTeacherError, match="request budget"):
         client.generate(arithmetic_problem())
+
+
+def test_request_budget_remains_exact_under_concurrency(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DEEPSEEK_API_KEY", FAKE_SECRET)
+    client = ExternalTeacherClient(
+        ExternalTeacherConfig(max_requests=4),
+        transport=lambda *_: provider_response(),
+    )
+
+    def attempt(_: int) -> bool:
+        try:
+            client.generate(arithmetic_problem())
+        except ExternalTeacherError as error:
+            assert "request budget" in str(error)
+            return False
+        return True
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        completed = list(executor.map(attempt, range(8)))
+
+    assert sum(completed) == 4
+    assert client.logical_requests == 4

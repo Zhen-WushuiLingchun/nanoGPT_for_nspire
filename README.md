@@ -23,7 +23,7 @@ English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、�
 - 已完成：[第十课：English byte tokenizer、角色 token 与可审计语料地基](docs/lessons/10-english-byte-tokenizer-and-corpus.md)
 - 已完成：[第十一课：CUDA、模型预算、公开语料与首个 English Base pilot](docs/lessons/11-english-base-pilot.md)
 - 已完成：[第十二课：数学物理 CPT、角色 SFT 与精确能力诊断](docs/lessons/12-math-physics-cpt-and-sft.md)
-- 进行中：[第十三课：外部 sequence teacher、本地 logit teacher 与可归因蒸馏](docs/lessons/13-external-and-local-teachers.md)
+- 进行中：[第十三课：外部合成数据 SFT、本地 logit teacher 与严格蒸馏](docs/lessons/13-external-and-local-teachers.md)
 - 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
@@ -105,9 +105,10 @@ Lesson 13 已完成共享 tokenizer 的 59.3M Local Teacher 和同架构
 Local-Logit-Distilled student。Teacher 的 full validation loss 为 `0.2816`，
 但冻结精确题仅 `1/128`；Logit 蒸馏把 10.8M student 的 loss 从 `0.4683`
 改善到 `0.4448`，精确题仍为 `1/128`。这说明 soft target 确实改变了 token
-分布，却没有凭空产生可泛化算术算法。外部 V4-Pro sequence route 已完成
-512-family、零网络调用的可重复 dry-run 与密钥防泄漏门，正式调用、sequence
-训练和 combined route 等 runtime credential 后继续，未把待运行值写成结果。
+分布，却没有凭空产生可泛化算术算法。外部 V4-Pro 路线明确属于 verified
+synthetic-data SFT，而非严格蒸馏；它已完成 4,096-family、零网络调用的可重复
+dry-run 与密钥防泄漏门，正式调用、sequence 训练和 combined route 尚未把待
+运行值写成结果。
 
 ## 快速开始
 

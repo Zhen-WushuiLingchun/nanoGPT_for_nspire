@@ -27,6 +27,7 @@ from nanogpt_nspire.lesson13_sequence_data import (
     verify_teacher_answer,
 )
 from nanogpt_nspire.math_curriculum import generate_arithmetic_examples
+from nanogpt_nspire.secret_safety import assert_secret_free_tree
 
 
 def answer(
@@ -362,6 +363,7 @@ def test_live_artifact_keeps_only_verified_public_sequences(
         ).encode("utf-8")
 
     output = tmp_path / "live"
+    response_cache = tmp_path / "response-cache"
     manifest = build_sequence_teacher_artifact(
         problems,
         output,
@@ -371,13 +373,42 @@ def test_live_artifact_keeps_only_verified_public_sequences(
         ),
         registry_path=registry,
         reference_sft_dir=reference,
+        max_workers=2,
+        response_cache_dir=response_cache,
     )
 
     assert calls == 2
     assert manifest["verification"]["accepted"] == 2
     assert manifest["verification"]["rejected"] == 0
+    assert manifest["execution"]["cache_hits"] == 0
+    assert manifest["execution"]["network_requests_this_run"] == 2
     accepted = (output / "accepted.jsonl").read_text(encoding="utf-8")
     assert "reasoning_content" not in accepted
     assert "discarded" not in accepted
     assert "sk-" not in accepted
     load_packed_dataset(output / "sft")
+    assert_secret_free_tree(response_cache)
+
+    def forbidden_transport(*_: object) -> bytes:
+        raise AssertionError("a cached answer must not call the provider")
+
+    resumed_output = tmp_path / "resumed-live"
+    resumed = build_sequence_teacher_artifact(
+        problems,
+        resumed_output,
+        client=ExternalTeacherClient(
+            ExternalTeacherConfig(max_requests=2),
+            transport=forbidden_transport,
+        ),
+        registry_path=registry,
+        reference_sft_dir=reference,
+        max_workers=2,
+        response_cache_dir=response_cache,
+    )
+
+    assert resumed["execution"]["cache_hits"] == 2
+    assert resumed["execution"]["network_requests_this_run"] == 0
+    assert (
+        output.joinpath("accepted.jsonl").read_bytes()
+        == resumed_output.joinpath("accepted.jsonl").read_bytes()
+    )

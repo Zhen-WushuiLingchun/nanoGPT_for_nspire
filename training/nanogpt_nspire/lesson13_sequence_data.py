@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -12,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sys
 import tempfile
 
 from nanogpt_nspire.base_corpus import (
@@ -34,6 +36,7 @@ from nanogpt_nspire.external_teacher import (
     ExternalTeacherError,
     TeacherAnswer,
     TeacherProblem,
+    TokenUsage,
 )
 from nanogpt_nspire.lesson12_curriculum import (
     PhysicsExample,
@@ -51,6 +54,8 @@ LESSON13_SEQUENCE_SPLIT_SEED = "lesson12-domain-v1"
 SEQUENCE_SOURCE_ID = "deepseek-v4-pro-generated"
 SEQUENCE_LICENSE_ID = "DeepSeek-Output-Terms-2026-03-27"
 MAX_CONVERSATION_TOKENS = 256
+MAX_PROVIDER_WORKERS = 64
+_ANSWER_CACHE_SCHEMA_VERSION = 1
 
 
 class SequenceTeacherDataError(ValueError):
@@ -140,6 +145,226 @@ def _publish_artifact(
         if temporary.exists():
             shutil.rmtree(temporary)
         raise
+
+
+def _answer_cache_path(
+    response_cache_dir: Path,
+    problem: TeacherProblem,
+) -> Path:
+    identity = _stable_json_bytes(asdict(problem))
+    return response_cache_dir / f"{_sha256_bytes(identity)}.json"
+
+
+def _answer_from_public_record(value: object) -> TeacherAnswer:
+    if not isinstance(value, Mapping) or frozenset(value) != frozenset(
+        {
+            "answer_text",
+            "final_answer",
+            "provider_model",
+            "provider_request_id",
+            "unit",
+            "usage",
+        }
+    ):
+        raise SequenceTeacherDataError(
+            "cached teacher answer schema is invalid"
+        )
+    strings: dict[str, str] = {}
+    for field in (
+        "answer_text",
+        "final_answer",
+        "provider_model",
+        "provider_request_id",
+    ):
+        item = value.get(field)
+        if not isinstance(item, str) or not item.strip():
+            raise SequenceTeacherDataError(
+                f"cached teacher answer {field} is invalid"
+            )
+        strings[field] = item.strip()
+    unit = value.get("unit")
+    if unit is not None and (
+        not isinstance(unit, str) or not unit.strip()
+    ):
+        raise SequenceTeacherDataError(
+            "cached teacher answer unit is invalid"
+        )
+    usage = value.get("usage")
+    if not isinstance(usage, Mapping) or frozenset(usage) != frozenset(
+        {"prompt_tokens", "completion_tokens", "total_tokens"}
+    ):
+        raise SequenceTeacherDataError(
+            "cached teacher answer usage schema is invalid"
+        )
+    token_counts: dict[str, int] = {}
+    for field in ("prompt_tokens", "completion_tokens", "total_tokens"):
+        item = usage.get(field)
+        if (
+            isinstance(item, bool)
+            or not isinstance(item, int)
+            or item < 0
+        ):
+            raise SequenceTeacherDataError(
+                f"cached teacher answer usage {field} is invalid"
+            )
+        token_counts[field] = item
+    if token_counts["total_tokens"] < (
+        token_counts["prompt_tokens"]
+        + token_counts["completion_tokens"]
+    ):
+        raise SequenceTeacherDataError(
+            "cached teacher answer token count is inconsistent"
+        )
+    answer = TeacherAnswer(
+        answer_text=strings["answer_text"],
+        final_answer=strings["final_answer"],
+        unit=None if unit is None else unit.strip(),
+        provider_model=strings["provider_model"],
+        provider_request_id=strings["provider_request_id"],
+        usage=TokenUsage(**token_counts),
+    )
+    answer.public_record()
+    return answer
+
+
+def _load_cached_answer(
+    response_cache_dir: Path,
+    problem: TeacherProblem,
+) -> TeacherAnswer | None:
+    path = _answer_cache_path(response_cache_dir, problem)
+    if not path.exists():
+        return None
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8", errors="strict"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise SequenceTeacherDataError(
+            f"cached teacher answer is unreadable: {path.name}"
+        ) from error
+    if (
+        not isinstance(raw, Mapping)
+        or frozenset(raw) != frozenset(
+            {"answer", "problem", "schema_version"}
+        )
+        or raw.get("schema_version") != _ANSWER_CACHE_SCHEMA_VERSION
+        or raw.get("problem") != asdict(problem)
+    ):
+        raise SequenceTeacherDataError(
+            f"cached teacher answer identity mismatch: {path.name}"
+        )
+    assert_secret_free(raw, context="cached teacher answer")
+    return _answer_from_public_record(raw.get("answer"))
+
+
+def _cache_answer(
+    response_cache_dir: Path,
+    problem: TeacherProblem,
+    answer: TeacherAnswer,
+) -> None:
+    response_cache_dir.mkdir(parents=True, exist_ok=True)
+    path = _answer_cache_path(response_cache_dir, problem)
+    payload = {
+        "answer": answer.public_record(),
+        "problem": asdict(problem),
+        "schema_version": _ANSWER_CACHE_SCHEMA_VERSION,
+    }
+    assert_secret_free(payload, context="cached teacher answer")
+    encoded = _stable_json_bytes(payload)
+    if path.exists():
+        existing = _load_cached_answer(response_cache_dir, problem)
+        if existing != answer:
+            raise SequenceTeacherDataError(
+                f"cached teacher answer conflict: {path.name}"
+            )
+        return
+    handle, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.stem}-",
+        suffix=".tmp",
+        dir=response_cache_dir,
+    )
+    os.close(handle)
+    temporary = Path(temporary_name)
+    try:
+        _write_bytes(temporary, encoded)
+        if path.exists():
+            existing = _load_cached_answer(response_cache_dir, problem)
+            if existing != answer:
+                raise SequenceTeacherDataError(
+                    f"cached teacher answer conflict: {path.name}"
+                )
+        else:
+            os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
+def collect_teacher_answers(
+    problems: Sequence[TeacherProblem],
+    *,
+    client: ExternalTeacherClient,
+    max_workers: int,
+    response_cache_dir: str | Path | None,
+    progress: Callable[[int, int, int], None] | None = None,
+) -> tuple[tuple[TeacherAnswer, ...], int]:
+    """Collect answers concurrently while keeping a secret-free resume cache."""
+
+    materialized = tuple(problems)
+    if not materialized:
+        raise SequenceTeacherDataError(
+            "teacher answer collection requires problems"
+        )
+    if (
+        isinstance(max_workers, bool)
+        or not isinstance(max_workers, int)
+        or not 1 <= max_workers <= MAX_PROVIDER_WORKERS
+    ):
+        raise SequenceTeacherDataError(
+            f"max_workers must be between 1 and {MAX_PROVIDER_WORKERS}"
+        )
+    cache = (
+        None
+        if response_cache_dir is None
+        else Path(response_cache_dir)
+    )
+    if cache is not None:
+        cache.mkdir(parents=True, exist_ok=True)
+
+    def obtain(problem: TeacherProblem) -> tuple[TeacherAnswer, bool]:
+        if cache is not None:
+            cached = _load_cached_answer(cache, problem)
+            if cached is not None:
+                return cached, True
+        answer = client.generate(problem)
+        if cache is not None:
+            _cache_answer(cache, problem, answer)
+        return answer, False
+
+    collected: list[TeacherAnswer | None] = [None] * len(materialized)
+    cache_hits = 0
+    completed = 0
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        pending = {
+            executor.submit(obtain, problem): index
+            for index, problem in enumerate(materialized)
+        }
+        try:
+            for future in as_completed(pending):
+                index = pending[future]
+                answer, cache_hit = future.result()
+                collected[index] = answer
+                cache_hits += int(cache_hit)
+                completed += 1
+                if progress is not None:
+                    progress(completed, len(materialized), cache_hits)
+        except BaseException:
+            for future in pending:
+                future.cancel()
+            raise
+    if any(answer is None for answer in collected):
+        raise AssertionError("teacher answer collection is incomplete")
+    return tuple(
+        answer for answer in collected if answer is not None
+    ), cache_hits
 
 
 def _evaluation_families(path: str | Path | None) -> frozenset[str]:
@@ -608,6 +833,9 @@ def build_sequence_teacher_artifact(
     client: ExternalTeacherClient,
     registry_path: str | Path,
     reference_sft_dir: str | Path,
+    max_workers: int = 1,
+    response_cache_dir: str | Path | None = None,
+    progress: Callable[[int, int, int], None] | None = None,
 ) -> dict[str, object]:
     """Call the provider, verify outputs, and publish train-only sequences."""
 
@@ -633,13 +861,21 @@ def build_sequence_teacher_artifact(
         )
     )
     try:
-        verifications: list[TeacherVerification] = []
-        for problem in materialized:
-            verification = verify_teacher_answer(
-                problem,
-                client.generate(problem),
+        answers, cache_hits = collect_teacher_answers(
+            materialized,
+            client=client,
+            max_workers=max_workers,
+            response_cache_dir=response_cache_dir,
+            progress=progress,
+        )
+        verifications = [
+            verify_teacher_answer(problem, answer)
+            for problem, answer in zip(
+                materialized,
+                answers,
+                strict=True,
             )
-            verifications.append(verification)
+        ]
         accepted = tuple(
             item for item in verifications if item.accepted
         )
@@ -711,9 +947,16 @@ def build_sequence_teacher_artifact(
                     ),
                 },
             },
+            "execution": {
+                "cache_hits": cache_hits,
+                "logical_answer_requests": len(materialized),
+                "max_workers": max_workers,
+                "network_requests_this_run": client.logical_requests,
+                "response_cache_enabled": response_cache_dir is not None,
+            },
             "provider": client.config.public_metadata(),
             "provider_usage": usage,
-            "requests": client.logical_requests,
+            "requests": len(materialized),
             "schema_version": 1,
             "sequence_corpus": {
                 "records": sequence_manifest.get("records"),
@@ -762,6 +1005,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-per-task", type=int, default=256)
     parser.add_argument("--seed", type=int, default=20260728)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--max-workers", type=int, default=1)
+    parser.add_argument("--response-cache-dir", type=Path)
     parser.add_argument("--registry-path", type=Path)
     parser.add_argument("--reference-sft-dir", type=Path)
     return parser
@@ -800,12 +1045,36 @@ def main(argv: list[str] | None = None) -> int:
                     "live build requires --registry-path and "
                     "--reference-sft-dir"
                 )
+
+            def report_progress(
+                completed: int,
+                total: int,
+                cache_hits: int,
+            ) -> None:
+                if completed == total or completed % 32 == 0:
+                    print(
+                        json.dumps(
+                            {
+                                "cache_hits": cache_hits,
+                                "completed": completed,
+                                "teacher_progress": True,
+                                "total": total,
+                            },
+                            sort_keys=True,
+                        ),
+                        file=sys.stderr,
+                        flush=True,
+                    )
+
             summary = build_sequence_teacher_artifact(
                 problems,
                 arguments.output_dir,
                 client=client,
                 registry_path=arguments.registry_path,
                 reference_sft_dir=arguments.reference_sft_dir,
+                max_workers=arguments.max_workers,
+                response_cache_dir=arguments.response_cache_dir,
+                progress=report_progress,
             )
     except (
         ExternalTeacherError,

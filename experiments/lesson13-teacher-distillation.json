@@ -12,7 +12,12 @@
       "Reliable arithmetic or introductory-physics answers",
       "RLVR or chain-of-thought benefit",
       "Quantized Host C or physical Nspire behavior"
-    ]
+    ],
+    "terminology": {
+      "external_api_route": "verified synthetic-data SFT; not strict distillation",
+      "local_teacher_route": "strict logit distillation through shared-vocabulary temperature-scaled KL",
+      "reason": "The API exposes final text but not a full next-token likelihood distribution aligned to the student's 264-token vocabulary."
+    }
   },
   "external_sequence_teacher": {
     "base_url": "https://api.deepseek.com",
@@ -23,21 +28,27 @@
     },
     "dry_run": {
       "byte_identical_repeat": true,
-      "families": 512,
-      "manifest_sha256": "b325c596efa7bb5f63b75cff343aeae95f8c7600246cc136d7c8d3d3ecb61829",
+      "families": 4096,
+      "manifest_sha256": "51abc7320c840497e7c012f8d3b9a7ff17f869c850bd73e4f881fc4ec5b7c62e",
       "network_calls": 0,
-      "request_plan_bytes": 507314,
-      "request_plan_sha256": "b5aba017403d6cc34fa6a267ad9a2522469a1ab156bb8b27ce755292049d6a75",
+      "request_plan_bytes": 4058710,
+      "request_plan_sha256": "081f151b0c04ea58727a2a9409067cb9b61d147cd0e38c76988ca920fa870d01",
       "tasks": {
-        "arithmetic": 256,
-        "physics_numeric": 256
+        "arithmetic": 2048,
+        "physics_numeric": 2048
       }
     },
+    "execution": {
+      "max_workers": 16,
+      "parsed_answer_cache": true,
+      "private_reasoning_cached": false,
+      "resume_without_repeating_completed_requests": true
+    },
     "generation_budget": {
-      "maximum_estimated_cost_usd": 0.6,
+      "maximum_estimated_cost_usd": 4.8,
       "maximum_input_tokens_per_request": 512,
       "maximum_output_tokens_per_request": 1024,
-      "maximum_requests": 512,
+      "maximum_requests": 4096,
       "price_snapshot_usd_per_million_tokens": {
         "cache_miss_input": 0.435,
         "output": 0.87
@@ -81,7 +92,7 @@
       },
       {
         "name": "Verified-Sequence-SFT",
-        "supervision": "reference hard labels plus verified external teacher final-answer sequences",
+        "supervision": "reference hard labels plus verified external synthetic final-answer sequences",
         "status": "pending"
       },
       {
@@ -91,7 +102,7 @@
       },
       {
         "name": "Combined-Sequence-Logit-SFT",
-        "supervision": "reference hard labels plus verified external sequences plus assistant-token local teacher KL",
+        "supervision": "reference hard labels plus verified external synthetic sequences plus assistant-token local teacher KL",
         "status": "pending"
       }
     ]

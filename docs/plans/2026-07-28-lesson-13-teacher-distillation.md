@@ -5,10 +5,10 @@
 > implementation, keep API credentials out of files and command arguments,
 > and commit each independently verified task.
 
-**Goal:** Compare two genuinely different ways to teach the same deployable
-10.8M-parameter student: verified answer sequences from a stronger external
-teacher and token-level probability targets from a larger local teacher that
-shares the student's 264-token vocabulary.
+**Goal:** Compare two genuinely different ways to improve the same deployable
+10.8M-parameter student: verified synthetic answer sequences from a stronger
+external model and strict token-level probability distillation from a larger
+local teacher that shares the student's 264-token vocabulary.
 
 **Architecture:** Keep the Lesson 12 student architecture, tokenizer, frozen
 evaluation suite, CPT parent checkpoint, update count, and sampled-token budget
@@ -24,11 +24,12 @@ DeepSeek OpenAI-compatible Chat Completions, exact `Decimal`/unit verifiers,
 pytest, and the existing `DirectSmallGPT`, packed corpus, stage trainer, and
 assistant evaluator.
 
-**Claim boundary:** External teacher output is sequence-level supervision, not
-logit distillation, because the provider tokenizer and probability vector are
-not available to the student. Local KL training is genuine logit distillation.
-Neither route by itself proves broad reasoning, calculator performance, or
-RL-generated chain-of-thought.
+**Claim boundary:** External API output is verified synthetic-data SFT, not
+strict distillation, because the provider tokenizer and probability vector are
+not available to the student. It may transfer solution coverage, tone, and
+wording preferences through hard target text. Local KL training is genuine
+logit distillation. Neither route by itself proves broad reasoning, calculator
+performance, or RL-generated chain-of-thought.
 
 ---
 
@@ -86,10 +87,13 @@ security: isolate Lesson 13 teacher credentials
 5. Quarantine malformed, disagreeing, duplicate, over-context, or role-leaking
    responses. Augment the reference SFT training split with deterministic
    `<USER>`/`<ASSISTANT>` shards from accepted outputs; keep reference
-   validation/test byte-identical so a 512-record teacher pilot does not turn
-   into a tiny-corpus overfit confound.
+   validation/test byte-identical so the 4,096-record primary synthetic corpus
+   does not change checkpoint selection or the frozen evaluation contract.
 6. Support a no-key dry run that writes only request plans and never performs
    network calls.
+7. Use a bounded concurrent collector plus a secret-free parsed-answer cache,
+   so a long paid build can resume without repeating completed requests or
+   retaining provider private reasoning.
 
 **Test:** A fake transport covers valid, invalid, retryable, unauthorized,
 malformed, duplicate, leaked-role, and evaluation-leak cases without using a
@@ -158,7 +162,7 @@ parameters receive no gradients, and alpha zero reproduces hard-label loss.
 **Commit:**
 
 ```text
-feat: compare sequence and logit distillation
+feat: compare synthetic-data SFT and logit distillation
 ```
 
 ## Task 5: Run the bounded experiment and teach the result
@@ -175,9 +179,9 @@ feat: compare sequence and logit distillation
 2. Train the local teacher and the three new student routes on CUDA.
 3. Evaluate all checkpoints on the immutable Lesson 12 suite with the same
    greedy token limit.
-4. Explain teacher versus student, sequence versus logit distillation,
-   tokenizer compatibility, temperature/KL, verification and rejection, and
-   why a stronger teacher can still teach bad shortcuts.
+4. Explain synthetic-data SFT versus strict logit distillation, tokenizer
+   compatibility, temperature/KL, verification and rejection, and why a
+   stronger generator or teacher can still teach bad shortcuts.
 5. Run all Python and Host C tests, scan tracked/generated metadata for
    credential-shaped values, commit, merge to `main`, and push.
 
@@ -187,7 +191,7 @@ experiment record; Git is clean and `origin/main` equals local `main`.
 **Commit:**
 
 ```text
-docs: teach external and local distillation
+docs: teach synthetic SFT and local logit distillation
 ```
 
 ## Frozen downstream order

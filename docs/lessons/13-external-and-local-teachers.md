@@ -1,21 +1,24 @@
-# Lesson 13：外部 sequence teacher、本地 logit teacher 与可归因蒸馏
+# Lesson 13：外部合成数据 SFT、本地 logit teacher 与严格蒸馏
 
 Lesson 12 的 10.8M student 已经学会 `<USER>` / `<ASSISTANT>` 格式，却只在冻结的
-128 题中答对 2 题。本课不把“换一个更强 API 生成答案”和“逐 token 蒸馏概率”
-混成一个模糊的 teacher 实验，而是拆成两条路线：
+128 题中答对 2 题。本课不把“换一个更强 API 制备合成答案”和“逐 token 蒸馏
+概率”混成一个模糊的 teacher 实验，而是拆成两条路线：
 
 ```text
-External V4-Pro
+External V4-Pro synthetic-data generator
   -> verified answer text
-  -> sequence-level SFT
+  -> hard-label SFT
 
 Local 59.3M GPT with the same tokenizer
   -> 264-dimensional logits at every position
-  -> temperature-scaled KL distillation
+  -> strict temperature-scaled KL distillation
 ```
 
 第一条教 student “应该输出哪段文字”；第二条还会教它“除 gold byte 外，teacher
-认为哪些 byte 也相对合理”。它们的数据、数学目标和可解释结论都不同。
+认为哪些 byte 也相对合理”。第一条更规范的名称是 **verified synthetic-data
+SFT**：它可能传递解题覆盖、语气和用词偏好，但不是严格意义上的蒸馏。只有第二
+条让 student 学习 teacher 的条件似然分布，才是本课的 **logit distillation**。
+它们的数据、数学目标和可解释结论都不同。
 
 本课新增实现：
 
@@ -65,14 +68,14 @@ ab17a536a58f664f49ff75d176baff7e219996d7d57ce2b6d097eec0b4f89dfb
 | Route | 训练数据 | 训练目标 |
 |---|---|---|
 | `Role-Aware-SFT` | Lesson 12 原答案 | hard CE |
-| `Verified-Sequence-SFT` | 原 SFT + 外部 teacher 的已验证 final sequence | hard CE |
+| `Verified-Sequence-SFT` | 原 SFT + 外部模型的已验证合成 sequence | hard CE |
 | `Local-Logit-Distilled-SFT` | Lesson 12 原答案 | hard CE + local KL |
 | `Combined-Sequence-Logit-SFT` | 外部已验证 sequence | hard CE + local KL |
 
 最后一条是组合增强，只能回答“两个干预一起会怎样”，不能单独证明收益来自
 sequence 还是 KL。
 
-## 2. 外部 teacher 为什么不是 logit distillation
+## 2. API 合成数据为什么不应称为严格蒸馏
 
 DeepSeek API 使用自己的 tokenizer，返回最终文本；项目拿不到与本地 264-token
 词表逐项对齐的完整概率向量。因此：
@@ -81,8 +84,20 @@ DeepSeek API 使用自己的 tokenizer，返回最终文本；项目拿不到与
 API text -> 本地重新编码 -> hard target
 ```
 
-这叫 sequence-level knowledge transfer 或 teacher-generated SFT。即使生成这些
-文字的模型内部使用了概率分布，我们训练 student 时也没有使用它的 logits。
+本课把它称为 **verified synthetic-data SFT**。它也可以宽泛地归入
+sequence-level knowledge transfer，但不能冒充严格的 knowledge
+distillation。即使生成这些文字的模型内部使用了概率分布，我们训练 student 时
+也只看到了离散文本 hard targets，没有学习该模型的似然分布。
+
+这条路线最可能直接传递的是：
+
+- 哪些训练问题获得更丰富的正确答案覆盖；
+- 解释通常如何组织成短句；
+- 常用语气、术语和措辞偏好；
+- 在 hard target 中显式出现的中间计算步骤。
+
+因此，如果它胜过 ordinary SFT，严格结论也只是“经过验证的合成数据改善了
+student”，不能单凭这个实验说“完成了 logits 蒸馏”。
 
 真正的 logit distillation 必须满足：
 
@@ -148,7 +163,7 @@ stream          false
 
 ## 5. 先提供 exact ground truth，再让 teacher 教表达
 
-算术和本课的数值物理都能由本地 `Decimal`/公式代码精确算出。向外部 teacher
+算术和本课的数值物理都能由本地 `Decimal`/公式代码精确算出。向外部合成数据模型
 发送的问题同时包含：
 
 ```json
@@ -220,34 +235,52 @@ manifest 同时保存组件 hash。新增 teacher sequence 是训练变量，原
 上完成。只用 512 条 sequence 的纯小语料路线可作为独立 overfit diagnostic，
 不混入四条主比较。
 
-## 8. 512 条 dry-run 说明什么
+## 8. 为什么从 512 pilot 扩到 4,096 条
+
+最初的 512 条只占原 SFT 约 18,600 条记录的 2.7%，主要能验证 API、verifier
+和数据拼接管线，作为能力干预偏弱。正式主实验扩到：
+
+```text
+arithmetic       2,048
+physics_numeric  2,048
+total            4,096
+```
+
+它约等于原 SFT 记录数的 22%，同时仍保留全部 reference hard labels。若这一级
+规模依然没有提高冻结 exact accuracy，下一步应先分析接受率、family 覆盖和错误
+模式，而不是未经诊断继续成倍购买相似文本。
 
 真实付费调用前，先生成两份完全独立的请求计划：
 
 | 项目 | 观察值 |
 |---|---:|
-| arithmetic families | 256 |
-| physics families | 256 |
-| total requests | 512 |
-| request-plan bytes | 507,314 |
+| arithmetic families | 2,048 |
+| physics families | 2,048 |
+| total requests | 4,096 |
+| request-plan bytes | 4,058,710 |
 | network calls | 0 |
 | 两次 plan byte-identical | 是 |
 
 请求计划 SHA-256：
 
 ```text
-b5aba017403d6cc34fa6a267ad9a2522469a1ab156bb8b27ce755292049d6a75
+081f151b0c04ea58727a2a9409067cb9b61d147cd0e38c76988ca920fa870d01
 ```
 
 root manifest SHA-256：
 
 ```text
-b325c596efa7bb5f63b75cff343aeae95f8c7600246cc136d7c8d3d3ecb61829
+51abc7320c840497e7c012f8d3b9a7ff17f869c850bd73e4f881fc4ec5b7c62e
 ```
 
-冻结上限为 512 次请求、每次最多 512 input / 1024 output tokens，按执行日
-V4-Pro cache-miss 价格计算的保守上界不超过约 `$0.60`。实际账单必须以后端
+冻结上限为 4,096 次请求、每次最多 512 input / 1024 output tokens，按执行日
+V4-Pro cache-miss 价格计算的保守上界不超过约 `$4.80`。实际账单必须以后端
 usage 为准，不能把这个上界当成已消费金额。
+
+正式调用使用 16 个并发 worker，并为每个 family 原子写入一份经过解析且
+secret-free 的公开答案缓存。缓存不含 authorization、原始 provider body 或
+`reasoning_content`。中断后重跑只请求缺失 family；最终数据仍按固定 problem
+顺序组装，所以并发完成顺序不会改变训练 corpus。
 
 ## 9. local teacher 的规格
 
@@ -479,8 +512,8 @@ The answer is 10.
 2. teacher 的低 loss 不保证 teacher 本身有可蒸馏的算法能力；
 3. KL 可以传递局部 token 相似性，却不会凭空创造训练数据中没有稳定体现的
    中间计算机制；
-4. 下一步的 external sequence teacher 必须提供经过验证、覆盖更多 family 的
-   正确解释，而不能只换一个更强的 loss。
+4. 下一步的 external synthetic-data generator 必须提供经过验证、覆盖更多
+   family 的正确解释，而不能只换一个更强的 loss。
 
 外部 sequence 与 combined 路线必须等 runtime credential 存在并且 512 条输出
 通过 verifier 后才能执行；未运行的 route 不以设计值冒充观察值。
@@ -501,7 +534,7 @@ The answer is 10.
 在正式结果完成前仍不能声称：
 
 - V4-Pro sequence 已经生成或花费了多少；
-- sequence teacher 提高了 exact accuracy；
+- verified synthetic-data SFT 提高了 exact accuracy；
 - local teacher 具备可泛化的可靠计算能力；
 - KL 提高冻结 exact accuracy；
 - combined route 一定叠加收益；
