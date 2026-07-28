@@ -4,9 +4,11 @@
       "Lesson 12 provides a fixed 10,821,504-parameter student, a 264-token byte vocabulary, a CPT parent checkpoint, an ordinary SFT baseline, and an immutable evaluation suite.",
       "DeepSeek Open Platform terms explicitly permit using outputs to train or distill another model, subject to the terms and independent output verification."
     ],
+    "established_by_current_run": [
+      "The completed Local-Logit-Distilled-SFT route lowers teacher-forced full validation loss from 0.46829624139991916 to 0.44484301739657617 but scores only 1/128 on the frozen greedy exact-answer gate."
+    ],
     "not_established_before_run": [
       "External sequence-teacher benefit",
-      "Local logit-distillation benefit",
       "Reliable arithmetic or introductory-physics answers",
       "RLVR or chain-of-thought benefit",
       "Quantized Host C or physical Nspire behavior"
@@ -79,17 +81,17 @@
       },
       {
         "name": "Verified-Sequence-SFT",
-        "supervision": "verified external teacher final-answer sequences",
+        "supervision": "reference hard labels plus verified external teacher final-answer sequences",
         "status": "pending"
       },
       {
         "name": "Local-Logit-Distilled-SFT",
         "supervision": "original hard labels plus assistant-token local teacher KL",
-        "status": "pending"
+        "status": "completed"
       },
       {
         "name": "Combined-Sequence-Logit-SFT",
-        "supervision": "verified external sequences plus assistant-token local teacher KL",
+        "supervision": "reference hard labels plus verified external sequences plus assistant-token local teacher KL",
         "status": "pending"
       }
     ]
@@ -106,11 +108,122 @@
       "tie_embeddings": true,
       "vocab_size": 264
     },
+    "parameters": 59331200,
+    "raw_fp32_parameter_bytes": 237324800,
+    "results": {
+      "cpt": {
+        "best_step": 2000,
+        "checkpoint_sha256": "445bbae23ed2a3616185c326aee37bbb6e6cdb2f04f826b724bcc328259776c5",
+        "full_test_loss": 1.27464021622531,
+        "full_validation_loss": 1.37979063739475,
+        "initial_sampled_validation_loss": 5.73286094414167,
+        "peak_cuda_memory_allocated_bytes": 1370049024,
+        "route": "Local-Teacher-CPT",
+        "selected_sampled_validation_loss": 1.35306656256087,
+        "source_commit": "3b1e8b5e6a4e81586cc1ed65849964788da56659",
+        "training_tokens": 8192000,
+        "update_tokens_per_second": 13171.2177979281,
+        "wall_seconds": 624.990504299989
+      },
+      "sft": {
+        "best_step": 1000,
+        "checkpoint_sha256": "0184c1fde793c0677db8c41c9a49ba5f705a45090525147e48926a609167198b",
+        "eligible_sampled_training_targets": 1288536,
+        "full_test_loss": 0.282652730141684,
+        "full_validation_loss": 0.281622149229038,
+        "initial_sampled_validation_loss": 1.34145412330747,
+        "parent_checkpoint_sha256": "445bbae23ed2a3616185c326aee37bbb6e6cdb2f04f826b724bcc328259776c5",
+        "peak_cuda_memory_allocated_bytes": 1370049024,
+        "route": "Local-Teacher-SFT",
+        "selected_sampled_validation_loss": 0.211544792380869,
+        "source_commit": "8bfcb32907c701d8208ee470249b65b2ccdba40d",
+        "training_tokens": 4096000,
+        "update_tokens_per_second": 14765.943818671,
+        "wall_seconds": 280.212936900032
+      },
+      "sft_frozen_generation": {
+        "evaluation_file_sha256": "2b04622efef4886f3edbfb1950946acf8bf3aff07659f737f2ff100ee5bb321c",
+        "evaluation_result_sha256": "7f7b0391342228e24bf81fecf97184bf6a3ec0bdd275399403d92d657b6cd4a1",
+        "examples": 128,
+        "format_valid_rate": 0.953125,
+        "per_task_accuracy": {
+          "arithmetic": 0.0,
+          "arithmetic_easy": 0.03125,
+          "gsm8k": 0.0,
+          "physics_numeric": 0.0
+        },
+        "repeated_phrase_rate": 0.0,
+        "role_leak_rate": 0.0,
+        "task_accuracy": 0.0078125,
+        "tokens_per_second": 137.431541622477
+      }
+    },
     "routes": [
       "Local-Teacher-CPT",
       "Local-Teacher-SFT"
     ],
-    "tokenizer_relation": "exactly shared with student"
+    "tokenizer_relation": "exactly shared with student",
+    "training_budget": {
+      "pretrain_sampled_tokens": 8192000,
+      "pretrain_updates": 2000,
+      "sft_sampled_tokens": 4096000,
+      "sft_updates": 1000,
+      "tokens_per_update": 4096
+    }
+  },
+  "student_results": {
+    "local_logit_distilled_sft": {
+      "best_step": 1000,
+      "checkpoint_sha256": "5b411ff34b70869a0b609346b4b11464890d34d3b9b71af4ff00f2873a90a2d1",
+      "eligible_sampled_training_targets": 1288536,
+      "full_test_loss": 0.44408068759984504,
+      "full_validation_loss": 0.44484301739657617,
+      "initial_full_validation_loss": 1.3883848882382681,
+      "initial_sampled_validation_loss": 1.3663758608842766,
+      "last_logged_losses": {
+        "hard_label": 0.4684925973415375,
+        "soft_target": 0.5547511503100395,
+        "total": 0.5116218701004982
+      },
+      "objective": {
+        "alpha": 0.5,
+        "hard_label_scope": "assistant answer bytes and EOS only",
+        "soft_target_scope": "assistant answer bytes and EOS only",
+        "temperature": 2.0
+      },
+      "parameters": 10821504,
+      "parent_checkpoint_sha256": "ab17a536a58f664f49ff75d176baff7e219996d7d57ce2b6d097eec0b4f89dfb",
+      "route": "Local-Logit-Distilled-SFT",
+      "selected_sampled_validation_loss": 0.37711580142807566,
+      "source_commit": "d3af455b677b95aadbc4840237732358fe5ba36a",
+      "teacher_checkpoint_sha256": "0184c1fde793c0677db8c41c9a49ba5f705a45090525147e48926a609167198b",
+      "teacher_forward_tokens_per_second": 82774.63150889393,
+      "training_tokens": 4096000,
+      "update_tokens_per_second": 32264.723714605803,
+      "wall_seconds": 128.4184023999842
+    },
+    "local_logit_frozen_generation": {
+      "evaluation_file_sha256": "2b04622efef4886f3edbfb1950946acf8bf3aff07659f737f2ff100ee5bb321c",
+      "evaluation_result_sha256": "fe2b021ea755d9f7519324c5f639850ac670ba61f073b89858c1124e79e288d6",
+      "examples": 128,
+      "format_valid_rate": 0.953125,
+      "most_common_completion": {
+        "count": 28,
+        "share": 0.21875,
+        "text": "The answer is 10."
+      },
+      "per_task_accuracy": {
+        "arithmetic": 0.0,
+        "arithmetic_easy": 0.03125,
+        "gsm8k": 0.0,
+        "physics_numeric": 0.0
+      },
+      "repeated_phrase_rate": 0.0,
+      "role_leak_rate": 0.0,
+      "task_accuracy": 0.0078125,
+      "tokens_per_second": 201.87946642008055,
+      "unique_completions": 74
+    }
   },
   "provider_evidence": {
     "api_quickstart": "https://api-docs.deepseek.com/quick_start/pricing-details-usd/",
