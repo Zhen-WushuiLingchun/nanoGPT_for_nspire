@@ -21,6 +21,7 @@ English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、�
 - 已完成：[第八课：统一模型文件、C 推理与 PyTorch 对齐](docs/lessons/08-c-runtime-and-pytorch-alignment.md)
 - 已完成（Host/ARM/真机启动）：[第九课：Ndless 像素对话界面、隐私生命周期与真机部署](docs/lessons/09-ndless-pixel-chat-ui.md)
 - 已完成：[第十课：English byte tokenizer、角色 token 与可审计语料地基](docs/lessons/10-english-byte-tokenizer-and-corpus.md)
+- 已完成：[第十一课：CUDA、模型预算、公开语料与首个 English Base pilot](docs/lessons/11-english-base-pilot.md)
 - 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
@@ -72,9 +73,21 @@ Lesson 10 冻结了 `256 byte + 8 special token` 的 264-token 合同，使
 `USER/ASSISTANT` 第一次成为模型可见 token，并加入 assistant-only SFT loss
 mask、公开数据许可门、family-level 防泄漏 split 和不使用 `eval` 的精确算术
 生成器。256 个 arithmetic family / 512 个 record 的两次 smoke build 全文件
-byte-identical；这仍只是数据地基，**新的英语 Base checkpoint 尚未训练**。
+byte-identical；在 Lesson 10 结束时这仍只是数据地基，当时尚未训练英语 Base。
 长期设计见
 [`english-math-physics-assistant-design.md`](docs/plans/2026-07-28-english-math-physics-assistant-design.md)。
+
+Lesson 11 已建立独立 CUDA 12.8/PyTorch 2.11 环境，冻结
+`6 layers / 6 heads / width 384 / context 256 / vocab 264` 的
+10,821,504-parameter Student，以及电脑端 `12×640` Teacher。两个精确
+Parquet snapshot 构成 848-document / 4,312,602-token public pilot；独立重建
+manifest SHA-256 一致。首个真实英语 Base 在 RTX 5080 Laptop 上训练
+4,096,000 tokens，完整 validation loss 从 `5.733047` 降到 `2.119973`，
+完整 test loss 为 `2.064447`，约 `90,281 tokens/s`，峰值 CUDA allocation
+`393,493,504 bytes`。生成已经出现英文局部结构但仍是无可靠语义的拟词，因此
+它是 Base LM，**还不是聊天、数学或物理助手**。W4 文件静态估算
+`6,172,992 bytes`，距离 6 MiB 门仅 `118,464 bytes`；真实 `.ngm v2`、C 对齐
+和 Nspire 部署仍待后续课实测。
 
 ## 快速开始
 
@@ -92,6 +105,12 @@ python -m nanogpt_nspire.lesson10_data smoke `
   --output artifacts/lesson10-smoke `
   --seed 20260728 `
   --examples 256
+python -m nanogpt_nspire.model_budget `
+  --output artifacts/lesson11-model-budget.json
+python -m nanogpt_nspire.lesson11_data `
+  --output artifacts/lesson11-public-pilot `
+  --registry experiments/lesson10-public-sources.json `
+  --split-seed lesson11-public-v1
 
 cmake -S . -B build/host -G "Visual Studio 17 2022" -A x64
 cmake --build build/host --config Release
