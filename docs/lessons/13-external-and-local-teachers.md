@@ -117,7 +117,7 @@ deepseek-v4-flash
 deepseek-v4-pro
 ```
 
-本课固定：
+最初预注册的质量优先合同：
 
 ```text
 base_url        https://api.deepseek.com
@@ -128,6 +128,22 @@ response_format json_object
 stream          false
 ```
 
+上面是最初的质量优先合同。真实 4,096 条执行前的小样显示：任务已经由本地提供
+ground truth 和公式，V4-Pro 只需生成短解释；`high` 会让部分请求把 1,024-token
+预算全部用于 thinking，甚至没有留下 final content。因此正式主实验改为：
+
+```text
+model                 deepseek-v4-pro
+thinking              enabled
+reasoning_effort       low
+max_output_tokens      1024
+prompt_schema_version  2
+```
+
+这不是为了换弱模型，而是把算力用于所需的公开答案文本，而不是重复推导已知
+ground truth。prompt v2 还要求 final answer/unit 原样出现在 `answer_text`，并
+只用 ASCII 数学写法。
+
 官方链接：
 
 - [API quick start](https://api-docs.deepseek.com/quick_start/pricing-details-usd/)
@@ -136,7 +152,8 @@ stream          false
 
 开放平台条款明确允许在遵守条款和法律的前提下，将 Output 用于训练其他模型，
 包括 model distillation。但“允许训练”不等于“答案一定正确”，所以本课仍执行
-独立 verifier。
+独立 verifier；法律条款允许某种用途，也不意味着本项目这条 hard-text SFT
+路线在技术定义上就成了严格蒸馏。
 
 ## 4. API key 为什么不能只靠 `.gitignore`
 
@@ -257,20 +274,20 @@ total            4,096
 | arithmetic families | 2,048 |
 | physics families | 2,048 |
 | total requests | 4,096 |
-| request-plan bytes | 4,058,710 |
+| request-plan bytes | 4,784,773 |
 | network calls | 0 |
 | 两次 plan byte-identical | 是 |
 
 请求计划 SHA-256：
 
 ```text
-081f151b0c04ea58727a2a9409067cb9b61d147cd0e38c76988ca920fa870d01
+3a108a92e7ce9dca3a4be7013571c1f50a1431f34d345270a0857778bfd0d9a0
 ```
 
 root manifest SHA-256：
 
 ```text
-51abc7320c840497e7c012f8d3b9a7ff17f869c850bd73e4f881fc4ec5b7c62e
+4562cf86a611766f9627d4c00740989b984e58f56f4599fbfa2dd479733f0bc9
 ```
 
 冻结上限为 4,096 次请求、每次最多 512 input / 1024 output tokens，按执行日
@@ -281,6 +298,20 @@ usage 为准，不能把这个上界当成已消费金额。
 secret-free 的公开答案缓存。缓存不含 authorization、原始 provider body 或
 `reasoning_content`。中断后重跑只请求缺失 family；最终数据仍按固定 problem
 顺序组装，所以并发完成顺序不会改变训练 corpus。
+
+配置选择不是凭感觉完成的：
+
+| Probe | accepted | 主要现象 |
+|---|---:|---|
+| high effort / prompt v1 | 117 条后中断 | 某响应 thinking 用满 1,024 tokens，final content 为空 |
+| low effort / prompt v1 | 51/64 | 11 条正确答案用了 Unicode 数学符号，2 条解释漏写 final string |
+| low effort / prompt v2 | **64/64** | 平均 403 completion tokens，无拒绝 |
+
+verifier 只对语义等价的数学符号执行白名单归一化，例如 `× -> *`、
+`Ω -> ohm`、`² -> ^2`；中文、emoji 或未知非 ASCII 内容仍被拒绝。cache key
+同时包含 problem、model、max tokens、reasoning effort 和 prompt schema，
+改变生成合同时不会静默复用旧答案。117 条 high-effort 结果和 64 条 v1 probe
+都只保留为诊断，不进入正式主 corpus。
 
 ## 9. local teacher 的规格
 
@@ -515,8 +546,8 @@ The answer is 10.
 4. 下一步的 external synthetic-data generator 必须提供经过验证、覆盖更多
    family 的正确解释，而不能只换一个更强的 loss。
 
-外部 sequence 与 combined 路线必须等 runtime credential 存在并且 512 条输出
-通过 verifier 后才能执行；未运行的 route 不以设计值冒充观察值。
+外部 synthetic-data 与 combined 路线必须等正式 4,096 次请求完成并通过
+verifier 后才能执行；未运行的 route 不以设计值冒充观察值。
 
 ## 13. 当前能与不能声称什么
 

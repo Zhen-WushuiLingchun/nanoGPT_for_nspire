@@ -141,6 +141,42 @@ def test_exact_arithmetic_answer_is_accepted() -> None:
     assert record.turns[0].content == problem.prompt
 
 
+def test_safe_math_unicode_is_normalized_but_non_english_text_is_rejected(
+) -> None:
+    problem = make_teacher_problems(
+        arithmetic=generate_arithmetic_examples(count=100, seed=10),
+        physics=generate_physics_examples(count=100, seed=10),
+        evaluation_path=None,
+        max_per_task=1,
+    )[0]
+
+    normalized = verify_teacher_answer(
+        problem,
+        answer(
+            text=(
+                "Use 2 \u00d7 3 and x\u00b2. "
+                f"The answer is {problem.expected_answer}."
+            ),
+            final=problem.expected_answer,
+            unit=None,
+        ),
+    )
+    rejected = verify_teacher_answer(
+        problem,
+        answer(
+            text=f"\u7b54\u6848\u662f {problem.expected_answer}.",
+            final=problem.expected_answer,
+            unit=None,
+        ),
+    )
+
+    assert normalized.accepted is True
+    assert normalized.answer.answer_text == (
+        f"Use 2 * 3 and x^2. The answer is {problem.expected_answer}."
+    )
+    assert rejected.reason == "non_ascii_or_empty_answer"
+
+
 def test_wrong_answer_role_leak_and_wrong_unit_are_rejected() -> None:
     problems = make_teacher_problems(
         arithmetic=generate_arithmetic_examples(count=100, seed=11),
@@ -412,3 +448,24 @@ def test_live_artifact_keeps_only_verified_public_sequences(
         output.joinpath("accepted.jsonl").read_bytes()
         == resumed_output.joinpath("accepted.jsonl").read_bytes()
     )
+
+    changed_output = tmp_path / "changed-contract-live"
+    changed = build_sequence_teacher_artifact(
+        problems,
+        changed_output,
+        client=ExternalTeacherClient(
+            ExternalTeacherConfig(
+                max_requests=2,
+                reasoning_effort="low",
+            ),
+            transport=transport,
+        ),
+        registry_path=registry,
+        reference_sft_dir=reference,
+        max_workers=2,
+        response_cache_dir=response_cache,
+    )
+
+    assert changed["execution"]["cache_hits"] == 0
+    assert changed["execution"]["network_requests_this_run"] == 2
+    assert calls == 4

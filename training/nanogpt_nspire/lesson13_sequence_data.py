@@ -56,6 +56,25 @@ SEQUENCE_LICENSE_ID = "DeepSeek-Output-Terms-2026-03-27"
 MAX_CONVERSATION_TOKENS = 256
 MAX_PROVIDER_WORKERS = 64
 _ANSWER_CACHE_SCHEMA_VERSION = 1
+_ASCII_MATH_TRANSLATION = str.maketrans(
+    {
+        "\u00b2": "^2",
+        "\u00b3": "^3",
+        "\u00b7": "*",
+        "\u00d7": "*",
+        "\u00f7": "/",
+        "\u03a9": "ohm",
+        "\u03bb": "lambda",
+        "\u2013": "-",
+        "\u2014": "-",
+        "\u2018": "'",
+        "\u2019": "'",
+        "\u201c": '"',
+        "\u201d": '"',
+        "\u2212": "-",
+        "\u22c5": "*",
+    }
+)
 
 
 class SequenceTeacherDataError(ValueError):
@@ -150,8 +169,14 @@ def _publish_artifact(
 def _answer_cache_path(
     response_cache_dir: Path,
     problem: TeacherProblem,
+    provider_contract: Mapping[str, object],
 ) -> Path:
-    identity = _stable_json_bytes(asdict(problem))
+    identity = _stable_json_bytes(
+        {
+            "problem": asdict(problem),
+            "provider_contract": dict(provider_contract),
+        }
+    )
     return response_cache_dir / f"{_sha256_bytes(identity)}.json"
 
 
@@ -230,8 +255,13 @@ def _answer_from_public_record(value: object) -> TeacherAnswer:
 def _load_cached_answer(
     response_cache_dir: Path,
     problem: TeacherProblem,
+    provider_contract: Mapping[str, object],
 ) -> TeacherAnswer | None:
-    path = _answer_cache_path(response_cache_dir, problem)
+    path = _answer_cache_path(
+        response_cache_dir,
+        problem,
+        provider_contract,
+    )
     if not path.exists():
         return None
     try:
@@ -243,10 +273,16 @@ def _load_cached_answer(
     if (
         not isinstance(raw, Mapping)
         or frozenset(raw) != frozenset(
-            {"answer", "problem", "schema_version"}
+            {
+                "answer",
+                "problem",
+                "provider_contract",
+                "schema_version",
+            }
         )
         or raw.get("schema_version") != _ANSWER_CACHE_SCHEMA_VERSION
         or raw.get("problem") != asdict(problem)
+        or raw.get("provider_contract") != dict(provider_contract)
     ):
         raise SequenceTeacherDataError(
             f"cached teacher answer identity mismatch: {path.name}"
@@ -259,18 +295,28 @@ def _cache_answer(
     response_cache_dir: Path,
     problem: TeacherProblem,
     answer: TeacherAnswer,
+    provider_contract: Mapping[str, object],
 ) -> None:
     response_cache_dir.mkdir(parents=True, exist_ok=True)
-    path = _answer_cache_path(response_cache_dir, problem)
+    path = _answer_cache_path(
+        response_cache_dir,
+        problem,
+        provider_contract,
+    )
     payload = {
         "answer": answer.public_record(),
         "problem": asdict(problem),
+        "provider_contract": dict(provider_contract),
         "schema_version": _ANSWER_CACHE_SCHEMA_VERSION,
     }
     assert_secret_free(payload, context="cached teacher answer")
     encoded = _stable_json_bytes(payload)
     if path.exists():
-        existing = _load_cached_answer(response_cache_dir, problem)
+        existing = _load_cached_answer(
+            response_cache_dir,
+            problem,
+            provider_contract,
+        )
         if existing != answer:
             raise SequenceTeacherDataError(
                 f"cached teacher answer conflict: {path.name}"
@@ -286,7 +332,11 @@ def _cache_answer(
     try:
         _write_bytes(temporary, encoded)
         if path.exists():
-            existing = _load_cached_answer(response_cache_dir, problem)
+            existing = _load_cached_answer(
+                response_cache_dir,
+                problem,
+                provider_contract,
+            )
             if existing != answer:
                 raise SequenceTeacherDataError(
                     f"cached teacher answer conflict: {path.name}"
@@ -328,15 +378,25 @@ def collect_teacher_answers(
     )
     if cache is not None:
         cache.mkdir(parents=True, exist_ok=True)
+    provider_contract = client.config.generation_contract()
 
     def obtain(problem: TeacherProblem) -> tuple[TeacherAnswer, bool]:
         if cache is not None:
-            cached = _load_cached_answer(cache, problem)
+            cached = _load_cached_answer(
+                cache,
+                problem,
+                provider_contract,
+            )
             if cached is not None:
                 return cached, True
         answer = client.generate(problem)
         if cache is not None:
-            _cache_answer(cache, problem, answer)
+            _cache_answer(
+                cache,
+                problem,
+                answer,
+                provider_contract,
+            )
         return answer, False
 
     collected: list[TeacherAnswer | None] = [None] * len(materialized)
@@ -561,7 +621,9 @@ def verify_teacher_answer(
             reason="unit_mismatch",
         )
 
-    text = " ".join(answer.answer_text.split())
+    text = " ".join(
+        answer.answer_text.translate(_ASCII_MATH_TRANSLATION).split()
+    )
     if not text or not text.isascii():
         return TeacherVerification(
             problem=problem,
@@ -952,6 +1014,7 @@ def build_sequence_teacher_artifact(
                 "logical_answer_requests": len(materialized),
                 "max_workers": max_workers,
                 "network_requests_this_run": client.logical_requests,
+                "provider_attempts_this_run": client.transport_attempts,
                 "response_cache_enabled": response_cache_dir is not None,
             },
             "provider": client.config.public_metadata(),
@@ -1005,7 +1068,13 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-per-task", type=int, default=256)
     parser.add_argument("--seed", type=int, default=20260728)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--max-output-tokens", type=int, default=1024)
     parser.add_argument("--max-workers", type=int, default=1)
+    parser.add_argument(
+        "--reasoning-effort",
+        choices=("low", "medium", "high"),
+        default="high",
+    )
     parser.add_argument("--response-cache-dir", type=Path)
     parser.add_argument("--registry-path", type=Path)
     parser.add_argument("--reference-sft-dir", type=Path)
@@ -1027,7 +1096,11 @@ def main(argv: list[str] | None = None) -> int:
         max_per_task=arguments.max_per_task,
     )
     client = ExternalTeacherClient(
-        ExternalTeacherConfig(max_requests=len(problems))
+        ExternalTeacherConfig(
+            max_requests=len(problems),
+            max_tokens=arguments.max_output_tokens,
+            reasoning_effort=arguments.reasoning_effort,
+        )
     )
     try:
         if arguments.dry_run:

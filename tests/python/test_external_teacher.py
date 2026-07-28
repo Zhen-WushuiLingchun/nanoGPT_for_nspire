@@ -116,7 +116,10 @@ def test_live_call_uses_runtime_key_but_returns_only_public_provenance(
         return provider_response()
 
     client = ExternalTeacherClient(
-        ExternalTeacherConfig(max_requests=1),
+        ExternalTeacherConfig(
+            max_requests=1,
+            maximum_attempts=1,
+        ),
         transport=transport,
     )
     answer = client.generate(arithmetic_problem())
@@ -159,6 +162,45 @@ def test_response_schema_is_strict(
         client.generate(arithmetic_problem())
 
 
+def test_empty_or_invalid_final_content_is_retried(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DEEPSEEK_API_KEY", FAKE_SECRET)
+    attempts = 0
+
+    def transport(*_: object) -> bytes:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return json.dumps(
+                {
+                    "id": "request-empty",
+                    "model": "deepseek-v4-pro",
+                    "choices": [{"message": {"content": ""}}],
+                    "usage": {
+                        "prompt_tokens": 20,
+                        "completion_tokens": 1024,
+                        "total_tokens": 1044,
+                    },
+                }
+            ).encode("utf-8")
+        return provider_response()
+
+    client = ExternalTeacherClient(
+        ExternalTeacherConfig(
+            max_requests=1,
+            maximum_attempts=2,
+            retry_delay_seconds=0.0,
+        ),
+        transport=transport,
+    )
+
+    assert client.generate(arithmetic_problem()).final_answer == "84"
+    assert attempts == 2
+    assert client.logical_requests == 1
+    assert client.transport_attempts == 2
+
+
 def test_retryable_transport_error_retries_without_exposing_detail(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -185,6 +227,7 @@ def test_retryable_transport_error_retries_without_exposing_detail(
     )
     assert client.generate(arithmetic_problem()).final_answer == "84"
     assert attempts == 2
+    assert client.transport_attempts == 2
 
 
 def test_non_retryable_provider_error_is_sanitized(

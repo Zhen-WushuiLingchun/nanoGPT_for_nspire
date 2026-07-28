@@ -29,16 +29,17 @@
     "dry_run": {
       "byte_identical_repeat": true,
       "families": 4096,
-      "manifest_sha256": "51abc7320c840497e7c012f8d3b9a7ff17f869c850bd73e4f881fc4ec5b7c62e",
+      "manifest_sha256": "4562cf86a611766f9627d4c00740989b984e58f56f4599fbfa2dd479733f0bc9",
       "network_calls": 0,
-      "request_plan_bytes": 4058710,
-      "request_plan_sha256": "081f151b0c04ea58727a2a9409067cb9b61d147cd0e38c76988ca920fa870d01",
+      "request_plan_bytes": 4784773,
+      "request_plan_sha256": "3a108a92e7ce9dca3a4be7013571c1f50a1431f34d345270a0857778bfd0d9a0",
       "tasks": {
         "arithmetic": 2048,
         "physics_numeric": 2048
       }
     },
     "execution": {
+      "cache_identity_includes_generation_contract": true,
       "max_workers": 16,
       "parsed_answer_cache": true,
       "private_reasoning_cached": false,
@@ -55,9 +56,10 @@
       }
     },
     "model": "deepseek-v4-pro",
+    "prompt_schema_version": 2,
     "private_reasoning_retained": false,
     "provider_contract_checked_utc_date": "2026-07-28",
-    "reasoning_effort": "high",
+    "reasoning_effort": "low",
     "response_format": "json_object",
     "source_id": "deepseek-v4-pro-generated",
     "stream": false,
@@ -69,6 +71,31 @@
       "evaluation_family_overlap": "reject",
       "physics": "numeric equality within task tolerance plus canonical unit equality",
       "role_token_leak": "reject"
+    },
+    "probe_results": {
+      "high_effort_v1": {
+        "cached_successful_answers_before_empty_final_content": 117,
+        "failure": "one response exhausted the 1024-token thinking budget and returned empty final content",
+        "included_in_primary_corpus": false
+      },
+      "low_effort_prompt_v1": {
+        "accepted": 51,
+        "rejected": 13,
+        "requests": 64,
+        "rejection_reasons": {
+          "final_answer_missing_from_text": 2,
+          "non_ascii_or_empty_answer": 11
+        }
+      },
+      "low_effort_prompt_v2": {
+        "accepted": 64,
+        "mean_completion_tokens": 403.21875,
+        "prompt_schema_version": 2,
+        "rejected": 0,
+        "requests": 64,
+        "resume_cache_hits": 48,
+        "resume_network_requests": 16
+      }
     }
   },
   "fair_comparison": {

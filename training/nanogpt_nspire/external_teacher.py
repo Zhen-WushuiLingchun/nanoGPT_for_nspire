@@ -22,6 +22,7 @@ from nanogpt_nspire.secret_safety import (
 
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 DEEPSEEK_MODEL = "deepseek-v4-pro"
+TEACHER_PROMPT_SCHEMA_VERSION = 2
 RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 _CONTENT_FIELDS = frozenset({"answer_text", "final_answer", "unit"})
 
@@ -144,6 +145,22 @@ class ExternalTeacherConfig:
         return {
             **asdict(self),
             "credential_source": "DEEPSEEK_API_KEY",
+            "prompt_schema_version": TEACHER_PROMPT_SCHEMA_VERSION,
+            "response_format": {"type": "json_object"},
+            "stream": False,
+            "thinking": {"type": "enabled"},
+        }
+
+    def generation_contract(self) -> dict[str, object]:
+        """Fields that can change one problem's generated answer."""
+
+        self.validate()
+        return {
+            "base_url": self.base_url,
+            "max_tokens": self.max_tokens,
+            "model": self.model,
+            "prompt_schema_version": TEACHER_PROMPT_SCHEMA_VERSION,
+            "reasoning_effort": self.reasoning_effort,
             "response_format": {"type": "json_object"},
             "stream": False,
             "thinking": {"type": "enabled"},
@@ -329,6 +346,9 @@ def _request_body(
         "Use the supplied independently verified ground truth. Explain the "
         "essential calculation in at most three short sentences. Return one "
         "JSON object with exactly answer_text, final_answer, and unit. "
+        "The exact final_answer string and non-null unit must appear verbatim "
+        "in answer_text. Use ASCII only: write *, /, ^2, ohm, and lambda "
+        "instead of typographic mathematical symbols. "
         "Do not include role labels, markdown, hidden reasoning, or extra keys."
     )
     user = (
@@ -371,12 +391,18 @@ class ExternalTeacherClient:
         self._transport = transport or _default_transport
         self._sleep = sleep
         self._logical_requests = 0
+        self._transport_attempts = 0
         self._request_lock = threading.Lock()
 
     @property
     def logical_requests(self) -> int:
         with self._request_lock:
             return self._logical_requests
+
+    @property
+    def transport_attempts(self) -> int:
+        with self._request_lock:
+            return self._transport_attempts
 
     def plan(self, problem: TeacherProblem) -> dict[str, object]:
         body = _request_body(self.config, problem)
@@ -419,6 +445,8 @@ class ExternalTeacherClient:
         }
         for attempt in range(1, self.config.maximum_attempts + 1):
             try:
+                with self._request_lock:
+                    self._transport_attempts += 1
                 response = self._transport(
                     str(plan["endpoint"]),
                     headers,
@@ -453,6 +481,9 @@ class ExternalTeacherClient:
                     f"provider transport failed with status {status}"
                 ) from None
             except ExternalTeacherError:
+                if attempt < self.config.maximum_attempts:
+                    self._sleep(self.config.retry_delay_seconds)
+                    continue
                 raise
             except BaseException as error:
                 safe = redact_text(str(error))
