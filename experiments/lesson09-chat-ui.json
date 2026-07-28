@@ -1,0 +1,126 @@
+{
+  "experiment_id": "lesson09-ndless-pixel-chat-ui",
+  "schema_version": 1,
+  "source_commit": "49ecfac0cd63f6fc97d70b214ccc39914b886be6",
+  "portable_ui": {
+    "dimensions": {
+      "height": 240,
+      "pixel_format": "RGB565",
+      "width": 320
+    },
+    "fixed_capacity": {
+      "cells": 24,
+      "input_bytes": 192,
+      "pending_tokens": 256,
+      "transcript_bytes": 4096
+    },
+    "font": {
+      "glyph_size": "5x7",
+      "lowercase_display": "maps to uppercase glyphs",
+      "provenance": "independently authored in this MIT repository"
+    },
+    "per_token_allocation": false,
+    "state_machine": [
+      "IDLE",
+      "PREFILL",
+      "GENERATING",
+      "DONE",
+      "ERROR"
+    ],
+    "visual_fixture": {
+      "conversation_fnv1a32": "7d5eb2d3",
+      "error_fnv1a32": "42522cbb",
+      "generating_fnv1a32": "988f738c",
+      "ready_fnv1a32": "24eae7d9",
+      "reviewed_at_original_resolution": true,
+      "test_view_fnv1a32": "863cca82"
+    }
+  },
+  "session_semantics": {
+    "current_model_behavior": "character-level sequence continuation, not instruction following",
+    "decode_policy": "greedy",
+    "model_role_tokens": false,
+    "prefill_tokens_per_event_loop_iteration": 1,
+    "generated_tokens_per_event_loop_iteration": 1,
+    "separator": "newline only when present in the loaded vocabulary",
+    "visible_user_ai_roles": "UI metadata only"
+  },
+  "privacy": {
+    "chat_files_created": false,
+    "new_chat": [
+      "volatile-zero runtime arena including KV cache",
+      "volatile-zero input",
+      "volatile-zero transcript pool",
+      "volatile-zero cell table",
+      "volatile-zero pending tokens",
+      "reset counters and telemetry"
+    ],
+    "repeated_lifecycle_cycles": 8,
+    "repeated_lifecycle_host_gate_passed": true,
+    "shutdown_zeroes_chat_struct": true,
+    "transcript_persistence": "disabled with no opt-in setting"
+  },
+  "host_verification": {
+    "ctest_passed": 7,
+    "headless_fixture_states": [
+      "ready",
+      "conversation",
+      "generating",
+      "context-full error"
+    ],
+    "platform": "Windows x64 Release"
+  },
+  "ndless_build": {
+    "arm_app_state_symbol_bytes": 11372,
+    "arm_elf": {
+      "bss_bytes": 12276,
+      "data_bytes": 7400,
+      "text_bytes": 74372,
+      "total_bytes": 94048
+    },
+    "compiled_with_warnings_as_errors": true,
+    "ndless_minimum_revision": 2022,
+    "package": {
+      "bytes": 59310,
+      "path": "dist/nanogpt-chat.tns",
+      "sha256": "d1590fb4e201c0b74ea00357aa03a9c4421ec8d514715a40456f4147c813d8f8"
+    },
+    "status": "compile_link_package_passed",
+    "strong_unresolved_symbols": 0,
+    "toolchain": "Arm GNU Toolchain 14.3 through installed Ndless SDK"
+  },
+  "deployment_bundle": {
+    "app_filename": "nanogpt-chat.tns",
+    "default_device_directory": "/nanoGPT",
+    "model": {
+      "bytes": 6036544,
+      "filename": "model.ngm.tns",
+      "route": "Quantized-Small packed W4A8",
+      "sha256": "87882cae9a098e280414df5e327253be12202f2c1f6db5ccd0e24503925647c9"
+    }
+  },
+  "telemetry": {
+    "context_tokens": "measured from ng_runtime",
+    "decode_tokens_per_second": "excludes prompt prefill",
+    "device_clock_resolution_ms": 1000,
+    "peak_memory": "tracked model blob plus runtime arena plus framebuffer plus chat state",
+    "subsecond_device_timing": "pending a non-invasive hardware timer probe"
+  },
+  "physical_device": {
+    "device_detected": true,
+    "device_type": "TI-Nspire CX II",
+    "initial_root_directory_query": "passed",
+    "intended_directory": "/nanoGPT",
+    "post_failure_remote_state": "not verified",
+    "sync_attempt": {
+      "elapsed_seconds": 50.9,
+      "error": "LibUSB error",
+      "result": "failed"
+    },
+    "transfer_tool": "phy-nlinkctl atomic multi-file sync",
+    "transport_recovery": "usbipd reattach re-enumerated the device but the TI file service still timed out; physical USB replug required",
+    "true_app_launch": "pending",
+    "true_peak_memory": "pending",
+    "true_tokens_per_second": "pending"
+  }
+}

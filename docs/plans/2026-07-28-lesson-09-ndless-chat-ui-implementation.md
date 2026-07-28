@@ -1,5 +1,10 @@
 # Lesson 09: Ndless Pixel Chat UI Implementation Plan
 
+> **Status (2026-07-28):** Tasks 1-6 and the Host/ARM parts of Task 7 are
+> complete. Physical upload/readback, launch, high-resolution timing, and
+> calculator-side exit verification remain pending after a screen-off LibUSB
+> interruption. Do not treat package success as device execution evidence.
+
 > **For Codex:** Follow this plan in order. Keep the portable state machine and
 > renderer independent from Ndless so every privacy and layout invariant can be
 > tested on the host before packaging the calculator program.
@@ -293,4 +298,3 @@ CX II CAS.
 
 Commit the lesson/evidence, push `main`, then confirm local `HEAD` equals
 `origin/main`.
-

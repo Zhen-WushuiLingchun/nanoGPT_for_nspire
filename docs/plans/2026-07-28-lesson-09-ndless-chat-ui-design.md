@@ -1,5 +1,13 @@
 # Lesson 09 Ndless 像素对话界面与真机测量设计
 
+> 实现状态（2026-07-28）：portable chat state、真实 `.ngm` session、RGB565
+> renderer、Host visual fixture、隐私清理测试和 `nanogpt-chat.tns` 均已完成。
+> ARM compile/link/package 已通过；真实 CX II 首次同步因设备息屏导致 LibUSB
+> error，上传后的远端状态、启动、速度和峰值 RAM 仍待物理重连后验证。实现与证据见
+> [`../lessons/09-ndless-pixel-chat-ui.md`](../lessons/09-ndless-pixel-chat-ui.md)
+> 和
+> [`../../experiments/lesson09-chat-ui.json`](../../experiments/lesson09-chat-ui.json)。
+
 ## 目标
 
 在 TI-Nspire CX II CAS 上提供一个原生 Ndless 对话应用：
