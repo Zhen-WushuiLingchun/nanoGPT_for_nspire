@@ -374,14 +374,36 @@ def make_packed_batch(
     maximum_start = split.token_count - block_size - 1
     if maximum_start < 0:
         raise ValueError("split is too short for block_size")
+    starts_were_provided = starts is not None
     if starts is None:
-        starts = torch.randint(
-            0,
-            maximum_start + 1,
-            (batch_size,),
-            generator=generator,
-            device="cpu",
-        )
+        if not bool(np.asarray(split.loss_mask)[1:].any()):
+            raise ValueError("split contains no eligible prediction target")
+        sampled_starts: list[int] = []
+        for _ in range(batch_size):
+            for _attempt in range(10_000):
+                candidate = int(
+                    torch.randint(
+                        0,
+                        maximum_start + 1,
+                        (1,),
+                        generator=generator,
+                        device="cpu",
+                    ).item()
+                )
+                if bool(
+                    np.asarray(
+                        split.loss_mask[
+                            candidate + 1 : candidate + block_size + 1
+                        ]
+                    ).any()
+                ):
+                    sampled_starts.append(candidate)
+                    break
+            else:
+                raise ValueError(
+                    "could not sample a window with an eligible target"
+                )
+        starts = torch.tensor(sampled_starts, dtype=torch.long)
     else:
         if (
             not isinstance(starts, torch.Tensor)
@@ -423,7 +445,7 @@ def make_packed_batch(
             for start in starts.tolist()
         ]
     )
-    if not np.all(mask_array.any(axis=1)):
+    if not starts_were_provided and not np.all(mask_array.any(axis=1)):
         raise ValueError(
             "sampled window contains no eligible prediction target"
         )
@@ -550,6 +572,10 @@ def evaluate_sequential_split(
 
     def accumulate(batch: PackedBatch) -> None:
         nonlocal weighted_loss, eligible_targets, evaluated_positions
+        eligible = int(batch.target_mask.sum().item())
+        evaluated_positions += batch.targets.numel()
+        if eligible == 0:
+            return
         with _autocast_context(
             device,
             enabled=use_bfloat16,
@@ -560,10 +586,8 @@ def evaluate_sequential_split(
                 batch.targets,
                 batch.target_mask,
             )
-        eligible = int(batch.target_mask.sum().item())
         weighted_loss += float(loss.item()) * eligible
         eligible_targets += eligible
-        evaluated_positions += batch.targets.numel()
 
     with torch.inference_mode():
         for offset in range(0, len(full_starts), batch_size):
