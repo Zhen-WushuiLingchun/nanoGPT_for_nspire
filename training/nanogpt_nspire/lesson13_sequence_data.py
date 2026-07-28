@@ -1070,12 +1070,14 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--max-output-tokens", type=int, default=1024)
     parser.add_argument("--max-workers", type=int, default=1)
+    parser.add_argument("--maximum-attempts", type=int, default=3)
     parser.add_argument(
         "--reasoning-effort",
         choices=("low", "medium", "high"),
         default="high",
     )
     parser.add_argument("--response-cache-dir", type=Path)
+    parser.add_argument("--timeout-seconds", type=float, default=90.0)
     parser.add_argument("--registry-path", type=Path)
     parser.add_argument("--reference-sft-dir", type=Path)
     return parser
@@ -1099,7 +1101,9 @@ def main(argv: list[str] | None = None) -> int:
         ExternalTeacherConfig(
             max_requests=len(problems),
             max_tokens=arguments.max_output_tokens,
+            maximum_attempts=arguments.maximum_attempts,
             reasoning_effort=arguments.reasoning_effort,
+            timeout_seconds=arguments.timeout_seconds,
         )
     )
     try:
