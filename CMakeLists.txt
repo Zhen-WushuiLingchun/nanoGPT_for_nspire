@@ -152,6 +152,28 @@ else()
 endif()
 add_test(NAME chat_state COMMAND test_chat)
 
+add_executable(test_chat_session tests/c/test_chat_session.c)
+target_link_libraries(test_chat_session PRIVATE nanogpt_runtime)
+add_dependencies(test_chat_session test_model_fixture)
+if(MSVC)
+    target_compile_options(test_chat_session PRIVATE /W4 /WX)
+else()
+    target_compile_options(
+        test_chat_session
+        PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wpedantic
+        -Wshadow
+        -Wconversion
+    )
+endif()
+add_test(
+    NAME chat_session
+    COMMAND test_chat_session "${TEST_MODEL_FIXTURE}"
+)
+
 add_executable(model_inspect runtime/platform/host/model_inspect.c)
 target_link_libraries(model_inspect PRIVATE nanogpt_runtime)
 if(MSVC)

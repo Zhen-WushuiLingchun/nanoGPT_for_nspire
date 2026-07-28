@@ -69,6 +69,7 @@ typedef struct ng_chat {
     ng_chat_phase phase;
     size_t max_generation_tokens;
     size_t generated_tokens;
+    size_t consecutive_newlines;
     size_t context_tokens;
     uint32_t submit_ms;
     uint32_t first_token_ms;
@@ -103,6 +104,10 @@ ng_chat_status ng_chat_append_to_last_cell(
     ng_chat *chat,
     const char *text,
     size_t text_length);
+
+ng_chat_status ng_chat_submit(ng_chat *chat, uint32_t now_ms);
+ng_chat_status ng_chat_step(ng_chat *chat, uint32_t now_ms);
+ng_chat_status ng_chat_cancel(ng_chat *chat);
 
 void ng_chat_new_chat(ng_chat *chat);
 void ng_chat_shutdown(ng_chat *chat);

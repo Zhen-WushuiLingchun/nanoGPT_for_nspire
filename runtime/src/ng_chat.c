@@ -17,6 +17,53 @@ static int ng_chat_role_is_valid(ng_chat_role role) {
         || role == NG_CHAT_ROLE_SYSTEM;
 }
 
+static void ng_chat_set_error(ng_chat *chat, const char *message) {
+    size_t length;
+    if (chat == NULL) {
+        return;
+    }
+    ng_chat_secure_zero(chat->error_message, sizeof(chat->error_message));
+    if (message == NULL) {
+        return;
+    }
+    length = strlen(message);
+    if (length >= sizeof(chat->error_message)) {
+        length = sizeof(chat->error_message) - 1u;
+    }
+    (void)memcpy(chat->error_message, message, length);
+}
+
+static ng_chat_status ng_chat_find_token(
+    const ng_model *model,
+    const char *bytes,
+    size_t length,
+    uint32_t *token_id) {
+    uint32_t index;
+    if (model == NULL || bytes == NULL || token_id == NULL) {
+        return NG_CHAT_INVALID;
+    }
+    for (index = 0u; index < model->spec.vocab_size; ++index) {
+        const ng_vocab_token *token = &model->vocabulary[index];
+        if ((size_t)token->length == length
+            && memcmp(token->bytes, bytes, length) == 0) {
+            *token_id = index;
+            return NG_CHAT_OK;
+        }
+    }
+    return NG_CHAT_UNSUPPORTED;
+}
+
+static uint32_t ng_chat_argmax(const float *values, uint32_t count) {
+    uint32_t best = 0u;
+    uint32_t index;
+    for (index = 1u; index < count; ++index) {
+        if (values[index] > values[best]) {
+            best = index;
+        }
+    }
+    return best;
+}
+
 void ng_chat_init(
     ng_chat *chat,
     const ng_model *model,
@@ -168,6 +215,218 @@ ng_chat_status ng_chat_append_to_last_cell(
     }
     cell->text_length += text_length;
     chat->transcript_length += text_length;
+    return NG_CHAT_OK;
+}
+
+ng_chat_status ng_chat_submit(ng_chat *chat, uint32_t now_ms) {
+    uint32_t separator_token = 0u;
+    size_t pending_count;
+    size_t index;
+    int has_separator;
+    ng_chat_status status;
+    if (chat == NULL || chat->model == NULL || chat->runtime == NULL) {
+        return NG_CHAT_INVALID;
+    }
+    if (chat->phase == NG_CHAT_PHASE_PREFILL
+        || chat->phase == NG_CHAT_PHASE_GENERATING) {
+        return NG_CHAT_INVALID;
+    }
+    if (chat->input_length == 0u) {
+        return NG_CHAT_NO_CHANGE;
+    }
+    has_separator =
+        ng_chat_find_token(chat->model, "\n", 1u, &separator_token)
+        == NG_CHAT_OK;
+    pending_count = chat->input_length + (has_separator ? 1u : 0u);
+    if (pending_count > NG_CHAT_MAX_PENDING_TOKENS
+        || pending_count > chat->model->spec.block_size
+            - ng_runtime_context_length(chat->runtime)
+        || chat->cell_count > NG_CHAT_MAX_CELLS - 2u
+        || chat->input_length
+            > NG_CHAT_TRANSCRIPT_BYTES - chat->transcript_length) {
+        return NG_CHAT_FULL;
+    }
+    for (index = 0u; index < chat->input_length; ++index) {
+        status = ng_chat_find_token(
+            chat->model,
+            chat->input + index,
+            1u,
+            &chat->pending_tokens[index]);
+        if (status != NG_CHAT_OK) {
+            ng_chat_secure_zero(
+                chat->pending_tokens,
+                sizeof(chat->pending_tokens));
+            return status;
+        }
+    }
+    if (has_separator) {
+        chat->pending_tokens[chat->input_length] = separator_token;
+    }
+    status = ng_chat_append_cell(
+        chat,
+        NG_CHAT_ROLE_USER,
+        chat->input,
+        chat->input_length);
+    if (status != NG_CHAT_OK) {
+        ng_chat_secure_zero(
+            chat->pending_tokens,
+            sizeof(chat->pending_tokens));
+        return status;
+    }
+    status = ng_chat_append_cell(
+        chat,
+        NG_CHAT_ROLE_ASSISTANT,
+        NULL,
+        0u);
+    if (status != NG_CHAT_OK) {
+        return status;
+    }
+    ng_chat_secure_zero(chat->input, sizeof(chat->input));
+    chat->input_length = 0u;
+    chat->input_cursor = 0u;
+    chat->pending_count = pending_count;
+    chat->pending_index = 0u;
+    chat->last_logits = NULL;
+    chat->phase = NG_CHAT_PHASE_PREFILL;
+    chat->generated_tokens = 0u;
+    chat->consecutive_newlines = 0u;
+    chat->submit_ms = now_ms;
+    chat->first_token_ms = 0u;
+    chat->last_token_ms = 0u;
+    chat->ttft_ms = 0u;
+    chat->decode_milli_tokens_per_second = 0u;
+    chat->context_tokens = ng_runtime_context_length(chat->runtime);
+    ng_chat_set_error(chat, NULL);
+    return NG_CHAT_OK;
+}
+
+ng_chat_status ng_chat_step(ng_chat *chat, uint32_t now_ms) {
+    ng_error error;
+    ng_status runtime_status;
+    if (chat == NULL || chat->model == NULL || chat->runtime == NULL) {
+        return NG_CHAT_INVALID;
+    }
+    if (chat->phase == NG_CHAT_PHASE_PREFILL) {
+        if (chat->pending_index >= chat->pending_count) {
+            chat->phase = NG_CHAT_PHASE_GENERATING;
+            return NG_CHAT_NO_CHANGE;
+        }
+        runtime_status = ng_runtime_forward_token(
+            chat->runtime,
+            chat->pending_tokens[chat->pending_index],
+            &chat->last_logits,
+            &error);
+        if (runtime_status != NG_STATUS_OK) {
+            chat->phase = NG_CHAT_PHASE_ERROR;
+            ng_chat_set_error(chat, error.message);
+            return NG_CHAT_MODEL_ERROR;
+        }
+        chat->pending_index += 1u;
+        chat->context_tokens = ng_runtime_context_length(chat->runtime);
+        if (chat->pending_index == chat->pending_count) {
+            chat->phase = NG_CHAT_PHASE_GENERATING;
+        }
+        return NG_CHAT_OK;
+    }
+    if (chat->phase == NG_CHAT_PHASE_GENERATING) {
+        uint32_t token_id;
+        const uint8_t *token_bytes = NULL;
+        uint16_t token_length = 0u;
+        uint64_t rate_numerator;
+        uint32_t elapsed_ms;
+        ng_chat_status append_status;
+        if (chat->last_logits == NULL) {
+            chat->phase = NG_CHAT_PHASE_ERROR;
+            ng_chat_set_error(chat, "missing generation logits");
+            return NG_CHAT_MODEL_ERROR;
+        }
+        if (chat->generated_tokens >= chat->max_generation_tokens
+            || ng_runtime_context_length(chat->runtime)
+                >= chat->model->spec.block_size) {
+            chat->phase = NG_CHAT_PHASE_DONE;
+            return NG_CHAT_NO_CHANGE;
+        }
+        token_id = ng_chat_argmax(
+            chat->last_logits,
+            chat->model->spec.vocab_size);
+        runtime_status = ng_model_token(
+            chat->model,
+            token_id,
+            &token_bytes,
+            &token_length);
+        if (runtime_status != NG_STATUS_OK) {
+            chat->phase = NG_CHAT_PHASE_ERROR;
+            ng_chat_set_error(chat, "invalid generated token");
+            return NG_CHAT_MODEL_ERROR;
+        }
+        if ((size_t)token_length
+            > NG_CHAT_TRANSCRIPT_BYTES - chat->transcript_length) {
+            chat->phase = NG_CHAT_PHASE_ERROR;
+            ng_chat_set_error(chat, "transcript capacity full");
+            return NG_CHAT_FULL;
+        }
+        runtime_status = ng_runtime_forward_token(
+            chat->runtime,
+            token_id,
+            &chat->last_logits,
+            &error);
+        if (runtime_status != NG_STATUS_OK) {
+            chat->phase = NG_CHAT_PHASE_ERROR;
+            ng_chat_set_error(chat, error.message);
+            return NG_CHAT_MODEL_ERROR;
+        }
+        append_status = ng_chat_append_to_last_cell(
+            chat,
+            (const char *)token_bytes,
+            (size_t)token_length);
+        if (append_status != NG_CHAT_OK) {
+            chat->phase = NG_CHAT_PHASE_ERROR;
+            ng_chat_set_error(chat, "transcript append failed");
+            return append_status;
+        }
+        chat->generated_tokens += 1u;
+        chat->context_tokens = ng_runtime_context_length(chat->runtime);
+        if (chat->generated_tokens == 1u) {
+            chat->first_token_ms = now_ms;
+            chat->ttft_ms = now_ms - chat->submit_ms;
+        }
+        chat->last_token_ms = now_ms;
+        if (chat->generated_tokens > 1u) {
+            elapsed_ms = now_ms - chat->first_token_ms;
+            if (elapsed_ms > 0u) {
+                rate_numerator =
+                    (uint64_t)(chat->generated_tokens - 1u) * 1000000u;
+                chat->decode_milli_tokens_per_second =
+                    (uint32_t)(rate_numerator / elapsed_ms);
+            }
+        }
+        if (token_length == 1u && token_bytes[0] == (uint8_t)'\n') {
+            chat->consecutive_newlines += 1u;
+        } else {
+            chat->consecutive_newlines = 0u;
+        }
+        if (chat->generated_tokens >= chat->max_generation_tokens
+            || chat->context_tokens >= chat->model->spec.block_size
+            || chat->consecutive_newlines >= 2u) {
+            chat->phase = NG_CHAT_PHASE_DONE;
+        }
+        return NG_CHAT_OK;
+    }
+    return NG_CHAT_NO_CHANGE;
+}
+
+ng_chat_status ng_chat_cancel(ng_chat *chat) {
+    if (chat == NULL) {
+        return NG_CHAT_INVALID;
+    }
+    if (chat->phase != NG_CHAT_PHASE_GENERATING) {
+        return NG_CHAT_NO_CHANGE;
+    }
+    ng_chat_secure_zero(chat->pending_tokens, sizeof(chat->pending_tokens));
+    chat->pending_count = 0u;
+    chat->pending_index = 0u;
+    chat->last_logits = NULL;
+    chat->phase = NG_CHAT_PHASE_DONE;
     return NG_CHAT_OK;
 }
 
