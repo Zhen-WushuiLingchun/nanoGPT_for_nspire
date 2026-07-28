@@ -5,6 +5,7 @@ import pytest
 
 from nanogpt_nspire.assistant_eval import (
     EvaluationError,
+    SUPPORTED_ROUTES,
     encode_assistant_prompt,
     load_evaluation_records,
     parse_last_decimal,
@@ -26,6 +27,15 @@ def test_assistant_prompt_uses_real_role_tokens() -> None:
     assert tokens[1] == USER_ID
     assert tokens[-1] == ASSISTANT_ID
     assert bytes(tokens[2:-1]).decode("utf-8") == "What is 2 + 3?"
+
+
+def test_lesson13_routes_share_the_frozen_evaluator() -> None:
+    assert {
+        "Verified-Sequence-SFT",
+        "Local-Logit-Distilled-SFT",
+        "Combined-Sequence-Logit-SFT",
+        "Local-Teacher-SFT",
+    } <= SUPPORTED_ROUTES
 
 
 def test_assistant_prompt_rejects_context_overflow() -> None:

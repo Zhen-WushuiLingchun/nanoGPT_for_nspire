@@ -42,7 +42,15 @@ SUPPORTED_TASKS = frozenset(
     {"arithmetic", "arithmetic_easy", "physics_numeric", "gsm8k"}
 )
 SUPPORTED_ROUTES = frozenset(
-    {"English-Base-Pilot", "Math-Physics-CPT", "Role-Aware-SFT"}
+    {
+        "Combined-Sequence-Logit-SFT",
+        "English-Base-Pilot",
+        "Local-Logit-Distilled-SFT",
+        "Local-Teacher-SFT",
+        "Math-Physics-CPT",
+        "Role-Aware-SFT",
+        "Verified-Sequence-SFT",
+    }
 )
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 _DECIMAL_PATTERN = re.compile(
@@ -306,7 +314,7 @@ def load_evaluation_model(
     expected_route: str,
     device: torch.device,
 ) -> tuple[DirectSmallGPT, dict[str, object]]:
-    """Load one frozen Base/CPT/SFT checkpoint with exact lineage checks."""
+    """Load one supported checkpoint with exact hash and route checks."""
 
     path = Path(checkpoint_path)
     if not path.is_file():
