@@ -1076,6 +1076,7 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=("low", "medium", "high"),
         default="high",
     )
+    parser.add_argument("--retry-delay-seconds", type=float, default=1.0)
     parser.add_argument("--response-cache-dir", type=Path)
     parser.add_argument("--timeout-seconds", type=float, default=90.0)
     parser.add_argument("--registry-path", type=Path)
@@ -1103,6 +1104,7 @@ def main(argv: list[str] | None = None) -> int:
             max_tokens=arguments.max_output_tokens,
             maximum_attempts=arguments.maximum_attempts,
             reasoning_effort=arguments.reasoning_effort,
+            retry_delay_seconds=arguments.retry_delay_seconds,
             timeout_seconds=arguments.timeout_seconds,
         )
     )
