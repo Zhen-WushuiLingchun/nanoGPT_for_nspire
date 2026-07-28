@@ -1,0 +1,104 @@
+{
+  "claim_boundary": "Static format-v2 and arena estimate; actual .ngm v2 bytes, Host peak RAM, Nspire peak RAM, and speed remain unmeasured.",
+  "frozen": {
+    "student": {
+      "architecture": {
+        "bias": false,
+        "block_size": 256,
+        "mlp_ratio": 4,
+        "n_embd": 384,
+        "n_head": 6,
+        "n_layer": 6,
+        "tie_embeddings": true,
+        "vocab_size": 264
+      },
+      "estimated_file_bytes": 6172992,
+      "estimated_inference_peak_bytes": 13009344,
+      "file_margin_bytes": 118464,
+      "file_target_band_passed": true,
+      "inference_ram_margin_bytes": 12156480,
+      "inference_ram_passed": true,
+      "parameter_count": 10821504,
+      "selection_reason": "More parameters than 6x320 and 8x320 while retaining six serial blocks, 64-wide heads, and positive file/RAM margins."
+    },
+    "teacher": {
+      "architecture": {
+        "bias": false,
+        "block_size": 256,
+        "mlp_ratio": 4,
+        "n_embd": 640,
+        "n_head": 10,
+        "n_layer": 12,
+        "tie_embeddings": true,
+        "vocab_size": 264
+      },
+      "deployment": "computer_only",
+      "estimated_fp32_file_bytes": 237395840,
+      "estimated_w4a8_file_bytes": 33499840,
+      "parameter_count": 59331200
+    }
+  },
+  "policy": {
+    "file_limit_bytes": 6291456,
+    "file_target_minimum_bytes": 4194304,
+    "format_v2_safety_reserve_bytes": 65536,
+    "ram_limit_bytes": 25165824,
+    "safety_reserve_bytes": 2097152,
+    "weight_group_size": 64
+  },
+  "schema_version": 1,
+  "student_grid": {
+    "student-6x320": {
+      "estimated_file_bytes": 4326208,
+      "estimated_inference_peak_bytes": 10373056,
+      "file_target_band_passed": true,
+      "inference_ram_passed": true,
+      "parameter_count": 7543360
+    },
+    "student-6x384-selected": {
+      "estimated_file_bytes": 6172992,
+      "estimated_inference_peak_bytes": 13009344,
+      "file_target_band_passed": true,
+      "inference_ram_passed": true,
+      "parameter_count": 10821504
+    },
+    "student-6x448": {
+      "estimated_file_bytes": 8351616,
+      "estimated_inference_peak_bytes": 15977536,
+      "file_target_band_passed": false,
+      "inference_ram_passed": true,
+      "parameter_count": 14689472
+    },
+    "student-8x320": {
+      "estimated_file_bytes": 5714496,
+      "estimated_inference_peak_bytes": 13072064,
+      "file_target_band_passed": true,
+      "inference_ram_passed": true,
+      "parameter_count": 10002240
+    }
+  },
+  "student_selected_breakdown": {
+    "file": {
+      "alignment_padding_bytes": 48,
+      "container_header_bytes": 128,
+      "format_v2_safety_reserve_bytes": 65536,
+      "payload_bytes": 6104256,
+      "tensor_table_bytes": 2496,
+      "tokenizer_metadata_bytes": 528
+    },
+    "inference_ram": {
+      "arena_alignment_padding_bytes": 0,
+      "float_workspace_bytes": 19072,
+      "kv_cache_bytes": 4718592,
+      "model_blob_bytes": 6172992,
+      "quantized_activation_workspace_bytes": 1536,
+      "ui_allocator_safety_reserve_bytes": 2097152
+    },
+    "storage": {
+      "fp32_passthrough_bytes": 19968,
+      "fp32_scale_bytes": 676032,
+      "logical_payload_bytes": 6104256,
+      "packed_weight_bytes": 5408256
+    }
+  }
+}
