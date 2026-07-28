@@ -1,0 +1,161 @@
+{
+  "baselines": {
+    "frequency_loss": 3.296311360410833,
+    "uniform_loss": 5.575949103146316
+  },
+  "checkpoint": {
+    "bytes": 43705491,
+    "sha256": "dcf6d3b4f87ae641e50d9956a302a84de19e70c7c9ca030b3ee4c46495de8be2"
+  },
+  "claim_boundary": "This proves a causal 264-token base model can learn the pinned pilot distribution. It does not prove instruction following, arithmetic correctness, physics understanding, distillation benefit, quantized C alignment, or Nspire performance.",
+  "configuration": {
+    "beta1": 0.9,
+    "beta2": 0.95,
+    "block_size": 256,
+    "dropout": 0.1,
+    "eval_batches": 20,
+    "eval_interval": 100,
+    "gradient_accumulation_steps": 4,
+    "learning_rate": 0.0006,
+    "micro_batch_size": 4,
+    "min_learning_rate": 0.00006,
+    "seed": 20260728,
+    "steps": 1000,
+    "training_tokens": 4096000,
+    "warmup_steps": 50,
+    "weight_decay": 0.1
+  },
+  "dataset": {
+    "approximate_train_epochs": 1.047927056499284,
+    "manifest_sha256": "ad37a8f964e07be1ee10b362f45bf51d46746d6547f275a0ee3bdea6340dfdf2",
+    "test_tokens": 188120,
+    "train_tokens": 3909439,
+    "validation_tokens": 215043,
+    "vocab_size": 264
+  },
+  "determinism": {
+    "all_40_model_state_tensors_bit_identical_across_two_runs": true,
+    "checkpoint_container_hash_expected_to_differ_when_source_commit_metadata_differs": true,
+    "selected_sampled_loss_equal_across_two_runs": true
+  },
+  "environment": {
+    "bfloat16_autocast": true,
+    "cuda_runtime": "12.8",
+    "gpu_name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "peak_cuda_memory_allocated_bytes": 393493504,
+    "python": "3.12.12",
+    "torch": "2.11.0+cu128"
+  },
+  "evaluation_history": [
+    {
+      "loss": 5.728678766051063,
+      "step": 0
+    },
+    {
+      "loss": 2.6886995459739453,
+      "step": 100
+    },
+    {
+      "loss": 2.6521347229562493,
+      "step": 200
+    },
+    {
+      "loss": 2.607886660468174,
+      "step": 300
+    },
+    {
+      "loss": 2.564922934551077,
+      "step": 400
+    },
+    {
+      "loss": 2.4246960187827025,
+      "step": 500
+    },
+    {
+      "loss": 2.3109062233159374,
+      "step": 600
+    },
+    {
+      "loss": 2.2495616730086048,
+      "step": 700
+    },
+    {
+      "loss": 2.1947425650213455,
+      "step": 800
+    },
+    {
+      "loss": 2.161827428133399,
+      "step": 900
+    },
+    {
+      "loss": 2.140835163962903,
+      "step": 1000
+    }
+  ],
+  "metrics": {
+    "best_step": 1000,
+    "full_initial_validation": {
+      "bits_per_byte": 8.27103853679965,
+      "byte_perplexity": 308.9090948173552,
+      "eligible_targets": 215004,
+      "loss": 5.7330470420853334
+    },
+    "full_selected_test": {
+      "bits_per_byte": 2.9783674670424625,
+      "byte_perplexity": 7.880938631525854,
+      "eligible_targets": 188081,
+      "loss": 2.0644470124519487
+    },
+    "full_selected_validation": {
+      "bits_per_byte": 3.0584741208595085,
+      "byte_perplexity": 8.330910164783347,
+      "eligible_targets": 215004,
+      "loss": 2.1199727136893256
+    },
+    "optimizer_update_seconds": 45.369450800004415,
+    "sampled_initial_validation_loss": 5.728678766051063,
+    "sampled_selected_validation_loss": 2.140835163962903,
+    "update_tokens_per_second": 90281.01349641202,
+    "wall_seconds": 46.16226369998185
+  },
+  "model": {
+    "bias": false,
+    "block_size": 256,
+    "dropout": 0.1,
+    "head_dim": 64,
+    "mlp_ratio": 4,
+    "n_embd": 384,
+    "n_head": 6,
+    "n_layer": 6,
+    "parameters": 10821504,
+    "raw_fp32_parameter_bytes": 43286016,
+    "tie_embeddings": true,
+    "vocab_size": 264
+  },
+  "overfit_gate": {
+    "five_step_gate": "failed; the full dropout-enabled model needed more than five updates",
+    "twenty_step_final_loss": 2.797222137451172,
+    "twenty_step_initial_loss": 5.5848846435546875,
+    "twenty_step_passed": true
+  },
+  "route": "English-Base-Pilot",
+  "samples": [
+    {
+      "continuation": " the prober siatemer detround the be work sout the foll suradile an.\n“scausion decua rany, and",
+      "prompt": "Force is",
+      "seed": 20260738
+    },
+    {
+      "continuation": "pencengen the can inference somefections. This over envere with dith showink plistise havers of ",
+      "prompt": "The value of x",
+      "seed": 20260739
+    },
+    {
+      "continuation": " made to gisto the fally. Exeadic insturfy.\n- Sot Sectionstrem abord in the Sysperies what marma",
+      "prompt": "Energy can be",
+      "seed": 20260740
+    }
+  ],
+  "schema_version": 1,
+  "source_commit": "ac7a91865343d9ac03fb118580e52082b7688e8c"
+}
