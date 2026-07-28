@@ -1,0 +1,109 @@
+{
+  "claim_boundary": {
+    "established_before_run": [
+      "Lesson 12 provides a fixed 10,821,504-parameter student, a 264-token byte vocabulary, a CPT parent checkpoint, an ordinary SFT baseline, and an immutable evaluation suite.",
+      "DeepSeek Open Platform terms explicitly permit using outputs to train or distill another model, subject to the terms and independent output verification."
+    ],
+    "not_established_before_run": [
+      "External sequence-teacher benefit",
+      "Local logit-distillation benefit",
+      "Reliable arithmetic or introductory-physics answers",
+      "RLVR or chain-of-thought benefit",
+      "Quantized Host C or physical Nspire behavior"
+    ]
+  },
+  "external_sequence_teacher": {
+    "base_url": "https://api.deepseek.com",
+    "credential": {
+      "accepted_cli_argument": false,
+      "environment_variable": "DEEPSEEK_API_KEY",
+      "serialized": false
+    },
+    "generation_budget": {
+      "maximum_estimated_cost_usd": 0.6,
+      "maximum_input_tokens_per_request": 512,
+      "maximum_output_tokens_per_request": 1024,
+      "maximum_requests": 512,
+      "price_snapshot_usd_per_million_tokens": {
+        "cache_miss_input": 0.435,
+        "output": 0.87
+      }
+    },
+    "model": "deepseek-v4-pro",
+    "private_reasoning_retained": false,
+    "provider_contract_checked_utc_date": "2026-07-28",
+    "reasoning_effort": "high",
+    "response_format": "json_object",
+    "source_id": "deepseek-v4-pro-generated",
+    "stream": false,
+    "thinking": {
+      "type": "enabled"
+    },
+    "verification": {
+      "arithmetic": "exact final Decimal or integer equality",
+      "evaluation_family_overlap": "reject",
+      "physics": "numeric equality within task tolerance plus canonical unit equality",
+      "role_token_leak": "reject"
+    }
+  },
+  "fair_comparison": {
+    "fixed": [
+      "student architecture",
+      "264-token vocabulary",
+      "256-token context",
+      "Lesson 12 CPT parent checkpoint",
+      "optimizer and learning-rate schedule",
+      "1000 optimizer updates",
+      "4096000 sampled training tokens",
+      "validation selection",
+      "frozen Lesson 12 evaluation prompts",
+      "48-token greedy generation limit"
+    ],
+    "routes": [
+      {
+        "name": "Role-Aware-SFT",
+        "supervision": "original hard-label SFT",
+        "status": "completed Lesson 12 baseline"
+      },
+      {
+        "name": "Verified-Sequence-SFT",
+        "supervision": "verified external teacher final-answer sequences",
+        "status": "pending"
+      },
+      {
+        "name": "Local-Logit-Distilled-SFT",
+        "supervision": "original hard labels plus assistant-token local teacher KL",
+        "status": "pending"
+      },
+      {
+        "name": "Combined-Sequence-Logit-SFT",
+        "supervision": "verified external sequences plus assistant-token local teacher KL",
+        "status": "pending"
+      }
+    ]
+  },
+  "local_logit_teacher": {
+    "architecture": {
+      "bias": false,
+      "block_size": 256,
+      "dropout": 0.1,
+      "mlp_ratio": 4,
+      "n_embd": 640,
+      "n_head": 10,
+      "n_layer": 12,
+      "tie_embeddings": true,
+      "vocab_size": 264
+    },
+    "routes": [
+      "Local-Teacher-CPT",
+      "Local-Teacher-SFT"
+    ],
+    "tokenizer_relation": "exactly shared with student"
+  },
+  "provider_evidence": {
+    "api_quickstart": "https://api-docs.deepseek.com/quick_start/pricing-details-usd/",
+    "models": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "terms": "https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html"
+  },
+  "schema_version": 1
+}

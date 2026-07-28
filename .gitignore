@@ -1,13 +1,24 @@
 # Generated datasets, checkpoints, exports, and device packages
 /artifacts/
+/artifacts/teacher-api/
 /build/
 /dist/
+/logs/
 /out*/
 /training/out*/
 *.pt
 *.pth
 *.ckpt
 *.tns
+*.credentials
+
+# Local credentials and provider configuration
+.env
+.env.*
+*.key
+*.pem
+credentials.json
+secrets.json
 
 # Python
 __pycache__/
