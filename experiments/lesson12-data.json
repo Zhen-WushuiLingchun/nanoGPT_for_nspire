@@ -1,7 +1,7 @@
 {
   "build": {
-    "first_manifest_sha256": "50e182eee4b536da9597d5212143c310821efdf9cb9f9e2548622e1c70fb7397",
-    "repeat_manifest_sha256": "50e182eee4b536da9597d5212143c310821efdf9cb9f9e2548622e1c70fb7397",
+    "first_manifest_sha256": "e337df15d070c0000d1ba88c4ec62b60fb561818cab8c87224ae5e3adb92d88e",
+    "repeat_manifest_sha256": "e337df15d070c0000d1ba88c4ec62b60fb561818cab8c87224ae5e3adb92d88e",
     "repeated_builds_byte_identical": true,
     "schema_version": 1,
     "split_seed": "lesson12-domain-v1"
@@ -78,12 +78,13 @@
   "evaluation": {
     "counts": {
       "arithmetic": 256,
+      "arithmetic_easy": 73,
       "gsm8k": 256,
       "physics_numeric": 200
     },
-    "families": 712,
-    "records": 712,
-    "sha256": "2504ac92a255ac7969c97f18173cbb0d430294f22761bc45157461be76b760f4"
+    "families": 785,
+    "records": 785,
+    "sha256": "2b04622efef4886f3edbfb1950946acf8bf3aff07659f737f2ff100ee5bb321c"
   },
   "generated": {
     "arithmetic_families": 12000,

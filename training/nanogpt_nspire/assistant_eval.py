@@ -39,7 +39,7 @@ from nanogpt_nspire.training_support import (
 
 
 SUPPORTED_TASKS = frozenset(
-    {"arithmetic", "physics_numeric", "gsm8k"}
+    {"arithmetic", "arithmetic_easy", "physics_numeric", "gsm8k"}
 )
 SUPPORTED_ROUTES = frozenset(
     {"English-Base-Pilot", "Math-Physics-CPT", "Role-Aware-SFT"}
@@ -594,4 +594,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -15,6 +15,7 @@ from nanogpt_nspire.lesson12_curriculum import (
 )
 from nanogpt_nspire.lesson12_data import (
     Lesson12DataError,
+    build_easy_arithmetic_evaluation,
     build_domain_records,
     compose_packed_corpora,
     load_gsm8k_jsonl,
@@ -178,6 +179,27 @@ def test_domain_records_keep_related_cpt_and_sft_variants_in_one_family() -> Non
     ]
     assert len(arith_sft) == 2
     assert len(physics_sft) == 2
+
+
+def test_easy_arithmetic_eval_is_held_out_and_bounded() -> None:
+    training = generate_arithmetic_examples(count=2_000, seed=20260728)
+
+    rows = build_easy_arithmetic_evaluation(
+        training=training,
+        split_seed="easy-eval-test",
+        max_records=32,
+    )
+
+    training_families = {item.family_id for item in training}
+    assert len(rows) == 32
+    assert all(row["task"] == "arithmetic_easy" for row in rows)
+    assert not (
+        training_families
+        & {str(row["family_id"]) for row in rows}
+    )
+    assert all(
+        len(str(row["prompt"]).encode("utf-8")) < 64 for row in rows
+    )
 
 
 def _component_corpus(

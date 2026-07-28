@@ -640,6 +640,13 @@ def _evaluation_rows(
         ),
         "arithmetic",
     )
+    arithmetic_easy_rows = list(
+        build_easy_arithmetic_evaluation(
+            training=arithmetic,
+            split_seed=split_seed,
+            max_records=max_per_task,
+        )
+    )
     physics_rows = rank(
         (
             {
@@ -675,12 +682,95 @@ def _evaluation_rows(
         ),
         "gsm8k",
     )
-    if not arithmetic_rows or not physics_rows or not official_test_rows:
+    if (
+        not arithmetic_rows
+        or not arithmetic_easy_rows
+        or not physics_rows
+        or not official_test_rows
+    ):
         raise Lesson12DataError(
-            "evaluation requires arithmetic, physics, and GSM8K rows"
+            "evaluation requires arithmetic, easy arithmetic, physics, "
+            "and GSM8K rows"
         )
     return tuple(
-        arithmetic_rows + physics_rows + official_test_rows
+        arithmetic_rows
+        + arithmetic_easy_rows
+        + physics_rows
+        + official_test_rows
+    )
+
+
+def build_easy_arithmetic_evaluation(
+    *,
+    training: Sequence[ArithmeticExample],
+    split_seed: str,
+    max_records: int,
+) -> tuple[dict[str, object], ...]:
+    """Build a 0--20 arithmetic holdout absent from all training families."""
+
+    max_records = _positive_integer(max_records, "max_records")
+    if not isinstance(split_seed, str) or not split_seed:
+        raise Lesson12DataError("split_seed must be non-empty")
+    if not training or any(
+        not isinstance(item, ArithmeticExample) for item in training
+    ):
+        raise Lesson12DataError(
+            "training must contain ArithmeticExample values"
+        )
+    training_families = {item.family_id for item in training}
+    candidates: dict[str, ArithmeticExample] = {}
+    for left in range(21):
+        for right in range(21):
+            for operator in ("+", "-", "*"):
+                example = ArithmeticExample.create(
+                    left=left,
+                    operator=operator,
+                    right=right,
+                )
+                candidates[example.family_id] = example
+    for quotient in range(21):
+        for divisor in range(1, 13):
+            example = ArithmeticExample.create(
+                left=quotient * divisor,
+                operator="/",
+                right=divisor,
+            )
+            candidates[example.family_id] = example
+    eligible = [
+        item
+        for item in candidates.values()
+        if item.family_id not in training_families
+        and stable_family_split(
+            item.family_id,
+            split_seed=split_seed,
+        )
+        == "test"
+    ]
+    ranked = sorted(
+        eligible,
+        key=lambda item: (
+            hashlib.sha256(
+                f"lesson12-easy:{item.family_id}".encode("utf-8")
+            ).digest(),
+            item.family_id,
+        ),
+    )
+    required_minimum = min(max_records, 32)
+    if len(ranked) < required_minimum:
+        raise Lesson12DataError(
+            "not enough held-out easy arithmetic families"
+        )
+    return tuple(
+        {
+            "difficulty": "easy-0-to-20",
+            "expected_answer": item.exact_answer,
+            "expected_unit": None,
+            "family_id": item.family_id,
+            "prompt": item.question,
+            "source_id": "project-arithmetic-v1",
+            "task": "arithmetic_easy",
+        }
+        for item in ranked[:max_records]
     )
 
 

@@ -116,7 +116,12 @@ def test_evaluation_loader_and_selection_are_order_independent(
             "family_id": f"{task}-{index}",
             "source_id": "test",
         }
-        for task in ("arithmetic", "physics_numeric", "gsm8k")
+        for task in (
+            "arithmetic",
+            "arithmetic_easy",
+            "physics_numeric",
+            "gsm8k",
+        )
         for index in range(10)
     ]
     path = tmp_path / "evaluation.jsonl"
@@ -135,10 +140,15 @@ def test_evaluation_loader_and_selection_are_order_independent(
     )
 
     assert first == second
-    assert len(first) == 9
+    assert len(first) == 12
     assert {
         row["task"] for row in first
-    } == {"arithmetic", "physics_numeric", "gsm8k"}
+    } == {
+        "arithmetic",
+        "arithmetic_easy",
+        "physics_numeric",
+        "gsm8k",
+    }
 
 
 def test_evaluation_loader_rejects_duplicate_families(tmp_path: Path) -> None:
@@ -158,4 +168,3 @@ def test_evaluation_loader_rejects_duplicate_families(tmp_path: Path) -> None:
 
     with pytest.raises(EvaluationError, match="duplicate family"):
         load_evaluation_records(path)
-
