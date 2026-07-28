@@ -7,6 +7,7 @@ import torch
 
 from nanogpt_nspire.base_corpus import CorpusRecord, build_corpus
 from nanogpt_nspire.byte_tokenizer import ConversationTurn
+from nanogpt_nspire.distillation import DistillationObjective
 from nanogpt_nspire.models.direct_small_gpt import (
     DirectSmallConfig,
     DirectSmallGPT,
@@ -239,3 +240,67 @@ def test_stage_and_parent_route_contract_is_not_interchangeable(
 
     with pytest.raises(ValueError, match="CPT must start"):
         config.validate()
+
+
+def test_stage_engine_records_masked_distillation_components(
+    tmp_path: Path,
+) -> None:
+    data = _training_data(tmp_path)
+    parent = _parent_checkpoint(
+        tmp_path / "parent.pt",
+        route="Math-Physics-CPT",
+    )
+    output = tmp_path / "distilled"
+    config = StageTrainingConfig(
+        stage="sft",
+        data_dir=data,
+        output_dir=output,
+        parent_checkpoint=parent,
+        parent_checkpoint_sha256=_sha256(parent),
+        expected_parent_route="Math-Physics-CPT",
+        source_commit="test",
+        device="cpu",
+        seed=37,
+        steps=2,
+        micro_batch_size=1,
+        gradient_accumulation_steps=1,
+        vocab_size=264,
+        block_size=16,
+        n_layer=1,
+        n_head=2,
+        n_embd=16,
+        mlp_ratio=2,
+        dropout=0.0,
+        learning_rate=0.01,
+        min_learning_rate=0.001,
+        warmup_steps=1,
+        eval_interval=1,
+        eval_batches=1,
+        log_interval=1,
+        overfit_gate_steps=1,
+        use_bfloat16=False,
+        route_override="Local-Logit-Distilled-SFT",
+        checkpoint_filename_override="local_logit_sft.pt",
+    )
+    teacher = DirectSmallGPT(_tiny_model_config())
+    objective = DistillationObjective(
+        teacher,
+        temperature=2.0,
+        alpha=0.5,
+        teacher_provenance={
+            "route": "Local-Teacher-SFT",
+            "checkpoint_sha256": "b" * 64,
+        },
+    )
+
+    result = run_stage_training(
+        config,
+        training_objective=objective,
+    )
+
+    assert result["objective"] == objective.summary()
+    assert result["route"] == "Local-Logit-Distilled-SFT"
+    assert {
+        "hard_label_loss",
+        "soft_target_loss",
+    } <= set(result["training_history"][0])

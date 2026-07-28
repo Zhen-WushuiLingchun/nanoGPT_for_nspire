@@ -61,6 +61,63 @@ def test_distillation_gradient_flows_only_to_student() -> None:
     )
 
 
+def test_assistant_mask_excludes_user_positions_from_hard_and_soft_loss() -> None:
+    student = torch.tensor(
+        [[[5.0, -5.0], [0.0, 1.0], [100.0, -100.0]]],
+        requires_grad=True,
+    )
+    teacher = torch.tensor(
+        [[[-5.0, 5.0], [1.0, 0.0], [-100.0, 100.0]]],
+    )
+    targets = torch.tensor([[1, 1, 0]], dtype=torch.long)
+    mask = torch.tensor([[0.0, 1.0, 0.0]])
+
+    losses = distillation_losses(
+        student_logits=student,
+        teacher_logits=teacher,
+        targets=targets,
+        target_mask=mask,
+        temperature=2.0,
+        alpha=0.5,
+    )
+    changed_student = student.detach().clone()
+    changed_teacher = teacher.clone()
+    changed_student[:, 0, :] = torch.tensor([-999.0, 999.0])
+    changed_student[:, 2, :] = torch.tensor([999.0, -999.0])
+    changed_teacher[:, 0, :] = torch.tensor([999.0, -999.0])
+    changed_teacher[:, 2, :] = torch.tensor([-999.0, 999.0])
+    changed = distillation_losses(
+        student_logits=changed_student,
+        teacher_logits=changed_teacher,
+        targets=targets,
+        target_mask=mask,
+        temperature=2.0,
+        alpha=0.5,
+    )
+    losses.total_loss.backward()
+
+    assert changed.hard_label_loss.item() == pytest.approx(
+        losses.hard_label_loss.item()
+    )
+    assert changed.soft_target_loss.item() == pytest.approx(
+        losses.soft_target_loss.item()
+    )
+    assert torch.count_nonzero(student.grad[:, (0, 2), :]) == 0
+    assert torch.count_nonzero(student.grad[:, 1, :]) > 0
+
+
+def test_distillation_rejects_empty_target_mask() -> None:
+    with pytest.raises(ValueError, match="eligible"):
+        distillation_losses(
+            student_logits=torch.zeros((1, 2, 3)),
+            teacher_logits=torch.zeros((1, 2, 3)),
+            targets=torch.zeros((1, 2), dtype=torch.long),
+            target_mask=torch.zeros((1, 2)),
+            temperature=2.0,
+            alpha=0.5,
+        )
+
+
 @pytest.mark.parametrize(
     ("kwargs", "message"),
     [
@@ -115,7 +172,8 @@ def test_distillation_objective_freezes_teacher_and_reports_components() -> None
     inputs = torch.tensor([[0, 1, 2, 3]], dtype=torch.long)
     targets = torch.tensor([[1, 2, 3, 4]], dtype=torch.long)
 
-    result = objective(student, inputs, targets)
+    target_mask = torch.tensor([[0.0, 1.0, 1.0, 1.0]])
+    result = objective(student, inputs, targets, target_mask)
     result.loss.backward()
 
     assert not objective.teacher.training

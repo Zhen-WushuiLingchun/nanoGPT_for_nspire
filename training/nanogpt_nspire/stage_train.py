@@ -351,11 +351,28 @@ def load_parent_checkpoint(
 
 def run_stage_training(
     config: StageTrainingConfig,
+    *,
+    training_objective: object | None = None,
 ) -> dict[str, object]:
     """Optimize one declared CPT/SFT stage and select by validation loss."""
 
     if not isinstance(config, StageTrainingConfig):
         raise ValueError("config must be a StageTrainingConfig")
+    if training_objective is not None and not callable(training_objective):
+        raise ValueError("training_objective must be callable")
+    objective_summary: dict[str, object] | None = None
+    if training_objective is not None:
+        summary_method = getattr(training_objective, "summary", None)
+        if not callable(summary_method):
+            raise ValueError(
+                "training_objective must provide a summary method"
+            )
+        raw_summary = summary_method()
+        if not isinstance(raw_summary, Mapping):
+            raise ValueError(
+                "training objective summary must be a mapping"
+            )
+        objective_summary = dict(raw_summary)
     config.validate()
     if config.output_dir.exists():
         raise ValueError(
@@ -443,6 +460,7 @@ def run_stage_training(
             group["lr"] = learning_rate
         optimizer.zero_grad(set_to_none=True)
         micro_losses: list[float] = []
+        micro_metrics: dict[str, list[float]] = {}
         for _ in range(config.gradient_accumulation_steps):
             batch = make_packed_batch(
                 dataset.train,
@@ -456,12 +474,51 @@ def run_stage_training(
                 device,
                 enabled=config.use_bfloat16,
             ):
-                logits, _ = model(batch.inputs)
-                loss = masked_cross_entropy(
-                    logits,
-                    batch.targets,
-                    batch.target_mask,
-                )
+                if training_objective is None:
+                    logits, _ = model(batch.inputs)
+                    loss = masked_cross_entropy(
+                        logits,
+                        batch.targets,
+                        batch.target_mask,
+                    )
+                    objective_metrics: Mapping[str, object] = {}
+                else:
+                    objective_step = training_objective(
+                        model,
+                        batch.inputs,
+                        batch.targets,
+                        batch.target_mask,
+                    )
+                    loss = getattr(objective_step, "loss", None)
+                    objective_metrics = getattr(
+                        objective_step,
+                        "metrics",
+                        None,
+                    )
+                    if not isinstance(loss, torch.Tensor):
+                        raise ValueError(
+                            "training objective must return a tensor loss"
+                        )
+                    if not isinstance(objective_metrics, Mapping):
+                        raise ValueError(
+                            "training objective metrics must be a mapping"
+                        )
+                    for name, raw_value in objective_metrics.items():
+                        if not isinstance(name, str) or not name:
+                            raise ValueError(
+                                "training objective metric names are invalid"
+                            )
+                        if (
+                            isinstance(raw_value, bool)
+                            or not isinstance(raw_value, (int, float))
+                            or not math.isfinite(float(raw_value))
+                        ):
+                            raise ValueError(
+                                f"training objective metric {name} is invalid"
+                            )
+                        micro_metrics.setdefault(name, []).append(
+                            float(raw_value)
+                        )
             if not bool(torch.isfinite(loss).item()):
                 raise FloatingPointError(
                     f"training loss became non-finite at step {step}"
@@ -484,6 +541,10 @@ def run_stage_training(
         ):
             training_history.append(
                 {
+                    **{
+                        name: sum(values) / len(values)
+                        for name, values in sorted(micro_metrics.items())
+                    },
                     "gradient_l2_norm_before_clip": float(
                         gradient_norm.item()
                     ),
@@ -574,6 +635,8 @@ def run_stage_training(
         },
         "training_seed": config.seed,
     }
+    if objective_summary is not None:
+        checkpoint["objective"] = objective_summary
     checkpoint_path = config.output_dir / config.checkpoint_filename
     _atomic_torch_save(checkpoint, checkpoint_path)
     configuration = asdict(config)
@@ -656,6 +719,8 @@ def run_stage_training(
         "source_commit": config.source_commit,
         "training_history": training_history,
     }
+    if objective_summary is not None:
+        summary["objective"] = objective_summary
     write_json_atomic(config.output_dir / "run.json", summary)
     return summary
 
