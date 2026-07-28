@@ -1,0 +1,111 @@
+{
+  "api_generation": {
+    "deepseek_called": false,
+    "key_persisted": false,
+    "status": "deferred until public-data ingestion and prompt/verifier contracts are frozen"
+  },
+  "claims": {
+    "base_checkpoint_trained": false,
+    "lesson10_scope": "tokenizer, role format, provenance, exact arithmetic generation, split, and shard reproducibility",
+    "rlvr_run": false,
+    "sft_checkpoint_trained": false
+  },
+  "environment": {
+    "data_pipeline_device": "CPU",
+    "gpu_available_for_future_training": "NVIDIA GeForce RTX 5080 Laptop GPU, 16303 MiB",
+    "project_venv_torch": "2.13.0+cpu",
+    "python": "3.12.12",
+    "worktree_module_resolution": "PYTHONPATH=<worktree>/training for the smoke CLI because the shared editable venv points at main"
+  },
+  "experiment_id": "lesson10-english-base-data-smoke",
+  "families": {
+    "test": 15,
+    "total": 256,
+    "train": 227,
+    "validation": 14
+  },
+  "files": {
+    "test.loss.bin": {
+      "bytes": 1280,
+      "sha256": "c3a21891a0f992287768875e08262efc448845e6482b9d0bca5a454c3675a922"
+    },
+    "test.tokens.bin": {
+      "bytes": 2560,
+      "sha256": "6635a82558892c227d2da39f22d16004b69822552a769b860374c3439f43fe12"
+    },
+    "train.loss.bin": {
+      "bytes": 20229,
+      "sha256": "2d107bce73183a2cf256dc1e73b9840001adfc97a5ee242326a4ea0b4d2fac7b"
+    },
+    "train.tokens.bin": {
+      "bytes": 40458,
+      "sha256": "5a9e6889c5d5d713dad4574d8ec1171b36c677b5d0fb340e23c6473ff4ec3910"
+    },
+    "validation.loss.bin": {
+      "bytes": 1295,
+      "sha256": "c29a34de1237478fcacef8fbccddd7a6f97436960e913972dc1684140577b637"
+    },
+    "validation.tokens.bin": {
+      "bytes": 2590,
+      "sha256": "33a389384b4d0d2a5982c5607d2fe61bd437c1dd9220204b9bd06b95cc0a720c"
+    }
+  },
+  "generator": {
+    "examples": 256,
+    "families_exactly_verified": 256,
+    "response_variants_per_family": [
+      "direct",
+      "worked"
+    ],
+    "seed": 20260728,
+    "source_id": "project-arithmetic-v1"
+  },
+  "manifest_sha256": "f4c5938fdc2d7f0fb501031e19c7e1daec987f956d2aac1cf0b70f175425629a",
+  "public_source_registry": {
+    "eligible_sources": 8,
+    "excluded_sources": 3,
+    "row_filtered_sources": 1,
+    "sha256": "59cf0bb75a3e5441a04a77483ec65b0a866d1d1e0d1bb9e34f8b2ceb41d161f9",
+    "sources_total": 12
+  },
+  "records": {
+    "deduplicated": 0,
+    "test": 30,
+    "total": 512,
+    "train": 454,
+    "validation": 28
+  },
+  "repeatability": {
+    "builds": 2,
+    "byte_identical_all_files": true,
+    "manifest_sha256_a": "f4c5938fdc2d7f0fb501031e19c7e1daec987f956d2aac1cf0b70f175425629a",
+    "manifest_sha256_b": "f4c5938fdc2d7f0fb501031e19c7e1daec987f956d2aac1cf0b70f175425629a"
+  },
+  "schema_version": 1,
+  "source_commit": "326890160d3591196d19dea9c0eeb0c1d701fec3",
+  "split": {
+    "kind": "sha256-family-90-5-5",
+    "seed": "lesson10-smoke-20260728"
+  },
+  "status": "data_foundation_smoke_passed_base_training_not_started",
+  "tokenizer": {
+    "byte_tokens": 256,
+    "special_tokens": {
+      "ASSISTANT": 259,
+      "BOS": 256,
+      "EOS": 257,
+      "FINAL": 262,
+      "PAD": 263,
+      "THINK": 261,
+      "TOOL": 260,
+      "USER": 258
+    },
+    "vocab_size": 264
+  },
+  "tokens": {
+    "test": 1280,
+    "total": 22804,
+    "train": 20229,
+    "validation": 1295
+  }
+}
