@@ -19,6 +19,18 @@
       "environment_variable": "DEEPSEEK_API_KEY",
       "serialized": false
     },
+    "dry_run": {
+      "byte_identical_repeat": true,
+      "families": 512,
+      "manifest_sha256": "b325c596efa7bb5f63b75cff343aeae95f8c7600246cc136d7c8d3d3ecb61829",
+      "network_calls": 0,
+      "request_plan_bytes": 507314,
+      "request_plan_sha256": "b5aba017403d6cc34fa6a267ad9a2522469a1ab156bb8b27ce755292049d6a75",
+      "tasks": {
+        "arithmetic": 256,
+        "physics_numeric": 256
+      }
+    },
     "generation_budget": {
       "maximum_estimated_cost_usd": 0.6,
       "maximum_input_tokens_per_request": 512,
