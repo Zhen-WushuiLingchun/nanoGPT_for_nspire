@@ -257,3 +257,29 @@ else()
         -Wconversion
     )
 endif()
+
+add_executable(chat_fixture runtime/platform/host/chat_fixture.c)
+target_link_libraries(chat_fixture PRIVATE nanogpt_ui)
+if(MSVC)
+    target_compile_options(chat_fixture PRIVATE /W4 /WX)
+else()
+    target_compile_options(
+        chat_fixture
+        PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wpedantic
+        -Wshadow
+        -Wconversion
+    )
+endif()
+add_test(
+    NAME chat_fixture_render
+    COMMAND
+        chat_fixture
+        "${TEST_FIXTURE_DIR}/chat-ready.ppm"
+        "${TEST_FIXTURE_DIR}/chat-conversation.ppm"
+        "${TEST_FIXTURE_DIR}/chat-generating.ppm"
+        "${TEST_FIXTURE_DIR}/chat-error.ppm"
+)

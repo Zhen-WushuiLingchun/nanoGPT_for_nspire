@@ -226,6 +226,46 @@ static void ng_view_transcript(
         NG_VIEW_TRANSCRIPT_TOP,
         NG_CHAT_VIEW_WIDTH - 2,
         NG_VIEW_TRANSCRIPT_BOTTOM - NG_VIEW_TRANSCRIPT_TOP);
+    if (chat->cell_count == 0u) {
+        ng_gfx_stroke_rect(
+            surface,
+            34,
+            55,
+            252,
+            75,
+            NG_CHAT_COLOR_BORDER);
+        ng_gfx_fill_rect(
+            surface,
+            34,
+            55,
+            3,
+            75,
+            NG_CHAT_COLOR_MINT);
+        ng_gfx_draw_text(
+            surface,
+            50,
+            68,
+            "LOCAL MODEL READY",
+            NG_CHAT_COLOR_MINT);
+        ng_gfx_draw_text(
+            surface,
+            50,
+            88,
+            "ENTER SEND  MENU NEW CHAT",
+            NG_CHAT_COLOR_TEXT);
+        ng_gfx_draw_text(
+            surface,
+            50,
+            100,
+            "CTRL+ESC EXIT",
+            NG_CHAT_COLOR_MUTED);
+        ng_gfx_draw_text(
+            surface,
+            50,
+            116,
+            "NO CHAT HISTORY SAVED",
+            NG_CHAT_COLOR_AMBER);
+    }
     for (index = 0u; index < chat->cell_count; ++index) {
         const ng_chat_cell *cell = &chat->cells[index];
         const char *label;
@@ -366,9 +406,9 @@ static void ng_view_footer(ng_surface *surface, const ng_chat *chat) {
         ng_builder_fixed_milli(
             &builder,
             chat->decode_milli_tokens_per_second);
-        ng_builder_text(&builder, "T/S  TTFT");
+        ng_builder_text(&builder, " T/S | TTFT:");
         ng_builder_uint(&builder, chat->ttft_ms);
-        ng_builder_text(&builder, "MS  RAM");
+        ng_builder_text(&builder, "MS | RAM:");
         ng_builder_mib_tenths(&builder, chat->tracked_peak_bytes);
         ng_builder_text(&builder, "M");
     }
