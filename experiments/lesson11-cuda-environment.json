@@ -1,0 +1,35 @@
+{
+  "claim_boundary": "CUDA availability and one bounded matrix workload only; this is not a language-model training benchmark.",
+  "command": "python -m nanogpt_nspire.cuda_probe --output artifacts/lesson11-cuda-probe.json --matrix-size 4096 --iterations 5 --seed 20260728",
+  "device": {
+    "available": true,
+    "compute_capability": [
+      12,
+      0
+    ],
+    "driver_version": "591.74",
+    "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "peak_memory_allocated_bytes": 276957696,
+    "total_memory_bytes": 17094475776,
+    "type": "cuda"
+  },
+  "python": "3.12.12",
+  "result": {
+    "checksum": 17181638656.0,
+    "elapsed_seconds": 0.034757799992803484,
+    "operations": 687194767360,
+    "operations_per_second": 19770951196631.605
+  },
+  "schema_version": 1,
+  "torch": {
+    "cuda_runtime": "12.8",
+    "version": "2.11.0+cu128"
+  },
+  "workload": {
+    "dtype": "float32",
+    "iterations": 5,
+    "matrix_size": 4096,
+    "operation": "matrix_multiply_and_reduce",
+    "seed": 20260728
+  }
+}
