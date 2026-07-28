@@ -220,6 +220,7 @@ ng_chat_status ng_chat_append_to_last_cell(
 
 ng_chat_status ng_chat_submit(ng_chat *chat, uint32_t now_ms) {
     uint32_t separator_token = 0u;
+    size_t separator_count;
     size_t pending_count;
     size_t index;
     int has_separator;
@@ -234,10 +235,20 @@ ng_chat_status ng_chat_submit(ng_chat *chat, uint32_t now_ms) {
     if (chat->input_length == 0u) {
         return NG_CHAT_NO_CHANGE;
     }
+    /*
+     * This is a completion model, not a role-conditioned chat model. Ending
+     * every prompt with the same newline makes the final conditioning token
+     * identical and can collapse greedy decoding onto one common line start.
+     * Keep the first prompt exact. On later turns, place the optional line
+     * boundary before the new user text so generation still conditions on the
+     * user's actual final character.
+     */
     has_separator =
-        ng_chat_find_token(chat->model, "\n", 1u, &separator_token)
-        == NG_CHAT_OK;
-    pending_count = chat->input_length + (has_separator ? 1u : 0u);
+        ng_runtime_context_length(chat->runtime) != 0u
+        && ng_chat_find_token(chat->model, "\n", 1u, &separator_token)
+            == NG_CHAT_OK;
+    separator_count = has_separator ? 1u : 0u;
+    pending_count = chat->input_length + separator_count;
     if (pending_count > NG_CHAT_MAX_PENDING_TOKENS
         || pending_count > chat->model->spec.block_size
             - ng_runtime_context_length(chat->runtime)
@@ -246,21 +257,21 @@ ng_chat_status ng_chat_submit(ng_chat *chat, uint32_t now_ms) {
             > NG_CHAT_TRANSCRIPT_BYTES - chat->transcript_length) {
         return NG_CHAT_FULL;
     }
+    if (has_separator) {
+        chat->pending_tokens[0] = separator_token;
+    }
     for (index = 0u; index < chat->input_length; ++index) {
         status = ng_chat_find_token(
             chat->model,
             chat->input + index,
             1u,
-            &chat->pending_tokens[index]);
+            &chat->pending_tokens[index + separator_count]);
         if (status != NG_CHAT_OK) {
             ng_chat_secure_zero(
                 chat->pending_tokens,
                 sizeof(chat->pending_tokens));
             return status;
         }
-    }
-    if (has_separator) {
-        chat->pending_tokens[chat->input_length] = separator_token;
     }
     status = ng_chat_append_cell(
         chat,

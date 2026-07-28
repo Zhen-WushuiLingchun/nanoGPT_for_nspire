@@ -32,6 +32,18 @@ static int bytes_are_zero(const void *pointer, size_t length) {
     return 1;
 }
 
+static int token_is(
+    const ng_model *model,
+    uint32_t token_id,
+    const char *expected,
+    size_t expected_length) {
+    const uint8_t *bytes = NULL;
+    uint16_t length = 0u;
+    return ng_model_token(model, token_id, &bytes, &length) == NG_STATUS_OK
+        && (size_t)length == expected_length
+        && memcmp(bytes, expected, expected_length) == 0;
+}
+
 static void test_incremental_session(const char *model_path) {
     ng_model model;
     ng_runtime runtime;
@@ -69,7 +81,8 @@ static void test_incremental_session(const char *model_path) {
     CHECK(ng_chat_input_insert(&chat, 'a') == NG_CHAT_OK);
     CHECK(ng_chat_submit(&chat, 100u) == NG_CHAT_OK);
     CHECK(chat.phase == NG_CHAT_PHASE_PREFILL);
-    CHECK(chat.pending_count == 2u);
+    CHECK(chat.pending_count == 1u);
+    CHECK(token_is(&model, chat.pending_tokens[0], "a", 1u));
     CHECK(chat.cell_count == 2u);
     CHECK(chat.cells[0].role == NG_CHAT_ROLE_USER);
     CHECK(chat.cells[1].role == NG_CHAT_ROLE_ASSISTANT);
@@ -78,26 +91,21 @@ static void test_incremental_session(const char *model_path) {
     before = ng_runtime_context_length(&runtime);
     CHECK(ng_chat_step(&chat, 101u) == NG_CHAT_OK);
     CHECK(ng_runtime_context_length(&runtime) == before + 1u);
-    CHECK(chat.phase == NG_CHAT_PHASE_PREFILL);
+    CHECK(chat.phase == NG_CHAT_PHASE_GENERATING);
 
     before = ng_runtime_context_length(&runtime);
     CHECK(ng_chat_step(&chat, 102u) == NG_CHAT_OK);
     CHECK(ng_runtime_context_length(&runtime) == before + 1u);
-    CHECK(chat.phase == NG_CHAT_PHASE_GENERATING);
+    CHECK(chat.generated_tokens == 1u);
+    CHECK(chat.ttft_ms == 2u);
+    CHECK(chat.decode_milli_tokens_per_second == 0u);
 
     before = ng_runtime_context_length(&runtime);
     CHECK(ng_chat_step(&chat, 103u) == NG_CHAT_OK);
     CHECK(ng_runtime_context_length(&runtime) == before + 1u);
-    CHECK(chat.generated_tokens == 1u);
-    CHECK(chat.ttft_ms == 3u);
-    CHECK(chat.decode_milli_tokens_per_second == 0u);
-
-    before = ng_runtime_context_length(&runtime);
-    CHECK(ng_chat_step(&chat, 104u) == NG_CHAT_OK);
-    CHECK(ng_runtime_context_length(&runtime) == before + 1u);
     CHECK(chat.phase == NG_CHAT_PHASE_DONE);
     CHECK(chat.generated_tokens == 2u);
-    CHECK(chat.context_tokens == 4u);
+    CHECK(chat.context_tokens == 3u);
     CHECK(chat.decode_milli_tokens_per_second == 1000000u);
     CHECK(chat.cells[1].text_length == 4u);
     CHECK(
@@ -111,6 +119,56 @@ static void test_incremental_session(const char *model_path) {
     CHECK(chat.phase == NG_CHAT_PHASE_IDLE);
     CHECK(chat.cell_count == 0u);
     CHECK(ng_runtime_context_length(&runtime) == 0u);
+    ng_chat_shutdown(&chat);
+    free(arena);
+    ng_model_free(&model);
+}
+
+static void test_later_turn_separator_precedes_user_text(
+    const char *model_path) {
+    ng_model model;
+    ng_runtime runtime;
+    ng_chat chat;
+    ng_error error;
+    uint8_t *arena;
+    const float *logits = NULL;
+
+    CHECK(
+        ng_model_load_file(
+            model_path,
+            (size_t)NG_INFERENCE_MEMORY_LIMIT_BYTES,
+            &model,
+            &error)
+        == NG_STATUS_OK);
+    if (failures != 0) {
+        return;
+    }
+    arena = (uint8_t *)malloc(model.required_arena_bytes);
+    CHECK(arena != NULL);
+    if (arena == NULL) {
+        ng_model_free(&model);
+        return;
+    }
+    CHECK(
+        ng_runtime_init(
+            &runtime,
+            &model,
+            arena,
+            model.required_arena_bytes,
+            &error)
+        == NG_STATUS_OK);
+    CHECK(
+        ng_runtime_forward_token(&runtime, 1u, &logits, &error)
+        == NG_STATUS_OK);
+    CHECK(logits != NULL);
+
+    ng_chat_init(&chat, &model, &runtime);
+    CHECK(ng_chat_input_insert(&chat, 'a') == NG_CHAT_OK);
+    CHECK(ng_chat_submit(&chat, 10u) == NG_CHAT_OK);
+    CHECK(chat.pending_count == 2u);
+    CHECK(token_is(&model, chat.pending_tokens[0], "\n", 1u));
+    CHECK(token_is(&model, chat.pending_tokens[1], "a", 1u));
+
     ng_chat_shutdown(&chat);
     free(arena);
     ng_model_free(&model);
@@ -223,9 +281,6 @@ static void test_repeated_private_lifecycle(const char *model_path) {
         CHECK(
             ng_chat_step(&chat, (uint32_t)(cycle * 10u + 3u))
             == NG_CHAT_OK);
-        CHECK(
-            ng_chat_step(&chat, (uint32_t)(cycle * 10u + 4u))
-            == NG_CHAT_OK);
         CHECK(chat.phase == NG_CHAT_PHASE_DONE);
         CHECK(!bytes_are_zero(arena, model.required_arena_bytes));
 
@@ -260,6 +315,7 @@ int main(int argument_count, char **arguments) {
         return 2;
     }
     test_incremental_session(arguments[1]);
+    test_later_turn_separator_precedes_user_text(arguments[1]);
     test_rejections_and_cancel(arguments[1]);
     test_repeated_private_lifecycle(arguments[1]);
     if (failures != 0) {
