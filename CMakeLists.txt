@@ -45,6 +45,38 @@ else()
     )
 endif()
 
+add_library(
+    nanogpt_ui
+    STATIC
+    runtime/src/ng_gfx.c
+    runtime/src/ng_chat_view.c
+)
+target_include_directories(
+    nanogpt_ui
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/runtime/src"
+)
+target_include_directories(
+    nanogpt_ui
+    PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/runtime/include"
+)
+target_link_libraries(nanogpt_ui PUBLIC nanogpt_runtime)
+if(MSVC)
+    target_compile_options(nanogpt_ui PRIVATE /W4 /WX)
+else()
+    target_compile_options(
+        nanogpt_ui
+        PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wpedantic
+        -Wshadow
+        -Wconversion
+    )
+endif()
+
 set(TEST_FIXTURE_DIR "${CMAKE_CURRENT_BINARY_DIR}/test-fixtures")
 set(TEST_MODEL_FIXTURE "${TEST_FIXTURE_DIR}/tiny-fp32.ngm")
 add_custom_command(
@@ -173,6 +205,24 @@ add_test(
     NAME chat_session
     COMMAND test_chat_session "${TEST_MODEL_FIXTURE}"
 )
+
+add_executable(test_chat_view tests/c/test_chat_view.c)
+target_link_libraries(test_chat_view PRIVATE nanogpt_ui)
+if(MSVC)
+    target_compile_options(test_chat_view PRIVATE /W4 /WX)
+else()
+    target_compile_options(
+        test_chat_view
+        PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wpedantic
+        -Wshadow
+        -Wconversion
+    )
+endif()
+add_test(NAME chat_view COMMAND test_chat_view)
 
 add_executable(model_inspect runtime/platform/host/model_inspect.c)
 target_link_libraries(model_inspect PRIVATE nanogpt_runtime)
