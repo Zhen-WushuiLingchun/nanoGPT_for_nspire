@@ -2,8 +2,9 @@
 
 > 实现状态（2026-07-28）：portable chat state、真实 `.ngm` session、RGB565
 > renderer、Host visual fixture、隐私清理测试和 `nanogpt-chat.tns` 均已完成。
-> ARM compile/link/package 已通过；真实 CX II 首次同步因设备息屏导致 LibUSB
-> error，上传后的远端状态、启动、速度和峰值 RAM 仍待物理重连后验证。实现与证据见
+> ARM compile/link/package、真实 CX II 上传读回、应用启动和模型打开已通过。
+> 真机观察到统一尾随 newline 与 greedy 共同造成的固定 continuation 前缀；
+> prompt-ending 修复已通过 Host/ARM 并重新部署，修复版输出和重复性能仍待复测。实现与证据见
 > [`../lessons/09-ndless-pixel-chat-ui.md`](../lessons/09-ndless-pixel-chat-ui.md)
 > 和
 > [`../../experiments/lesson09-chat-ui.json`](../../experiments/lesson09-chat-ui.json)。
@@ -107,13 +108,14 @@ IDLE_EDIT/GENERATING -> NEW_CHAT -> IDLE_EDIT
 
 1. 编码为当前 `.ngm` 的字符 token；
 2. 添加 USER cell；
-3. 将明确的 role/separator prompt token 送入模型；
+3. 第一轮保持用户输入原样；后续轮次把可选 separator 放在新输入之前；
 4. 创建空 AI cell；
 5. 每生成一个 token，追加文本并更新 metrics；
 6. 遇到停止条件、context 满或用户中断后回到编辑状态。
 
-在后训练格式冻结前，role separator 先作为配置，不硬编码为当前 Shakespeare
-词表中不存在的特殊 token。
+在后训练格式冻结前，USER/AI role 只属于 UI metadata。不要在当前用户输入末尾
+追加统一 separator；这会让 completion 模型的最后一个条件 token 对所有 prompt
+都相同。
 
 ## 5. telemetry 定义
 

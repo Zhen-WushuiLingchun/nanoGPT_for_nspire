@@ -26,7 +26,7 @@ RGB565 framebuffer <- USER / AI cells <- UTF-8 token
 生成的应用为：
 
 ```text
-dist/nanogpt-chat.tns       59,310 bytes
+dist/nanogpt-chat.tns       59,309 bytes
 dist/model.ngm.tns       6,036,544 bytes  # 默认 Quantized-Small
 ```
 
@@ -35,8 +35,9 @@ dist/model.ngm.tns       6,036,544 bytes  # 默认 Quantized-Small
 `135.2 s`。此前约 50.9 秒的失败没有开始传输，实际卡在 TI 文件服务握手；
 另一次快速失败则发生在 USB/IP 尚未被 WSL 枚举时。正确恢复不需要物理拔插：
 等待设备达到 Windows `Attached`、WSL 枚举到 `0451:e022` 后，直接用唯一一个
-`sync` 进程完成全部 TI 协议操作。当前证据是 Host、ARM package 和真机传输均
-通过；还不能把“文件在计算器上”写成“应用已经成功启动并推理”。
+`sync` 进程完成全部 TI 协议操作。原版应用随后已在真机成功启动、打开 W4A8
+模型并生成文本；它同时暴露了一个可复现的统一 prompt 尾缀问题。修复版已经通过
+Host 与 ARM 构建，真机替换和复测仍单独记录，不能用旧版启动照片替代新版验证。
 
 ## 1. 这是不是一个 ChatGPT
 
@@ -51,11 +52,12 @@ dist/model.ngm.tns       6,036,544 bytes  # 默认 Quantized-Small
 ```
 
 但当前模型仍是 Tiny Shakespeare 字符续写模型。USER/AI 是界面 metadata，
-不是模型理解的 role token；模型实际看到的是连续字符和换行：
+不是模型理解的 role token。修复后的第一轮只输入用户字符；后续轮次用一个前置
+换行把已有 completion 与新用户文本隔开：
 
 ```text
-Explain causal attention.\n...
-Why triangular?\n...
+Explain causal attention.<generated text>
+\nWhy triangular?<generated text>
 ```
 
 所以必须区分三层：
@@ -80,7 +82,13 @@ PREFILL:
     input token 0 -> forward -> KV[0]
     input token 1 -> forward -> KV[1]
     ...
-    newline       -> forward -> KV[n]
+    final user token -> forward -> KV[n]
+
+LATER TURN PREFILL:
+    optional newline boundary -> forward
+    new input token 0         -> forward
+    ...
+    final user token          -> forward
 
 GENERATING:
     argmax(logits)
@@ -239,6 +247,39 @@ next_token = argmax(logits)
 以后可以加入 temperature/top-k，但那需要固定 PRNG、seed、浮点语义和跨平台采样
 测试，不能只在 UI 上加一个看起来存在的选项。
 
+### 7.1 为什么真机总说 `That we have seen the state`
+
+原版真机中，即使输入画面上显示为 `DO NOT SAY THE STATE`，greedy 输出仍从
+`THAT WE HAVE SEEN THE STATE...` 开始。5×7 字体会把小写显示成大写；底层 token
+仍保留原始大小写。
+
+同一个已部署 W4A8 模型在 Host C 上可以精确复现：
+
+| 实际 prompt | 32-token greedy continuation |
+|---|---|
+| `do not say the state\n` | `That we have seen the state of t` |
+| `physics\n` | `That we have seen the state of t` |
+| `do not say the state` | ` of my heart\nThat I have seen th` |
+| `physics` | ` are they say, and they say,\nThe` |
+
+这不是一句“模型太小”就能解释完。它是四个因素叠加：
+
+1. 这是 Shakespeare completion model，不理解“不要说”是指令；
+2. 原版 `ng_chat_submit` 在每个用户输入末尾都追加同一个 newline；
+3. 小模型对最近 token 依赖很强，不同 prompt 因相同末 token 变得相似；
+4. greedy 每次都走最高概率分支，没有采样带来的分岔。
+
+newline 版本的 `do not say the state` 与 `x`，首 token 都是 `T`；去掉 newline
+后，首 token 分别变成空格与 `e`。packed-W4A8 Python reference 与 Host C 在四个
+诊断 prompt 上的 greedy token 序列完全一致，因此没有证据表明这是 ARM runtime
+错位、INT4 文件损坏或词表解码错误。
+
+修复不伪装成 instruction tuning：第一轮保持用户输入原样；后续轮次若词表有
+newline，把它放在新用户文本之前。这样每次生成仍由用户的真实最后字符给出最后
+一组 logits。它能消除人为制造的统一尾缀，但不会让 Shakespeare 模型突然学会
+问答或遵从否定指令。temperature/top-k 与 physics instruction 后训练仍是后续
+独立实验。
+
 ## 8. 320×240 为什么仍使用完整 backbuffer
 
 CX II 屏幕是 320×240。RGB565 每像素 2 bytes：
@@ -309,15 +350,28 @@ tracked total    8,568,768 + sizeof(ng_chat)
 对象。因此界面明确称 tracked memory。ARM ELF 还单独记录：
 
 ```text
-text   74,372 bytes
+text   74,388 bytes
 data    7,400 bytes
 bss    12,276 bytes
 ```
 
 Ndless 公共 `gettimeofday` 在当前 SDK 只有 1 秒分辨率。它能诚实测量很慢的真机
 生成和长窗口平均速度，但亚秒 token 会显示 0。现在没有为了得到好看的数字而直接
-写未验证的 timer MMIO；真机恢复后先做独立、可退出的高分辨率 timer probe，再把
-其安全实现接入 UI。
+写未验证的 timer MMIO。
+
+原版真机照片给出第一组观察值：
+
+```text
+context       53 / 128
+decode rate   about 1.2 character tokens/s
+TTFT          15,000 ms
+tracked RAM   8.2 MiB
+route         QUANT W4A8
+```
+
+这是一次屏幕读数，不是重复 benchmark。TTFT 还强烈依赖 prompt 长度；`8.2M`
+是上述已知区域的加总，不是 calculator OS 的 heap 峰值。修复版部署后应使用固定
+prompt 重复至少三次，再决定是否做独立、可退出的高分辨率 timer probe。
 
 ## 10. New Chat 为什么同时是正确性与隐私操作
 
@@ -486,16 +540,17 @@ phy-nlinkctl sync \
 
 | 文件 | bytes | SHA-256 |
 |---|---:|---|
-| `nanogpt-chat.tns` | 59,310 | `d1590fb4…813d8f8` |
+| `nanogpt-chat.tns` | 59,309 | `3b1de9d3…72e65f1` |
 | `model.ngm.tns` | 6,036,544 | `87882cae…5647c9` |
 
 真实 CX II 同步结果：
 
 | 项目 | 结果 |
 |---|---|
-| 总耗时 | `135.2 s` |
-| `nanogpt-chat.tns` | 上传、59,310-byte 读回、SHA-256、最终文件检查均通过 |
+| 首次 bundle 总耗时 | `135.2 s` |
+| 原版 `nanogpt-chat.tns` | 59,310-byte 上传读回通过，随后已在真机启动 |
 | `model.ngm.tns` | 上传、6,036,544-byte 读回、SHA-256、最终文件检查均通过 |
+| 修复版 `nanogpt-chat.tns` | 59,309-byte 上传读回通过，旧版备份已删除 |
 | 临时/备份文件 | 最终检查未发现 |
 
 ## 14. 哪些结论已经成立
@@ -510,12 +565,14 @@ phy-nlinkctl sync \
 - 完整 chat program 能被 ARM 工具链以 warnings-as-errors 编译、链接和封装；
 - 外部 Quantized-Small bundle 已在 Host 准备完成。
 - 两个 bundle 文件已在真实 CX II 完整上传、读回校验并原子部署。
+- 原版应用已在真机启动、打开模型并产生逐字符输出；
+- 固定 continuation 前缀已在 Host 复现、定位并完成 prompt-ending 修复；
+- 修复版应用已上传、读回并原子替换原版。
 
 尚未成立：
 
-- `nanogpt-chat.tns` 已在当前 CX II 成功启动；
-- calculator-side model open 已通过；
-- CX II 的真实 TTFT/tokens/s；
+- 修复版不再对不同 prompt 产生同一个固定前缀；
+- CX II 的重复 TTFT/tokens/s benchmark；
 - calculator-side peak heap；
 - 退出后 LCD/按键恢复已由人眼确认；
 
@@ -524,20 +581,19 @@ phy-nlinkctl sync \
 
 ## 15. 余下的真机交互验收顺序
 
-上传与读回已经通过，下一步直接在计算器上：
+修复版上传与读回已经通过，下一步直接在计算器上：
 
 1. 从 Documents 打开 `nanoGPT/nanogpt-chat.tns`；
-2. 确认应用找到 `/nanoGPT/model.ngm.tns`，而不是进入 model-open error；
-3. 输入一轮短 ASCII prompt；
-4. 生成中按 Esc；
-5. 再输入第二轮，确认 cell 连续；
-6. Menu New Chat，确认 context 回到 0；
-7. Ctrl+Esc 退出，确认 Documents 屏幕正常；
-8. 重新启动，确认没有恢复上次 transcript；
-9. 记录至少 32 个 decode token 的 wall time 与 tracked RAM；
-10. 再决定是否启用高分辨率 timer probe。
+2. 用 New Chat 分别测试 `physics` 与 `do not say the state`，确认首句不再相同；
+3. 生成中按 Esc；
+4. 再输入第二轮，确认 cell 连续且新输入末字符仍决定生成条件；
+5. Menu New Chat，确认 context 回到 0；
+6. Ctrl+Esc 退出，确认 Documents 屏幕正常；
+7. 重新启动，确认没有恢复上次 transcript；
+8. 用固定 prompt 重复三次 TTFT、至少 32 个 decode token 和 tracked RAM；
+9. 再决定是否启用高分辨率 timer probe。
 
 完成这组验收后，Lesson 09 的 `physical_device` 才能从
-`transferred_and_verified` 改成 `measured`。
+`prompt_fix_transferred_device_output_retest_pending` 改成 `measured`。
 下一阶段则可以一边优化 W4A8 ARM kernel，一边准备真正的物理解释后训练数据；UI
 与模型能力仍保持两个可以独立验证的层。

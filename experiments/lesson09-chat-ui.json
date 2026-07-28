@@ -1,7 +1,7 @@
 {
   "experiment_id": "lesson09-ndless-pixel-chat-ui",
-  "schema_version": 2,
-  "source_commit": "49ecfac0cd63f6fc97d70b214ccc39914b886be6",
+  "schema_version": 3,
+  "source_commit": "08855feb0fff6017e96a371e2d8d6bc5c2f4bab1",
   "portable_ui": {
     "dimensions": {
       "height": 240,
@@ -42,7 +42,7 @@
     "model_role_tokens": false,
     "prefill_tokens_per_event_loop_iteration": 1,
     "generated_tokens_per_event_loop_iteration": 1,
-    "separator": "newline only when present in the loaded vocabulary",
+    "separator": "first turn ends at the exact user input; later turns optionally prefix newline before the new user input",
     "visible_user_ai_roles": "UI metadata only"
   },
   "privacy": {
@@ -75,15 +75,15 @@
     "arm_elf": {
       "bss_bytes": 12276,
       "data_bytes": 7400,
-      "text_bytes": 74372,
-      "total_bytes": 94048
+      "text_bytes": 74388,
+      "total_bytes": 94064
     },
     "compiled_with_warnings_as_errors": true,
     "ndless_minimum_revision": 2022,
     "package": {
-      "bytes": 59310,
+      "bytes": 59309,
       "path": "dist/nanogpt-chat.tns",
-      "sha256": "d1590fb4e201c0b74ea00357aa03a9c4421ec8d514715a40456f4147c813d8f8"
+      "sha256": "3b1de9d3b4564470f4cd7808efc42b0585d34940a86106ed4b58b0c6772e65f1"
     },
     "status": "compile_link_package_passed",
     "strong_unresolved_symbols": 0,
@@ -106,13 +106,55 @@
     "peak_memory": "tracked model blob plus runtime arena plus framebuffer plus chat state",
     "subsecond_device_timing": "pending a non-invasive hardware timer probe"
   },
+  "prompt_suffix_diagnostic": {
+    "cross_engine_check": {
+      "engines": [
+        "Python packed-W4A8 incremental reference",
+        "Host C incremental runtime"
+      ],
+      "greedy_generated_tokens_exact": true,
+      "prompt_count": 4
+    },
+    "deployed_model_sha256": "87882cae9a098e280414df5e327253be12202f2c1f6db5ccd0e24503925647c9",
+    "diagnosis": [
+      "the model is a Shakespeare character completion model without instruction or role semantics",
+      "the original chat layer appended the same newline token after every user input",
+      "the small model over-weighted the shared final token",
+      "greedy argmax deterministically selected the same high-probability line opening"
+    ],
+    "fix": {
+      "device_readback_sha256": "3b1de9d3b4564470f4cd7808efc42b0585d34940a86106ed4b58b0c6772e65f1",
+      "first_turn": "prefill exact user input with no synthetic suffix",
+      "later_turns": "place an optional newline before the new user input",
+      "source_commit": "08855feb0fff6017e96a371e2d8d6bc5c2f4bab1",
+      "status": "host_c_tests_arm_package_and_device_transfer_passed_device_output_retest_pending"
+    },
+    "host_c_reproduction": [
+      {
+        "continuation_32": "That we have seen the state of t",
+        "prompt": "do not say the state\n"
+      },
+      {
+        "continuation_32": "That we have seen the state of t",
+        "prompt": "physics\n"
+      },
+      {
+        "continuation_32": " of my heart\nThat I have seen th",
+        "prompt": "do not say the state"
+      },
+      {
+        "continuation_32": " are they say, and they say,\nThe",
+        "prompt": "physics"
+      }
+    ]
+  },
   "physical_device": {
     "device_detected": true,
     "device_type": "TI-Nspire CX II",
     "initial_root_directory_query": "passed",
     "intended_directory": "/nanoGPT",
-    "post_failure_remote_state": "verified by successful fresh sync; final check found only the two intended files",
-    "status": "transferred_and_verified",
+    "post_failure_remote_state": "verified by successful fresh sync and successful prompt-fix replacement; no upload temporary remained",
+    "status": "prompt_fix_transferred_device_output_retest_pending",
     "sync_attempts": [
       {
         "diagnosis": "no upload progress was emitted; a separate prior CLI process left the CX II firmware unable to accept the next TI file-service handshake immediately",
@@ -139,12 +181,60 @@
         "result": "passed",
         "temporary_or_backup_files_after_sync": false,
         "upload_started": true
+      },
+      {
+        "diagnosis": "device remained USB/IP Attached but the TI file service did not complete a handshake while the original Ndless app was still in the foreground",
+        "elapsed_seconds": 86.8,
+        "error": "LibUSB error",
+        "result": "failed",
+        "target": "prompt-ending fix app only",
+        "upload_started": false
+      },
+      {
+        "diagnosis": "exiting the Ndless app triggered a transient WSL device-node re-enumeration window",
+        "elapsed_seconds": 0.7,
+        "error": "No device found",
+        "result": "failed",
+        "target": "prompt-ending fix app only",
+        "upload_started": false
+      },
+      {
+        "diagnosis": "the device had re-enumerated but the old USB/TI protocol session still did not complete the file-service handshake",
+        "elapsed_seconds": 53.9,
+        "error": "LibUSB error",
+        "result": "failed",
+        "target": "prompt-ending fix app only",
+        "upload_started": false
+      },
+      {
+        "app_readback_sha256": "3b1de9d3b4564470f4cd7808efc42b0585d34940a86106ed4b58b0c6772e65f1",
+        "backup_removed": true,
+        "elapsed_seconds_approximate": 26.3,
+        "final_files": {
+          "/nanoGPT/nanogpt-chat.tns": 59309
+        },
+        "recovery": "host-side usbipd detach/attach, wait for Attached and WSL 0451:e022, then one sync process",
+        "result": "passed",
+        "temporary_file_after_sync": false,
+        "upload_started": true
       }
     ],
     "transfer_tool": "phy-nlinkctl atomic multi-file sync",
-    "transport_recovery": "no physical USB replug: wait for usbipd Attached plus WSL 0451:e022 enumeration, then run exactly one phy-nlinkctl sync process without a separate phy-nlinkctl preflight",
-    "true_app_launch": "pending",
+    "transport_recovery": "no physical USB replug: exit the foreground Ndless app, use host-side usbipd detach/attach when the TI session is stale, wait for Attached plus WSL 0451:e022, then run exactly one phy-nlinkctl sync process",
+    "device_photo_observation": {
+      "context_tokens": "53/128",
+      "decode_character_tokens_per_second": 1.2,
+      "displayed_generation_prefix": "THAT WE HAVE SEEN THE STATE OF T",
+      "displayed_tracked_ram_mib": 8.2,
+      "displayed_user_prompt": "DO NOT SAY THE STATE",
+      "model_route": "QUANT W4A8",
+      "ttft_ms": 15000
+    },
+    "exit_display_restore": "pending explicit visual confirmation",
+    "fixed_app_launch": "pending",
+    "model_open": "passed for the originally deployed app",
+    "true_app_launch": "passed for the originally deployed app",
     "true_peak_memory": "pending",
-    "true_tokens_per_second": "pending"
+    "true_tokens_per_second": "single screen observation is 1.2 character tokens/s; fixed-prompt repeats pending"
   }
 }

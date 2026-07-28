@@ -1,9 +1,12 @@
 # Lesson 09: Ndless Pixel Chat UI Implementation Plan
 
 > **Status (2026-07-28):** Tasks 1-6 and the Host/ARM parts of Task 7 are
-> complete. Physical upload/readback, launch, high-resolution timing, and
-> calculator-side exit verification remain pending after a screen-off LibUSB
-> interruption. Do not treat package success as device execution evidence.
+> complete. Physical upload/readback, application launch, and model open passed.
+> The first run exposed a deterministic continuation collapse caused by the
+> original trailing-newline prompt construction; the prompt-ending fix passes
+> Host/ARM gates and was redeployed with readback verification. Fixed-version
+> output, repeat timing, true peak memory, and calculator-side exit verification
+> remain pending.
 
 > **For Codex:** Follow this plan in order. Keep the portable state machine and
 > renderer independent from Ndless so every privacy and layout invariant can be
@@ -95,9 +98,11 @@ Load the deterministic tiny FP32 fixture and assert:
 **Step 2: Implement token lookup and session stepping**
 
 Map UTF-8 input scalars to the model vocabulary by exact byte match. Feed one
-prefill token or generate one token per call. Use newline as a separator only
-when present in the vocabulary. Stop at the configured token limit, context
-limit, repeated newline, user cancellation, or runtime error.
+prefill token or generate one token per call. Keep the first user prompt exact;
+on later turns, prefix newline before the new user text only when it exists in
+the vocabulary. Never append a shared synthetic token after the current user
+input. Stop at the configured token limit, context limit, repeated newline,
+user cancellation, or runtime error.
 
 **Step 3: Run focused and full C tests**
 

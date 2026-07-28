@@ -15,8 +15,8 @@
 - 已完成：[第六课：Teacher 与 INT4 量化诊断](docs/lessons/06-int4-quantization.md)
 - 已完成：[第七课：Teacher v2、正式量化与蒸馏](docs/lessons/07-teacher-v2-distillation-and-comparison.md)
 - 已完成：[第八课：统一模型文件、C 推理与 PyTorch 对齐](docs/lessons/08-c-runtime-and-pytorch-alignment.md)
-- 已完成（Host/ARM/真机传输）：[第九课：Ndless 像素对话界面、隐私生命周期与真机部署](docs/lessons/09-ndless-pixel-chat-ui.md)
-- 待真机交互门：启动与模型打开、CX II tokens/s/峰值 RAM、退出显示恢复
+- 已完成（Host/ARM/真机启动）：[第九课：Ndless 像素对话界面、隐私生命周期与真机部署](docs/lessons/09-ndless-pixel-chat-ui.md)
+- 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
 体积门和量化误差门均通过，因此该产物保留为 diagnostic。Lesson 07 只把
@@ -37,20 +37,24 @@ compile/link/package，生成 `48,056-byte` smoke `.tns`。这些仍不是 CX II
 
 Lesson 09 已加入固定容量多轮 cell、逐 token prefill/decode、320×240 RGB565
 像素界面、TTFT/tokens/s/context/tracked RAM、New Chat/Exit volatile zeroing 和
-完整 `nanogpt-chat.tns`。Host 现有 7 个 CTest；ARM chat ELF 为 `94,048 bytes`，
-封装后的 `.tns` 为 `59,310 bytes`。默认部署 bundle 使用 Quantized-Small：
+完整 `nanogpt-chat.tns`。Host 现有 7 个 CTest；prompt-ending 修复版 ARM chat
+ELF 为 `94,064 bytes`，封装后的 `.tns` 为 `59,309 bytes`。默认部署 bundle
+使用 Quantized-Small：
 
 ```text
 dist/
-├── nanogpt-chat.tns    59,310 bytes
+├── nanogpt-chat.tns    59,309 bytes
 └── model.ngm.tns    6,036,544 bytes
 ```
 
 真实 CX II 已完成两个文件的单进程原子同步：上传后完整读回的 SHA-256 与本地
 一致，设备端最终只保留正式文件。该次同步耗时 `135.2 s`。此前失败不是息屏或
 必须物理插拔，而是 USB/IP 尚未完成 WSL 枚举，以及连续启动独立 `phy-nlinkctl`
-进程造成的 TI 文件服务握手竞态。当前只把真机传输门写成通过；应用启动、模型
-打开、速度和峰值内存仍需计算器侧实测。
+进程造成的 TI 文件服务握手竞态。原版应用也已经在真机启动并打开 W4A8 模型；
+一次照片证据显示约 `1.2 char-token/s`、`15 s TTFT` 和 `8.2 MiB tracked RAM`。
+真机还暴露了统一尾随换行造成的固定 `That we have seen the state...` 前缀。
+Host 复现和跨引擎对齐排除了文件损坏；修复版改为让生成条件以用户真实末字符
+结束。完整原因、边界和待复测项记录在 Lesson 09。
 
 三条可部署小模型路线与两层公平性已经冻结在
 [`small-model-comparison-design.md`](docs/plans/2026-07-27-small-model-comparison-design.md)，
