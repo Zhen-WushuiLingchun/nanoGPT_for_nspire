@@ -4,9 +4,10 @@
 > complete. Physical upload/readback, application launch, and model open passed.
 > The first run exposed a deterministic continuation collapse caused by the
 > original trailing-newline prompt construction; the prompt-ending fix passes
-> Host/ARM gates and was redeployed with readback verification. Fixed-version
-> output, repeat timing, true peak memory, and calculator-side exit verification
-> remain pending.
+> Host/ARM gates and was redeployed with readback verification. Two fixed-version
+> device continuations exactly match Host/Python W4A8. The residual `state`
+> attractor is a model/greedy effect; repeat timing, true peak memory, and
+> calculator-side exit verification remain pending.
 
 > **For Codex:** Follow this plan in order. Keep the portable state machine and
 > renderer independent from Ndless so every privacy and layout invariant can be

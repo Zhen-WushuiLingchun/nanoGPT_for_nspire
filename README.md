@@ -51,10 +51,12 @@ dist/
 一致，设备端最终只保留正式文件。该次同步耗时 `135.2 s`。此前失败不是息屏或
 必须物理插拔，而是 USB/IP 尚未完成 WSL 枚举，以及连续启动独立 `phy-nlinkctl`
 进程造成的 TI 文件服务握手竞态。原版应用也已经在真机启动并打开 W4A8 模型；
-一次照片证据显示约 `1.2 char-token/s`、`15 s TTFT` 和 `8.2 MiB tracked RAM`。
-真机还暴露了统一尾随换行造成的固定 `That we have seen the state...` 前缀。
-Host 复现和跨引擎对齐排除了文件损坏；修复版改为让生成条件以用户真实末字符
-结束。完整原因、边界和待复测项记录在 Lesson 09。
+照片证据显示约 `0.9–1.2 char-token/s`、`12–15 s TTFT` 和 `8.2 MiB tracked
+RAM`。统一尾随换行造成的固定句首已修复；修复版真机的 `hello` 与
+`one plus two` 输出逐字符匹配 Host/Python reference，但仍频繁进入 `the state`
+吸引盆。49-prompt 扫描中 Direct/Teacher/Quantized/Distilled 的 `state` 命中数
+分别为 `4/15/13/46`；当前 W4A8 的 temperature/top-k stress probe 则只有
+`1/160`。完整原因、蒸馏负结果和解码边界记录在 Lesson 09。
 
 三条可部署小模型路线与两层公平性已经冻结在
 [`small-model-comparison-design.md`](docs/plans/2026-07-27-small-model-comparison-design.md)，

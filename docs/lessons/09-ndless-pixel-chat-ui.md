@@ -37,7 +37,8 @@ dist/model.ngm.tns       6,036,544 bytes  # 默认 Quantized-Small
 等待设备达到 Windows `Attached`、WSL 枚举到 `0451:e022` 后，直接用唯一一个
 `sync` 进程完成全部 TI 协议操作。原版应用随后已在真机成功启动、打开 W4A8
 模型并生成文本；它同时暴露了一个可复现的统一 prompt 尾缀问题。修复版已经通过
-Host 与 ARM 构建，真机替换和复测仍单独记录，不能用旧版启动照片替代新版验证。
+Host/ARM、真机替换和两条 32-token 输出对齐；重复性能与退出恢复仍单独保留为
+未完成验收。
 
 ## 1. 这是不是一个 ChatGPT
 
@@ -279,6 +280,85 @@ newline，把它放在新用户文本之前。这样每次生成仍由用户的�
 一组 logits。它能消除人为制造的统一尾缀，但不会让 Shakespeare 模型突然学会
 问答或遵从否定指令。temperature/top-k 与 physics instruction 后训练仍是后续
 独立实验。
+
+### 7.2 修复尾随换行后，为什么仍然偏爱 `the state`
+
+修复版真机没有再对所有输入输出完全相同的句首，但两条新证据仍然落入
+`the state`：
+
+| 真机 prompt | 真机 32-token continuation | context | TTFT | decode |
+|---|---|---:|---:|---:|
+| `hello` | `w the state of his father's head` | 37/128 | 15 s | 0.9 token/s |
+| `one plus two` | ` be and the state of my heart\nTh` | 44/128 | 12 s | 0.9 token/s |
+
+它们与 Host C 和 Python packed-W4A8 reference 的 greedy token 序列逐字符一致。
+这证明两件事同时成立：
+
+1. prompt-ending 修复确实生效了，因为两个 prompt 的开头已经不同；
+2. 剩余的 `state` 偏好来自模型与 greedy，不是 Nspire 独有 bug。
+
+#### 它不是简单的语料高频背诵
+
+对训练语料做大小写无关的 word/bigram 统计：
+
+| 项目 | 次数 | 并列排名 |
+|---|---:|---:|
+| `state` | 82 | 330 / 12,373 words |
+| `the state` | 21 | 718 / 107,203 bigrams |
+| `the state of` | 2 | 3,500 / 183,626 trigrams |
+| `the state of my` | 0 | — |
+| `the state of his` | 0 | — |
+
+真机出现的 `the state of my heart`、`the state of his father's head` 和原版的
+`that we have seen the state` 都不是训练集原句。模型学到的是局部字符模式，再把
+多个片段组合成了训练集里没有的句子。
+
+#### 四条路线暴露出不同程度的吸引盆
+
+使用相同 49 个短 prompt，每个生成 32 个 greedy token：
+
+| 模型 | 含 `state` | 含 `the state` | unique continuations |
+|---|---:|---:|---:|
+| Direct-Small FP32 | 4/49 | 4/49 | 33/49 |
+| Teacher-v2 FP32 | 15/49 | 12/49 | 47/49 |
+| Quantized-Small W4A8 | 13/49 | 13/49 | 44/49 |
+| Distilled-Small FP32 | 46/49 | 46/49 | 26/49 |
+
+Teacher-v2 与量化版总命中数接近，因此 INT4 不是主因；它会改变具体哪个 prompt
+掉进盆，但没有创造这个偏好。Distilled-Small 的 46/49 则是一个重要负结果：
+validation loss 不能单独代表开放式生成质量。student 在软目标、有限容量和 greedy
+共同作用下，把 teacher 的局部偏好放大成了近乎全局的模式坍缩。
+
+#### greedy 在一个低置信岔路口作出不可逆选择
+
+以当前 W4A8 为例：
+
+| 已生成前缀 | top-1 | 概率 | top-2 | 概率 |
+|---|---:|---:|---:|---:|
+| `hello` → `w the ` | `s` | 9.27% | `c` | 8.16% |
+| `one plus two` → ` be and the ` | `s` | 9.64% | `c` | 9.11% |
+
+此时模型并不确信下一个字符是 `s`；greedy 只是把略高一点的第一名固定下来。
+一旦选中 `s`，后续 `tate` 的条件概率迅速变尖，序列就进入 `state` 漏斗。也就是：
+
+```text
+高熵、近乎平票的岔路
+          |
+          v  argmax 固定选择 s
+低熵、容易拼完的 "state"
+```
+
+为了验证概率质量并没有全部挤在这个盆里，选取 10 个 greedy 会生成 `state` 的
+stress prompts，对同一 W4A8 权重做 `temperature=0.8, top-k=20`、16 个固定 seed：
+
+| 解码 | `state` 命中 | unique outputs |
+|---|---:|---:|
+| greedy stress set | 10/10 | 不适用 |
+| temperature/top-k | 1/160（0.625%） | 160/160 |
+
+这说明采样几乎总能逃离 `state`，但“更多样”不等于“会算 1+2”或“会解释物理”。
+下一阶段适合把可复现 PRNG、temperature/top-k、重复率/unique continuation 指标做成
+独立解码实验；后训练则负责模型能力。二者不应混成同一个改动。
 
 ## 8. 320×240 为什么仍使用完整 backbuffer
 
@@ -568,10 +648,11 @@ phy-nlinkctl sync \
 - 原版应用已在真机启动、打开模型并产生逐字符输出；
 - 固定 continuation 前缀已在 Host 复现、定位并完成 prompt-ending 修复；
 - 修复版应用已上传、读回并原子替换原版。
+- 修复版 `hello` 与 `one plus two` 已在真机产生不同输出，且逐字符匹配
+  Host C/Python packed-W4A8 reference。
 
 尚未成立：
 
-- 修复版不再对不同 prompt 产生同一个固定前缀；
 - CX II 的重复 TTFT/tokens/s benchmark；
 - calculator-side peak heap；
 - 退出后 LCD/按键恢复已由人眼确认；
@@ -581,19 +662,17 @@ phy-nlinkctl sync \
 
 ## 15. 余下的真机交互验收顺序
 
-修复版上传与读回已经通过，下一步直接在计算器上：
+修复版启动与单轮输出已经通过，剩余验收为：
 
-1. 从 Documents 打开 `nanoGPT/nanogpt-chat.tns`；
-2. 用 New Chat 分别测试 `physics` 与 `do not say the state`，确认首句不再相同；
-3. 生成中按 Esc；
-4. 再输入第二轮，确认 cell 连续且新输入末字符仍决定生成条件；
-5. Menu New Chat，确认 context 回到 0；
-6. Ctrl+Esc 退出，确认 Documents 屏幕正常；
-7. 重新启动，确认没有恢复上次 transcript；
-8. 用固定 prompt 重复三次 TTFT、至少 32 个 decode token 和 tracked RAM；
-9. 再决定是否启用高分辨率 timer probe。
+1. 生成中按 Esc；
+2. 再输入第二轮，确认 cell 连续且新输入末字符仍决定生成条件；
+3. Menu New Chat，确认 context 回到 0；
+4. Ctrl+Esc 退出，确认 Documents 屏幕正常；
+5. 重新启动，确认没有恢复上次 transcript；
+6. 用固定 prompt 重复三次 TTFT、至少 32 个 decode token 和 tracked RAM；
+7. 再决定是否启用高分辨率 timer probe。
 
 完成这组验收后，Lesson 09 的 `physical_device` 才能从
-`prompt_fix_transferred_device_output_retest_pending` 改成 `measured`。
+`fixed_app_output_aligned_repeat_benchmark_pending` 改成 `measured`。
 下一阶段则可以一边优化 W4A8 ARM kernel，一边准备真正的物理解释后训练数据；UI
 与模型能力仍保持两个可以独立验证的层。

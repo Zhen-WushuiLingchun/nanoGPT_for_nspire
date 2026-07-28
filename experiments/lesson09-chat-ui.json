@@ -1,6 +1,6 @@
 {
   "experiment_id": "lesson09-ndless-pixel-chat-ui",
-  "schema_version": 3,
+  "schema_version": 4,
   "source_commit": "08855feb0fff6017e96a371e2d8d6bc5c2f4bab1",
   "portable_ui": {
     "dimensions": {
@@ -127,7 +127,7 @@
       "first_turn": "prefill exact user input with no synthetic suffix",
       "later_turns": "place an optional newline before the new user input",
       "source_commit": "08855feb0fff6017e96a371e2d8d6bc5c2f4bab1",
-      "status": "host_c_tests_arm_package_and_device_transfer_passed_device_output_retest_pending"
+      "status": "host_c_tests_arm_package_device_transfer_and_two_prompt_device_output_passed"
     },
     "host_c_reproduction": [
       {
@@ -148,13 +148,158 @@
       }
     ]
   },
+  "residual_state_attractor": {
+    "corpus_frequency": {
+      "casefolded_substring_counts": {
+        "that we have seen the state": 0,
+        "the state": 21,
+        "the state of his": 0,
+        "the state of my": 0
+      },
+      "state_word": {
+        "count": 82,
+        "rank_by_count": 330,
+        "word_tokens": 203839,
+        "word_types": 12373
+      },
+      "the_state_bigram": {
+        "count": 21,
+        "rank_by_count": 718,
+        "types": 107203
+      },
+      "the_state_of_trigram": {
+        "count": 2,
+        "rank_by_count": 3500,
+        "types": 183626
+      }
+    },
+    "decision_probe": [
+      {
+        "generated_prefix": "w the ",
+        "prompt": "hello",
+        "top1_probability": 0.0927,
+        "top1_token": "s",
+        "top2_probability": 0.0816,
+        "top2_token": "c"
+      },
+      {
+        "generated_prefix": " be and the ",
+        "prompt": "one plus two",
+        "top1_probability": 0.0964,
+        "top1_token": "s",
+        "top2_probability": 0.0911,
+        "top2_token": "c"
+      }
+    ],
+    "greedy_route_sweep": {
+      "generate_tokens": 32,
+      "prompt_count": 49,
+      "prompts": [
+        "hello",
+        "one plus two",
+        "physics",
+        "gravity",
+        "black hole",
+        "explain attention",
+        "what is mass",
+        "why",
+        "how",
+        "who are you",
+        "state",
+        "the state",
+        "do not say the state",
+        "king",
+        "queen",
+        "romeo",
+        "juliet",
+        "love",
+        "hate",
+        "war",
+        "peace",
+        "heart",
+        "father",
+        "mother",
+        "england",
+        "x",
+        "y",
+        "z",
+        "a",
+        "b",
+        "c",
+        "cat",
+        "dog",
+        "science",
+        "number",
+        "calculate",
+        "one",
+        "two",
+        "three",
+        "to be or not to be",
+        "once upon a time",
+        "i think",
+        "we are",
+        "you are",
+        "they are",
+        "this is",
+        "that is",
+        "good morning",
+        "good night"
+      ],
+      "results": [
+        {
+          "model": "Direct-Small FP32",
+          "state_hits": 4,
+          "the_state_hits": 4,
+          "unique_continuations": 33
+        },
+        {
+          "model": "Teacher-v2 FP32",
+          "state_hits": 15,
+          "the_state_hits": 12,
+          "unique_continuations": 47
+        },
+        {
+          "model": "Quantized-Small W4A8",
+          "state_hits": 13,
+          "the_state_hits": 13,
+          "unique_continuations": 44
+        },
+        {
+          "model": "Distilled-Small FP32",
+          "state_hits": 46,
+          "the_state_hits": 46,
+          "unique_continuations": 26
+        }
+      ]
+    },
+    "interpretation": [
+      "the generated state phrases are not exact corpus memorization",
+      "Teacher-v2 and Quantized-Small have similar aggregate hit counts, so INT4 is not the primary cause",
+      "Distilled-Small amplifies the teacher preference into severe greedy mode collapse",
+      "validation loss alone does not measure open-ended generation diversity"
+    ],
+    "sampling_stress_probe": {
+      "generate_tokens": 32,
+      "greedy_state_hits": "10/10 selected attractor prompts",
+      "policy": {
+        "temperature": 0.8,
+        "top_k": 20
+      },
+      "prompt_count": 10,
+      "sample_runs": 160,
+      "sampled_state_hits": 1,
+      "sampled_state_hit_rate": 0.00625,
+      "seeds_per_prompt": 16,
+      "unique_sampled_outputs": 160
+    }
+  },
   "physical_device": {
     "device_detected": true,
     "device_type": "TI-Nspire CX II",
     "initial_root_directory_query": "passed",
     "intended_directory": "/nanoGPT",
     "post_failure_remote_state": "verified by successful fresh sync and successful prompt-fix replacement; no upload temporary remained",
-    "status": "prompt_fix_transferred_device_output_retest_pending",
+    "status": "fixed_app_output_aligned_repeat_benchmark_pending",
     "sync_attempts": [
       {
         "diagnosis": "no upload progress was emitted; a separate prior CLI process left the CX II firmware unable to accept the next TI file-service handshake immediately",
@@ -221,7 +366,7 @@
     ],
     "transfer_tool": "phy-nlinkctl atomic multi-file sync",
     "transport_recovery": "no physical USB replug: exit the foreground Ndless app, use host-side usbipd detach/attach when the TI session is stale, wait for Attached plus WSL 0451:e022, then run exactly one phy-nlinkctl sync process",
-    "device_photo_observation": {
+    "original_app_photo_observation": {
       "context_tokens": "53/128",
       "decode_character_tokens_per_second": 1.2,
       "displayed_generation_prefix": "THAT WE HAVE SEEN THE STATE OF T",
@@ -231,10 +376,30 @@
       "ttft_ms": 15000
     },
     "exit_display_restore": "pending explicit visual confirmation",
-    "fixed_app_launch": "pending",
-    "model_open": "passed for the originally deployed app",
-    "true_app_launch": "passed for the originally deployed app",
+    "fixed_app_launch": "passed",
+    "fixed_app_photo_observations": [
+      {
+        "context_tokens": "37/128",
+        "decode_character_tokens_per_second": 0.9,
+        "displayed_continuation": "W THE STATE OF HIS FATHER'S HEAD",
+        "displayed_tracked_ram_mib": 8.2,
+        "displayed_user_prompt": "HELLO",
+        "host_c_and_python_w4a8_exact": true,
+        "ttft_ms": 15000
+      },
+      {
+        "context_tokens": "44/128",
+        "decode_character_tokens_per_second": 0.9,
+        "displayed_continuation": " BE AND THE STATE OF MY HEART\nTH",
+        "displayed_tracked_ram_mib": 8.2,
+        "displayed_user_prompt": "ONE PLUS TWO",
+        "host_c_and_python_w4a8_exact": true,
+        "ttft_ms": 12000
+      }
+    ],
+    "model_open": "passed for original and fixed apps",
+    "true_app_launch": "passed for original and fixed apps",
     "true_peak_memory": "pending",
-    "true_tokens_per_second": "single screen observation is 1.2 character tokens/s; fixed-prompt repeats pending"
+    "true_tokens_per_second": "fixed-app single observations are 0.9 character tokens/s; fixed-prompt repeats pending"
   }
 }

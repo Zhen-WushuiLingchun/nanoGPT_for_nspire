@@ -4,7 +4,9 @@
 > renderer、Host visual fixture、隐私清理测试和 `nanogpt-chat.tns` 均已完成。
 > ARM compile/link/package、真实 CX II 上传读回、应用启动和模型打开已通过。
 > 真机观察到统一尾随 newline 与 greedy 共同造成的固定 continuation 前缀；
-> prompt-ending 修复已通过 Host/ARM 并重新部署，修复版输出和重复性能仍待复测。实现与证据见
+> prompt-ending 修复已通过 Host/ARM 并重新部署，两条修复版真机输出与
+> Host/Python reference 对齐。剩余 `state` 吸引盆已归因于模型与 greedy；
+> 重复性能、真实峰值内存和退出恢复仍待验收。实现与证据见
 > [`../lessons/09-ndless-pixel-chat-ui.md`](../lessons/09-ndless-pixel-chat-ui.md)
 > 和
 > [`../../experiments/lesson09-chat-ui.json`](../../experiments/lesson09-chat-ui.json)。
