@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "allowed_row_licenses": [
+        "Public-Domain",
+        "CC0-1.0",
+        "CC-BY-4.0"
+      ],
+      "exclusion_reason": null,
+      "license_id": "per-document",
+      "name": "Common Corpus",
+      "notes": "Stream English rows and retain document-level creator, identifier, and license metadata.",
+      "policy": "row-filtered",
+      "revision": "516f542de3a841fe15cfb7cb2a2bc24d8f5eaa4c",
+      "source_id": "common-corpus",
+      "stages": [
+        "base_pretraining",
+        "continued_pretraining"
+      ],
+      "subset": "English public-domain, CC0, and CC-BY rows",
+      "url": "https://huggingface.co/datasets/PleIAs/common_corpus"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": null,
+      "license_id": "Apache-2.0",
+      "name": "DeepMind Mathematics Dataset",
+      "notes": "Programmatic school-level mathematics with deterministic curriculum difficulty and exact answers.",
+      "policy": "eligible",
+      "revision": "v1.0",
+      "source_id": "deepmind-mathematics",
+      "stages": [
+        "continued_pretraining",
+        "sft",
+        "evaluation"
+      ],
+      "subset": "arithmetic, algebra, comparison, measurement, numbers, probability",
+      "url": "https://github.com/google-deepmind/mathematics_dataset"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": null,
+      "license_id": "DeepSeek-Output-Terms-2026-03-27",
+      "name": "DeepSeek V4-Pro generated records",
+      "notes": "AI-generated candidates require verifier evidence, model and prompt provenance, and explicit AI-generated labeling.",
+      "policy": "eligible",
+      "revision": "deepseek-v4-pro@2026-07-28",
+      "source_id": "deepseek-v4-pro-generated",
+      "stages": [
+        "sft",
+        "distillation"
+      ],
+      "subset": "verified English math and introductory physics",
+      "url": "https://api-docs.deepseek.com/guides/thinking_mode"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": null,
+      "license_id": "ODC-By-1.0",
+      "name": "FineWeb-Edu",
+      "notes": "Stream a deterministic high-score English educational subset; do not download the full corpus.",
+      "policy": "eligible",
+      "revision": "v1.0.0",
+      "source_id": "fineweb-edu",
+      "stages": [
+        "base_pretraining"
+      ],
+      "subset": "English educational score 4-5",
+      "url": "https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": null,
+      "license_id": "MIT",
+      "name": "GSM8K",
+      "notes": "Use the original train split for SFT and keep the original test split untouched for evaluation.",
+      "policy": "eligible",
+      "revision": "archive-2026-04-08",
+      "source_id": "gsm8k",
+      "stages": [
+        "sft",
+        "evaluation"
+      ],
+      "subset": "main and socratic, split-preserving",
+      "url": "https://github.com/openai/grade-school-math"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": null,
+      "license_id": "Apache-2.0",
+      "name": "OpenAssistant OASST1",
+      "notes": "Select short, high-rated, English-only dialogue branches and preserve message-tree provenance.",
+      "policy": "eligible",
+      "revision": "dataset-through-2023-04-12",
+      "source_id": "oasst1",
+      "stages": [
+        "sft"
+      ],
+      "subset": "English high-quality short conversations",
+      "url": "https://huggingface.co/datasets/OpenAssistant/oasst1"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": "The public dataset card reports licensing information as unknown.",
+      "license_id": "unknown",
+      "name": "OpenBookQA",
+      "notes": "Reconsider only if an authoritative compatible dataset license is identified and pinned.",
+      "policy": "excluded",
+      "revision": "card-as-of-2026-07-28",
+      "source_id": "openbookqa",
+      "stages": [
+        "sft",
+        "evaluation"
+      ],
+      "subset": "main",
+      "url": "https://huggingface.co/datasets/allenai/openbookqa"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": null,
+      "license_id": "CC-BY-4.0",
+      "name": "OpenMathInstruct-2",
+      "notes": "Select only short, target-difficulty problems whose final answers pass an independent exact verifier.",
+      "policy": "eligible",
+      "revision": "469216e",
+      "source_id": "openmathinstruct-2",
+      "stages": [
+        "sft",
+        "distillation"
+      ],
+      "subset": "verified short English solutions",
+      "url": "https://huggingface.co/datasets/nvidia/OpenMathInstruct-2"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": "The current preface explicitly prohibits ingestion into large language models or generative AI offerings without permission.",
+      "license_id": "AI-TRAINING-PROHIBITED",
+      "name": "OpenStax College Physics 2e",
+      "notes": "Do not download, transform, send to a teacher, or include in model training without explicit permission.",
+      "policy": "excluded",
+      "revision": "preface-as-of-2026-07-28",
+      "source_id": "openstax-college-physics-2e",
+      "stages": [
+        "continued_pretraining",
+        "sft"
+      ],
+      "subset": "all textbook content",
+      "url": "https://openstax.org/books/college-physics-2e/pages/preface"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": null,
+      "license_id": "ODC-By-1.0",
+      "name": "OpenWebMath",
+      "notes": "Stream cleaned English math documents and filter malformed or overlong LaTeX before family splitting.",
+      "policy": "eligible",
+      "revision": "dataset-release-2023-10",
+      "source_id": "openwebmath",
+      "stages": [
+        "continued_pretraining"
+      ],
+      "subset": "English high-quality mathematical web text",
+      "url": "https://huggingface.co/datasets/open-web-math/open-web-math"
+    },
+    {
+      "allowed_row_licenses": [],
+      "exclusion_reason": "CC-BY-NC-3.0 is outside the initial permissive training mix.",
+      "license_id": "CC-BY-NC-3.0",
+      "name": "SciQ",
+      "notes": "Do not train on or redistribute this dataset in the permissive model line.",
+      "policy": "excluded",
+      "revision": "card-as-of-2026-07-28",
+      "source_id": "sciq",
+      "stages": [
+        "sft",
+        "evaluation"
+      ],
+      "subset": "main",
+      "url": "https://huggingface.co/datasets/allenai/sciq"
+    }
+  ]
+}
