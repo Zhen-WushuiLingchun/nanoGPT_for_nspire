@@ -118,6 +118,25 @@ def test_distillation_rejects_empty_target_mask() -> None:
         )
 
 
+def test_bfloat16_logits_use_float32_loss_math() -> None:
+    losses = distillation_losses(
+        student_logits=torch.zeros(
+            (1, 2, 3),
+            dtype=torch.bfloat16,
+            requires_grad=True,
+        ),
+        teacher_logits=torch.ones((1, 2, 3), dtype=torch.bfloat16),
+        targets=torch.zeros((1, 2), dtype=torch.long),
+        target_mask=torch.ones((1, 2), dtype=torch.bool),
+        temperature=2.0,
+        alpha=0.5,
+    )
+
+    assert losses.total_loss.dtype == torch.float32
+    assert losses.hard_label_loss.dtype == torch.float32
+    assert losses.soft_target_loss.dtype == torch.float32
+
+
 @pytest.mark.parametrize(
     ("kwargs", "message"),
     [

@@ -72,7 +72,7 @@ def distillation_losses(
         or not bool(((target_mask == 0) | (target_mask == 1)).all())
     ):
         raise ValueError("target_mask values must be finite zero or one")
-    eligible = target_mask.reshape(-1).to(student_logits.dtype)
+    eligible = target_mask.reshape(-1).to(torch.float32)
     eligible_count = eligible.sum()
     if not bool((eligible_count > 0).item()):
         raise ValueError("target_mask must contain an eligible target")
@@ -97,8 +97,10 @@ def distillation_losses(
         raise ValueError("student and teacher logits must be finite")
 
     vocabulary_size = student_logits.shape[-1]
-    student_flat = student_logits.reshape(-1, vocabulary_size)
-    teacher_flat = teacher_logits.detach().reshape(-1, vocabulary_size)
+    student_flat = student_logits.reshape(-1, vocabulary_size).float()
+    teacher_flat = (
+        teacher_logits.detach().reshape(-1, vocabulary_size).float()
+    )
     targets_flat = targets.reshape(-1)
     hard_per_token = F.cross_entropy(
         student_flat,
