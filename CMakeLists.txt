@@ -15,6 +15,7 @@ add_library(
     nanogpt_runtime
     STATIC
     runtime/src/ng_crc32.c
+    runtime/src/ng_chat.c
     runtime/src/ng_model.c
     runtime/src/ng_ops.c
     runtime/src/ng_runtime.c
@@ -132,6 +133,24 @@ add_test(
     NAME incremental_runtime
     COMMAND test_runtime "${TEST_MODEL_FIXTURE}"
 )
+
+add_executable(test_chat tests/c/test_chat.c)
+target_link_libraries(test_chat PRIVATE nanogpt_runtime)
+if(MSVC)
+    target_compile_options(test_chat PRIVATE /W4 /WX)
+else()
+    target_compile_options(
+        test_chat
+        PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wpedantic
+        -Wshadow
+        -Wconversion
+    )
+endif()
+add_test(NAME chat_state COMMAND test_chat)
 
 add_executable(model_inspect runtime/platform/host/model_inspect.c)
 target_link_libraries(model_inspect PRIVATE nanogpt_runtime)
