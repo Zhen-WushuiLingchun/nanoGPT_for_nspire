@@ -222,3 +222,48 @@ def test_distillation_objective_freezes_teacher_and_reports_components() -> None
         },
         "temperature": 2.0,
     }
+
+
+def test_teacher_and_student_may_have_different_hidden_widths() -> None:
+    teacher = DirectSmallGPT(
+        DirectSmallConfig(
+            vocab_size=7,
+            block_size=8,
+            n_layer=2,
+            n_head=4,
+            n_embd=32,
+            mlp_ratio=2,
+            dropout=0.0,
+        )
+    )
+    student = DirectSmallGPT(
+        DirectSmallConfig(
+            vocab_size=7,
+            block_size=8,
+            n_layer=1,
+            n_head=2,
+            n_embd=16,
+            mlp_ratio=2,
+            dropout=0.0,
+        )
+    )
+    objective = DistillationObjective(
+        teacher,
+        temperature=2.0,
+        alpha=0.5,
+        teacher_provenance={"route": "Local-Teacher-SFT"},
+    )
+    inputs = torch.tensor([[0, 1, 2, 3]], dtype=torch.long)
+    targets = torch.tensor([[1, 2, 3, 4]], dtype=torch.long)
+    mask = torch.tensor([[False, True, True, True]])
+
+    result = objective(student, inputs, targets, mask)
+    result.loss.backward()
+
+    assert torch.isfinite(result.loss)
+    assert any(
+        parameter.grad is not None for parameter in student.parameters()
+    )
+    assert all(
+        parameter.grad is None for parameter in teacher.parameters()
+    )
