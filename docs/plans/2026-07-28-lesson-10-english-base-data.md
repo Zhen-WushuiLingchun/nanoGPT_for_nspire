@@ -408,7 +408,8 @@ Run:
 ```powershell
 git diff --check
 git status --short
-git grep -n -I -E "sk-[A-Za-z0-9]{16,}|DEEPSEEK_API_KEY="
+$secretPattern = "sk-" + "[A-Za-z0-9]{16,}|DEEPSEEK_API_KEY" + "="
+git grep -n -I -E $secretPattern
 ```
 
 Expected: no credential value, no raw corpus, no checkpoint, and no generated

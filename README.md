@@ -2,7 +2,11 @@
 
 这是一个边学 Transformer、边把小型 GPT 推理移植到 TI-Nspire CX II CAS 的项目。
 
-当前路线从 Tiny Shakespeare 字符模型开始，依次比较直接训练小模型、量化模型和蒸馏小模型；通过 Host C 数值对齐后，再进入 Ndless 真机推理。官方 nanoGPT 源码保存在 [`upstream/nanoGPT/`](upstream/nanoGPT/)，不会与我们的实现混写。
+第一阶段从 Tiny Shakespeare 字符模型开始，依次比较直接训练小模型、量化模型和
+蒸馏小模型；通过 Host C 数值对齐后，再进入 Ndless 真机推理。第二阶段正在构建
+English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、强 teacher
+蒸馏、可验证 RL/CoT、重新量化与真机部署。官方 nanoGPT 源码保存在
+[`upstream/nanoGPT/`](upstream/nanoGPT/)，不会与我们的实现混写。
 
 ## 当前进度
 
@@ -16,6 +20,7 @@
 - 已完成：[第七课：Teacher v2、正式量化与蒸馏](docs/lessons/07-teacher-v2-distillation-and-comparison.md)
 - 已完成：[第八课：统一模型文件、C 推理与 PyTorch 对齐](docs/lessons/08-c-runtime-and-pytorch-alignment.md)
 - 已完成（Host/ARM/真机启动）：[第九课：Ndless 像素对话界面、隐私生命周期与真机部署](docs/lessons/09-ndless-pixel-chat-ui.md)
+- 已完成：[第十课：English byte tokenizer、角色 token 与可审计语料地基](docs/lessons/10-english-byte-tokenizer-and-corpus.md)
 - 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
@@ -63,6 +68,14 @@ RAM`。统一尾随换行造成的固定句首已修复；修复版真机的 `he
 机器可读状态表位于
 [`experiments/small-model-comparison.json`](experiments/small-model-comparison.json)。
 
+Lesson 10 冻结了 `256 byte + 8 special token` 的 264-token 合同，使
+`USER/ASSISTANT` 第一次成为模型可见 token，并加入 assistant-only SFT loss
+mask、公开数据许可门、family-level 防泄漏 split 和不使用 `eval` 的精确算术
+生成器。256 个 arithmetic family / 512 个 record 的两次 smoke build 全文件
+byte-identical；这仍只是数据地基，**新的英语 Base checkpoint 尚未训练**。
+长期设计见
+[`english-math-physics-assistant-design.md`](docs/plans/2026-07-28-english-math-physics-assistant-design.md)。
+
 ## 快速开始
 
 需要 Python 3.10 或更新版本、PyTorch 2 或更新版本，以及 pytest。
@@ -75,6 +88,10 @@ python -m nanogpt_nspire.data fetch `
 python -m nanogpt_nspire.data prepare `
   --input artifacts/raw/tinyshakespeare.txt `
   --output artifacts/data/tinyshakespeare
+python -m nanogpt_nspire.lesson10_data smoke `
+  --output artifacts/lesson10-smoke `
+  --seed 20260728 `
+  --examples 256
 
 cmake -S . -B build/host -G "Visual Studio 17 2022" -A x64
 cmake --build build/host --config Release

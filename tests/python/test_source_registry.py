@@ -151,6 +151,7 @@ def test_row_filtered_source_requires_only_permissive_row_licenses():
 def test_secret_scanner_detects_key_shapes_without_storing_a_real_key():
     prefix = "s" + "k-"
     fake_secret = (prefix + "x" * 24).encode("ascii")
+    env_assignment = ("DEEPSEEK_API" + "_KEY=placeholder").encode("ascii")
 
     assert registry_contains_secret(fake_secret)
-    assert registry_contains_secret(b"DEEPSEEK_API_KEY=placeholder")
+    assert registry_contains_secret(env_assignment)

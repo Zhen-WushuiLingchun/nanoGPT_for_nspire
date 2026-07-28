@@ -107,5 +107,15 @@
     "total": 22804,
     "train": 20229,
     "validation": 1295
+  },
+  "verification": {
+    "ctest": {
+      "passed": 7,
+      "total": 7
+    },
+    "python": {
+      "passed": 254,
+      "skipped": 0
+    }
   }
 }
