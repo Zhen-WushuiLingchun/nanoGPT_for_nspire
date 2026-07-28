@@ -287,17 +287,18 @@ total            4,096
 root manifest SHA-256：
 
 ```text
-4562cf86a611766f9627d4c00740989b984e58f56f4599fbfa2dd479733f0bc9
+f2dc408d8fc6e517ad0f72d7fb9878fb62fd745f1975c2a5938df550964b5545
 ```
 
 冻结上限为 4,096 次请求、每次最多 512 input / 1024 output tokens，按执行日
 V4-Pro cache-miss 价格计算的保守上界不超过约 `$4.80`。实际账单必须以后端
 usage 为准，不能把这个上界当成已消费金额。
 
-正式调用使用 16 个并发 worker，并为每个 family 原子写入一份经过解析且
-secret-free 的公开答案缓存。缓存不含 authorization、原始 provider body 或
-`reasoning_content`。中断后重跑只请求缺失 family；最终数据仍按固定 problem
-顺序组装，所以并发完成顺序不会改变训练 corpus。
+正式调用最初使用 16 个并发 worker；遇到偶发网络长尾后，恢复阶段降为 8 个，
+并使用 180 秒 timeout、最多 8 次尝试和 10 秒退避。每个 family 原子写入一份
+经过解析且 secret-free 的公开答案缓存。缓存不含 authorization、原始 provider
+body 或 `reasoning_content`。中断后重跑只请求缺失 family；最终数据仍按固定
+problem 顺序组装，所以并发完成顺序不会改变训练 corpus。
 
 配置选择不是凭感觉完成的：
 
@@ -312,6 +313,51 @@ verifier 只对语义等价的数学符号执行白名单归一化，例如 `× 
 同时包含 problem、model、max tokens、reasoning effort 和 prompt schema，
 改变生成合同时不会静默复用旧答案。117 条 high-effort 结果和 64 条 v1 probe
 都只保留为诊断，不进入正式主 corpus。
+
+### 8.1 正式合成数据结果
+
+正式 artifact 原子发布后的观察值：
+
+| 项目 | 结果 |
+|---|---:|
+| provider responses | 4,096 |
+| verifier accepted | 4,077 |
+| rejected | 19 |
+| acceptance rate | 99.54% |
+| accepted sequence tokens | 551,229 |
+| final assembled SFT train tokens | 3,076,297 |
+| successful prompt tokens | 745,629 |
+| successful completion tokens | 1,585,045 |
+
+19 条拒绝全部是 `conversation_exceeds_context_or_is_invalid`：答案数值和单位没有
+失败，但 question + explanation + role tokens 超过了固定 256-token context。
+没有发现数值不一致、单位不一致、role token 泄漏或未知非 ASCII 污染。
+
+成功响应 token 按执行日价格估算约 `$1.70`。这不是账单：两次中断前的失败重试
+可能产生未进入成功 usage 汇总的 token，项目没有读取账户账单来倒推出精确消费。
+保守预注册上界仍是 `$4.80`。
+
+正式 artifact manifest：
+
+```text
+9a26be23c85a221d2624c5d465bfd0c917f0605a4881b28d2096684e798d4383
+```
+
+accepted JSONL：
+
+```text
+962812475f369ee8902cf68bfd341cf6cd5ce1dbbe4329d1d541d0d02b33f169
+```
+
+assembled SFT manifest：
+
+```text
+cee5c99cb9dec4b153dfacbf03272295876574eb320805df570fcc9a4f023543
+```
+
+reference 与 assembled 的 validation/test token、assistant loss mask 四个文件
+分别 SHA-256 一致。正式 artifact 和 4,096 个 cache 文件也通过递归
+credential-shape scan。
 
 ## 9. local teacher 的规格
 
@@ -521,7 +567,7 @@ student 学会了可泛化的计算过程
 
 ### 12.4 输出吸引子变了，但算法能力没有出现
 
-三个模型在同一 128 题上的最常见 completion 都是：
+五个模型在同一 128 题上的最常见 completion 都是：
 
 ```text
 The answer is 10.
@@ -534,6 +580,8 @@ The answer is 10.
 | Ordinary SFT student | 33 | 25.78% | 73 |
 | Local SFT teacher | 47 | 36.72% | 61 |
 | Local-logit student | 28 | 21.88% | 74 |
+| Verified synthetic-data SFT | 30 | 23.44% | 68 |
+| Synthetic + local-logit | 27 | 21.09% | 76 |
 
 因此不能把 Logit student 的失败简单解释成“逐字复制 Teacher 的 `10`
 吸引子”。`alpha=0.5` 的 hard CE、soft KL、有限 student 容量和优化轨迹共同
@@ -543,32 +591,65 @@ The answer is 10.
 2. teacher 的低 loss 不保证 teacher 本身有可蒸馏的算法能力；
 3. KL 可以传递局部 token 相似性，却不会凭空创造训练数据中没有稳定体现的
    中间计算机制；
-4. 下一步的 external synthetic-data generator 必须提供经过验证、覆盖更多
-   family 的正确解释，而不能只换一个更强的 loss。
+4. 4,077 条经过验证的合成解释可以改变格式和措辞分布，却仍未教会泛化算法；
+5. 把合成 hard targets 与一个缺少可靠算法能力的 logit teacher 叠加，也不会
+   自动产生更强 reasoning。
 
-外部 synthetic-data 与 combined 路线必须等正式 4,096 次请求完成并通过
-verifier 后才能执行；未运行的 route 不以设计值冒充观察值。
+### 12.5 四个同架构 student 的最终比较
+
+所有 student 都是 10,821,504 参数、同一个 CPT parent、1,000 updates 和
+4,096,000 sampled tokens：
+
+| Route | full val | full test | format | exact |
+|---|---:|---:|---:|---:|
+| Ordinary hard-label SFT | 0.4683 | 0.4632 | 95.31% | **2/128** |
+| Verified synthetic-data SFT | 0.5504 | 0.5339 | **97.66%** | **2/128** |
+| Local-logit distillation | **0.4448** | **0.4441** | 95.31% | 1/128 |
+| Synthetic + local-logit | 0.4899 | 0.4801 | 94.53% | 1/128 |
+
+Synthetic-data SFT checkpoint：
+
+```text
+17423d5861c1a1553240ce2d698f5394ecf90c5d161e242bb071e3a90169233b
+```
+
+它把格式有效率提高了 2.35 个百分点，却没有增加 exact 总数；两题都是答案为
+`12` 的 easy arithmetic，mixed arithmetic、GSM8K 和 physics 仍是 `0/32`。
+原 reference loss 变差也不等于合成文本本身错误，而是说明训练分布加入了更长、
+更多样的解释，和 reference 的短模板风格发生偏移。
+
+Combined checkpoint：
+
+```text
+a584a6a17e8a6f3d01133eba0548bad195b7c8682dfc60f441a4c9cf5729f428
+```
+
+KL 把 synthetic route 的 full validation loss 从 `0.5504` 拉回 `0.4899`，
+但仍不如 ordinary SFT，更不如只做 local-logit 的 `0.4448`。冻结 exact 从
+`2/128` 降到 `1/128`。因此组合实验没有显示互补增益。
 
 ## 13. 当前能与不能声称什么
 
-代码和 dry-run 已经能够证明：
+本课现在能够证明：
 
 - provider/current model contract 已更新；
-- secret 不进入提交物或可序列化配置；
+- 4,096 次正式生成得到 4,077 条通过 exact verifier 的合成序列；
+- secret 不进入提交物、cache 或可序列化配置；
 - external family 不泄漏到冻结 evaluation；
-- 外部 sequence 会经过 exact value/unit verification；
+- validation/test 与 reference 字节一致；
+- API 路线是 verified synthetic-data SFT，不是严格 logits 蒸馏；
 - local teacher 与 student 逐 token vocab 对齐；
 - hard/soft loss 使用同一个 assistant mask；
 - 三个新 student route 共享架构、parent 与 token budget；
-- local-logit route 的 loss 改善没有转化成 exact-answer 改善。
+- local-logit route 的 loss 改善没有转化成 exact-answer 改善；
+- synthetic route 的格式改善没有转化成 exact-answer 改善；
+- combined route 没有产生叠加收益。
 
-在正式结果完成前仍不能声称：
+仍不能声称：
 
-- V4-Pro sequence 已经生成或花费了多少；
-- verified synthetic-data SFT 提高了 exact accuracy；
 - local teacher 具备可泛化的可靠计算能力；
-- KL 提高冻结 exact accuracy；
-- combined route 一定叠加收益；
+- 当前 student 能可靠回答数学或初等物理；
+- 这次 API token 估算等于账户精确账单；
 - 任何新模型已经量化、进入 Host C 或 Nspire。
 
 下一课才在这些可归因结果上比较 direct answer 与受限 CoT 的 SFT/RLVR；不能用

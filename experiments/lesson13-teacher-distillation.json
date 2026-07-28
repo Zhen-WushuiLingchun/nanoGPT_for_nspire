@@ -5,10 +5,11 @@
       "DeepSeek Open Platform terms explicitly permit using outputs to train or distill another model, subject to the terms and independent output verification."
     ],
     "established_by_current_run": [
-      "The completed Local-Logit-Distilled-SFT route lowers teacher-forced full validation loss from 0.46829624139991916 to 0.44484301739657617 but scores only 1/128 on the frozen greedy exact-answer gate."
+      "The completed Local-Logit-Distilled-SFT route lowers teacher-forced full validation loss from 0.46829624139991916 to 0.44484301739657617 but scores only 1/128 on the frozen greedy exact-answer gate.",
+      "Verified synthetic-data SFT raises format validity from 0.953125 to 0.9765625 but retains the ordinary baseline's 2/128 exact score and worsens reference validation loss to 0.5503610629980786.",
+      "Combining verified synthetic hard targets with local-teacher KL scores 1/128 and does not outperform either the ordinary SFT or local-logit route."
     ],
-    "not_established_before_run": [
-      "External sequence-teacher benefit",
+    "still_not_established": [
       "Reliable arithmetic or introductory-physics answers",
       "RLVR or chain-of-thought benefit",
       "Quantized Host C or physical Nspire behavior"
@@ -29,7 +30,7 @@
     "dry_run": {
       "byte_identical_repeat": true,
       "families": 4096,
-      "manifest_sha256": "4562cf86a611766f9627d4c00740989b984e58f56f4599fbfa2dd479733f0bc9",
+      "manifest_sha256": "f2dc408d8fc6e517ad0f72d7fb9878fb62fd745f1975c2a5938df550964b5545",
       "network_calls": 0,
       "request_plan_bytes": 4784773,
       "request_plan_sha256": "3a108a92e7ce9dca3a4be7013571c1f50a1431f34d345270a0857778bfd0d9a0",
@@ -40,10 +41,17 @@
     },
     "execution": {
       "cache_identity_includes_generation_contract": true,
-      "max_workers": 16,
+      "final_max_workers": 8,
+      "maximum_attempts": 8,
       "parsed_answer_cache": true,
       "private_reasoning_cached": false,
-      "resume_without_repeating_completed_requests": true
+      "resume_without_repeating_completed_requests": true,
+      "retry_delay_seconds": 10.0,
+      "timeout_seconds": 180.0,
+      "worker_history": [
+        16,
+        8
+      ]
     },
     "generation_budget": {
       "maximum_estimated_cost_usd": 4.8,
@@ -96,6 +104,31 @@
         "resume_cache_hits": 48,
         "resume_network_requests": 16
       }
+    },
+    "primary_generation": {
+      "accepted": 4077,
+      "accepted_jsonl_sha256": "962812475f369ee8902cf68bfd341cf6cd5ce1dbbe4329d1d541d0d02b33f169",
+      "acceptance_rate": 0.995361328125,
+      "artifact_manifest_sha256": "9a26be23c85a221d2624c5d465bfd0c917f0605a4881b28d2096684e798d4383",
+      "cache_hits_in_final_resume": 1915,
+      "completion_tokens_in_successful_responses": 1585045,
+      "estimated_cost_of_successful_response_tokens_usd": 1.7033377650000001,
+      "network_requests_in_final_resume": 2181,
+      "prompt_tokens_in_successful_responses": 745629,
+      "provider_attempts_in_final_resume": 2183,
+      "rejected": 19,
+      "rejected_jsonl_sha256": "9511a5eb7d17c68f8f158563fc8011ec0c911cd4873f1b17a7c5db693cb82983",
+      "rejection_reasons": {
+        "conversation_exceeds_context_or_is_invalid": 19
+      },
+      "requests": 4096,
+      "sequence_manifest_sha256": "4b60d6e5b2d1c7c12a292d09dcaff6a8f30838a6da7c4b8f2740b1032cfb4ad5",
+      "sequence_train_tokens": 551229,
+      "sft_manifest_sha256": "cee5c99cb9dec4b153dfacbf03272295876574eb320805df570fcc9a4f023543",
+      "sft_test_byte_identical_to_reference": true,
+      "sft_train_tokens": 3076297,
+      "sft_validation_byte_identical_to_reference": true,
+      "successful_response_total_tokens": 2330674
     }
   },
   "fair_comparison": {
@@ -120,7 +153,7 @@
       {
         "name": "Verified-Sequence-SFT",
         "supervision": "reference hard labels plus verified external synthetic final-answer sequences",
-        "status": "pending"
+        "status": "completed"
       },
       {
         "name": "Local-Logit-Distilled-SFT",
@@ -130,7 +163,7 @@
       {
         "name": "Combined-Sequence-Logit-SFT",
         "supervision": "reference hard labels plus verified external synthetic sequences plus assistant-token local teacher KL",
-        "status": "pending"
+        "status": "completed"
       }
     ]
   },
@@ -210,6 +243,47 @@
     }
   },
   "student_results": {
+    "combined_sequence_logit_sft": {
+      "best_step": 1000,
+      "checkpoint_sha256": "a584a6a17e8a6f3d01133eba0548bad195b7c8682dfc60f441a4c9cf5729f428",
+      "dataset_manifest_sha256": "cee5c99cb9dec4b153dfacbf03272295876574eb320805df570fcc9a4f023543",
+      "eligible_sampled_training_targets": 1533000,
+      "full_test_loss": 0.48008869280404776,
+      "full_validation_loss": 0.4899165368399815,
+      "last_logged_losses": {
+        "hard_label": 0.6927451938390732,
+        "soft_target": 0.6150521077215672,
+        "total": 0.6538986563682556
+      },
+      "peak_cuda_memory_allocated_bytes": 664179200,
+      "route": "Combined-Sequence-Logit-SFT",
+      "selected_sampled_validation_loss": 0.4166690831270239,
+      "source_commit": "a989223b80e050143d3eac2b49ce49c1eff43eca",
+      "teacher_checkpoint_sha256": "0184c1fde793c0677db8c41c9a49ba5f705a45090525147e48926a609167198b",
+      "teacher_forward_tokens_per_second": 74205.72159694695,
+      "training_tokens": 4096000,
+      "update_tokens_per_second": 42634.15678976802,
+      "wall_seconds": 97.05214420001721
+    },
+    "combined_frozen_generation": {
+      "evaluation_result_sha256": "e2805f0f9f4708a5e60e66a9e6b46110f3046aaf9b1a69502261f552f3f6b4c6",
+      "examples": 128,
+      "format_valid_rate": 0.9453125,
+      "most_common_completion": {
+        "count": 27,
+        "share": 0.2109375,
+        "text": "The answer is 10."
+      },
+      "per_task_accuracy": {
+        "arithmetic": 0.0,
+        "arithmetic_easy": 0.03125,
+        "gsm8k": 0.0,
+        "physics_numeric": 0.0
+      },
+      "role_leak_rate": 0.0,
+      "task_accuracy": 0.0078125,
+      "unique_completions": 76
+    },
     "local_logit_distilled_sft": {
       "best_step": 1000,
       "checkpoint_sha256": "5b411ff34b70869a0b609346b4b11464890d34d3b9b71af4ff00f2873a90a2d1",
@@ -261,6 +335,40 @@
       "task_accuracy": 0.0078125,
       "tokens_per_second": 201.87946642008055,
       "unique_completions": 74
+    },
+    "verified_sequence_sft": {
+      "best_step": 1000,
+      "checkpoint_sha256": "17423d5861c1a1553240ce2d698f5394ecf90c5d161e242bb071e3a90169233b",
+      "dataset_manifest_sha256": "cee5c99cb9dec4b153dfacbf03272295876574eb320805df570fcc9a4f023543",
+      "eligible_sampled_training_targets": 1533000,
+      "full_test_loss": 0.5338563295123636,
+      "full_validation_loss": 0.5503610629980786,
+      "peak_cuda_memory_allocated_bytes": 393493504,
+      "route": "Verified-Sequence-SFT",
+      "selected_sampled_validation_loss": 0.4734227421727823,
+      "source_commit": "a989223b80e050143d3eac2b49ce49c1eff43eca",
+      "training_tokens": 4096000,
+      "update_tokens_per_second": 67094.74929493885,
+      "wall_seconds": 62.06573709996883
+    },
+    "verified_sequence_frozen_generation": {
+      "evaluation_result_sha256": "e87e991559f351f5f9435de476331d7546015c9c5cdf87a8c2a1d5b64db68d4f",
+      "examples": 128,
+      "format_valid_rate": 0.9765625,
+      "most_common_completion": {
+        "count": 30,
+        "share": 0.234375,
+        "text": "The answer is 10."
+      },
+      "per_task_accuracy": {
+        "arithmetic": 0.0,
+        "arithmetic_easy": 0.0625,
+        "gsm8k": 0.0,
+        "physics_numeric": 0.0
+      },
+      "role_leak_rate": 0.0,
+      "task_accuracy": 0.015625,
+      "unique_completions": 68
     }
   },
   "provider_evidence": {

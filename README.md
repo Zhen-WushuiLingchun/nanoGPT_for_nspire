@@ -23,7 +23,7 @@ English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、�
 - 已完成：[第十课：English byte tokenizer、角色 token 与可审计语料地基](docs/lessons/10-english-byte-tokenizer-and-corpus.md)
 - 已完成：[第十一课：CUDA、模型预算、公开语料与首个 English Base pilot](docs/lessons/11-english-base-pilot.md)
 - 已完成：[第十二课：数学物理 CPT、角色 SFT 与精确能力诊断](docs/lessons/12-math-physics-cpt-and-sft.md)
-- 进行中：[第十三课：外部合成数据 SFT、本地 logit teacher 与严格蒸馏](docs/lessons/13-external-and-local-teachers.md)
+- 已完成：[第十三课：外部合成数据 SFT、本地 logit teacher 与严格蒸馏](docs/lessons/13-external-and-local-teachers.md)
 - 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
@@ -106,9 +106,12 @@ Local-Logit-Distilled student。Teacher 的 full validation loss 为 `0.2816`，
 但冻结精确题仅 `1/128`；Logit 蒸馏把 10.8M student 的 loss 从 `0.4683`
 改善到 `0.4448`，精确题仍为 `1/128`。这说明 soft target 确实改变了 token
 分布，却没有凭空产生可泛化算术算法。外部 V4-Pro 路线明确属于 verified
-synthetic-data SFT，而非严格蒸馏；它已完成 4,096-family、零网络调用的可重复
-dry-run 与密钥防泄漏门，正式调用、sequence 训练和 combined route 尚未把待
-运行值写成结果。
+synthetic-data SFT，而非严格蒸馏；4,096 次正式调用得到 4,077 条通过 exact
+value/unit/context 门的序列，成功响应 token 的价格估算约 `$1.70`，且
+validation/test 与 reference 字节一致。Synthetic-SFT 把格式有效率提高到
+97.66%，但 exact 仍为 `2/128`；合成数据再叠加 local-logit 后为 `1/128`。
+因此更丰富的正确解释和 soft likelihood 都改变了输出分布，却仍未让当前
+10.8M byte-level student 学会可泛化的计算算法。
 
 ## 快速开始
 
