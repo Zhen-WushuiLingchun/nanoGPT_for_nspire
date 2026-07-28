@@ -1,0 +1,162 @@
+{
+  "claim_boundary": {
+    "established": [
+      "The Lesson 11 Base checkpoint can be continued on a replay-aware math and physics corpus.",
+      "Real USER and ASSISTANT tokens plus assistant-only loss teach the narrow response format and EOS behavior.",
+      "CPT, SFT, and exact generation metrics can move very differently."
+    ],
+    "not_established": [
+      "Reliable arithmetic",
+      "Reliable introductory-physics calculation",
+      "GSM8K reasoning",
+      "Teacher-distillation benefit",
+      "RLVR or CoT benefit",
+      "Quantized C or Nspire behavior"
+    ]
+  },
+  "cross_loss_validation": {
+    "base": {
+      "domain_cpt": 2.419702336821375,
+      "general_english": 2.1199727136893256,
+      "role_sft": 2.803628316493512
+    },
+    "cpt": {
+      "domain_cpt": 0.7892414886125768,
+      "general_english": 1.9212005623231783,
+      "role_sft": 1.3883848882382681
+    },
+    "sft": {
+      "domain_cpt": 1.1830322226105983,
+      "general_english": 2.1145314650584064,
+      "role_sft": 0.46829624139991916
+    }
+  },
+  "evaluation": {
+    "decoding": {
+      "examples_per_task": 32,
+      "greedy": true,
+      "max_new_byte_tokens": 48,
+      "tasks": [
+        "arithmetic",
+        "arithmetic_easy",
+        "gsm8k",
+        "physics_numeric"
+      ]
+    },
+    "evaluation_file_sha256": "2b04622efef4886f3edbfb1950946acf8bf3aff07659f737f2ff100ee5bb321c",
+    "routes": {
+      "base": {
+        "format_valid_rate": 0.0,
+        "repeated_phrase_rate": 0.21875,
+        "role_leak_rate": 0.0,
+        "task_accuracy": 0.0,
+        "termination_rate_by_task": {
+          "arithmetic": 0.0,
+          "arithmetic_easy": 0.0,
+          "gsm8k": 0.0,
+          "physics_numeric": 0.0
+        }
+      },
+      "cpt": {
+        "format_valid_rate": 0.4765625,
+        "repeated_phrase_rate": 0.0078125,
+        "role_leak_rate": 0.0,
+        "task_accuracy": 0.0,
+        "termination_rate_by_task": {
+          "arithmetic": 0.90625,
+          "arithmetic_easy": 0.78125,
+          "gsm8k": 0.28125,
+          "physics_numeric": 0.0
+        }
+      },
+      "sft": {
+        "format_valid_rate": 0.953125,
+        "numeric_accuracy_by_task": {
+          "arithmetic": 0.0,
+          "arithmetic_easy": 0.03125,
+          "gsm8k": 0.0,
+          "physics_numeric": 0.03125
+        },
+        "repeated_phrase_rate": 0.0,
+        "role_leak_rate": 0.0,
+        "task_accuracy": 0.015625,
+        "task_accuracy_by_task": {
+          "arithmetic": 0.0,
+          "arithmetic_easy": 0.03125,
+          "gsm8k": 0.0,
+          "physics_numeric": 0.03125
+        },
+        "termination_rate_by_task": {
+          "arithmetic": 1.0,
+          "arithmetic_easy": 1.0,
+          "gsm8k": 1.0,
+          "physics_numeric": 0.96875
+        }
+      }
+    },
+    "selected_examples": 128
+  },
+  "model": {
+    "architecture": {
+      "bias": false,
+      "block_size": 256,
+      "dropout": 0.1,
+      "mlp_ratio": 4,
+      "n_embd": 384,
+      "n_head": 6,
+      "n_layer": 6,
+      "tie_embeddings": true,
+      "vocab_size": 264
+    },
+    "parameters": 10821504
+  },
+  "schema_version": 1,
+  "stages": {
+    "base_parent": {
+      "checkpoint_bytes": 43705361,
+      "checkpoint_sha256": "dcf6d3b4f87ae641e50d9956a302a84de19e70c7c9ca030b3ee4c46495de8be2",
+      "route": "English-Base-Pilot",
+      "source_commit": "ac7a91865343d9ac03fb118580e52082b7688e8c"
+    },
+    "cpt": {
+      "approximate_eligible_target_epochs": 0.6732849199596336,
+      "best_step": 1000,
+      "checkpoint_bytes": 43705361,
+      "checkpoint_sha256": "ab17a536a58f664f49ff75d176baff7e219996d7d57ce2b6d097eec0b4f89dfb",
+      "eligible_sampled_training_targets": 4083096,
+      "full_test_loss": 1.4332897806314295,
+      "full_validation_loss": 1.5286864611195063,
+      "initial_sampled_validation_loss": 2.169663029387126,
+      "parent_checkpoint_sha256": "dcf6d3b4f87ae641e50d9956a302a84de19e70c7c9ca030b3ee4c46495de8be2",
+      "route": "Math-Physics-CPT",
+      "selected_sampled_validation_loss": 1.469485760637235,
+      "training_tokens": 4096000,
+      "update_tokens_per_second": 42782.66857467516,
+      "wall_seconds": 97.37412579997908
+    },
+    "sft": {
+      "approximate_eligible_target_epochs": 1.6311862449964427,
+      "best_step": 1000,
+      "checkpoint_bytes": 43705361,
+      "checkpoint_sha256": "a65faad9f284bef44725a69940bc133cc3b9f16a7977a2a2ca5adb1deff36a12",
+      "eligible_sampled_training_targets": 1288536,
+      "full_test_loss": 0.4631891839129758,
+      "full_validation_loss": 0.46829624139991916,
+      "initial_sampled_validation_loss": 1.3663758608842766,
+      "parent_checkpoint_sha256": "ab17a536a58f664f49ff75d176baff7e219996d7d57ce2b6d097eec0b4f89dfb",
+      "route": "Role-Aware-SFT",
+      "selected_sampled_validation_loss": 0.39918225889813314,
+      "training_tokens": 4096000,
+      "update_tokens_per_second": 27250.75868317962,
+      "wall_seconds": 152.77521150000393
+    }
+  },
+  "training_environment": {
+    "bfloat16_autocast": true,
+    "cuda_runtime": "12.8",
+    "gpu": "NVIDIA GeForce RTX 5080 Laptop GPU",
+    "peak_cuda_memory_allocated_bytes": 393493504,
+    "python": "3.12.12",
+    "torch": "2.11.0+cu128"
+  }
+}

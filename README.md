@@ -22,6 +22,7 @@ English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、�
 - 已完成（Host/ARM/真机启动）：[第九课：Ndless 像素对话界面、隐私生命周期与真机部署](docs/lessons/09-ndless-pixel-chat-ui.md)
 - 已完成：[第十课：English byte tokenizer、角色 token 与可审计语料地基](docs/lessons/10-english-byte-tokenizer-and-corpus.md)
 - 已完成：[第十一课：CUDA、模型预算、公开语料与首个 English Base pilot](docs/lessons/11-english-base-pilot.md)
+- 已完成：[第十二课：数学物理 CPT、角色 SFT 与精确能力诊断](docs/lessons/12-math-physics-cpt-and-sft.md)
 - 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
@@ -89,6 +90,16 @@ manifest SHA-256 一致。首个真实英语 Base 在 RTX 5080 Laptop 上训练
 `6,172,992 bytes`，距离 6 MiB 门仅 `118,464 bytes`；真实 `.ngm v2`、C 对齐
 和 Nspire 部署仍待后续课实测。
 
+Lesson 12 固定了 GSM8K/OASST1 与 12,000 个算术、4,000 个物理 family，
+构建 `6,718,812-token` replay-aware CPT 和 `2,793,452-token` role-aware
+SFT。CPT 把 domain validation loss 从 `2.4197` 降到 `0.7892`；SFT 把
+assistant-only loss 降到 `0.4683`。在 Base/CPT/SFT 共用的 128-prompt
+greedy gate 上，格式有效率从 `0%`、`47.7%` 提高到 `95.3%`，但 SFT 只精确
+答对 `2/128`，easy arithmetic 也只有 `1/32`。因此它已经是模型可见 role
+token 驱动的窄 instruction baseline，却仍不是可靠数学物理助手。这个
+“会回答格式、不会泛化计算”的负结果将作为 Lesson 13 teacher/distillation
+的固定起点，不用低 loss 掩盖。
+
 ## 快速开始
 
 需要 Python 3.10 或更新版本、PyTorch 2 或更新版本，以及 pytest。
@@ -111,6 +122,11 @@ python -m nanogpt_nspire.lesson11_data `
   --output artifacts/lesson11-public-pilot `
   --registry experiments/lesson10-public-sources.json `
   --split-seed lesson11-public-v1
+python -m nanogpt_nspire.lesson12_data `
+  --download-dir artifacts/lesson12-downloads `
+  --lesson11-data-dir artifacts/lesson11-public-pilot `
+  --output-dir artifacts/lesson12-data `
+  --registry-path experiments/lesson10-public-sources.json
 
 cmake -S . -B build/host -G "Visual Studio 17 2022" -A x64
 cmake --build build/host --config Release

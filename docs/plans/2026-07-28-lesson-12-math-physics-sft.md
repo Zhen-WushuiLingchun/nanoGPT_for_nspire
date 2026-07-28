@@ -138,9 +138,9 @@ feat: train CPT and SFT from declared checkpoints
    `<BOS><USER>question<ASSISTANT>` and generate only the continuation.
 2. Stop at `<EOS>`, reject any non-byte special token in ordinary answer text,
    and keep context truncation deterministic.
-3. Score exact arithmetic with a strict final-number parser, physics
-   multiple-choice with a strict first-choice parser, answer termination, role
-   leakage, repeated-phrase rate, and fixed greedy completions.
+3. Score exact arithmetic with a strict final-number parser, numerical physics
+   with value-plus-unit checks, answer termination, role leakage,
+   repeated-phrase rate, and fixed greedy completions.
 4. Evaluate all three checkpoints with the same prompts, maximum generated
    tokens, decoding rule, and tokenizer.
 5. Report per-stage deltas without treating an SFT-formatted answer as proof
@@ -194,4 +194,3 @@ docs: teach math physics CPT and role-aware SFT
    limits.
 3. **Lesson 15:** real W4A8 export, PyTorch/Host C alignment, safe arithmetic
    tool comparison, and physical Nspire deployment.
-
