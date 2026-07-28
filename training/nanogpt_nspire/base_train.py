@@ -135,6 +135,8 @@ class BaseTrainingConfig:
         "The value of x",
         "Energy can be",
     )
+    route: str = ROUTE
+    checkpoint_filename: str = CHECKPOINT_FILENAME
 
     @property
     def effective_batch_tokens(self) -> int:
@@ -228,6 +230,17 @@ class BaseTrainingConfig:
             )
         if not isinstance(self.source_commit, str) or not self.source_commit:
             raise ValueError("source_commit must not be empty")
+        if not isinstance(self.route, str) or not self.route.strip():
+            raise ValueError("route must be a non-empty string")
+        if (
+            not isinstance(self.checkpoint_filename, str)
+            or not self.checkpoint_filename.endswith(".pt")
+            or Path(self.checkpoint_filename).name
+            != self.checkpoint_filename
+        ):
+            raise ValueError(
+                "checkpoint_filename must be one local .pt filename"
+            )
         self.model_config().validate()
 
 
@@ -1070,7 +1083,7 @@ def run_base_training(
         "dataset_manifest_sha256": sha256_file(dataset.manifest_path),
         "model_config": asdict(model_config),
         "model_state_dict": best_state,
-        "route": ROUTE,
+        "route": config.route,
         "schema_version": 1,
         "selected_validation_loss": selected_validation_loss,
         "source_commit": config.source_commit,
@@ -1080,7 +1093,7 @@ def run_base_training(
         },
         "training_seed": config.seed,
     }
-    checkpoint_path = config.output_dir / CHECKPOINT_FILENAME
+    checkpoint_path = config.output_dir / config.checkpoint_filename
     _atomic_torch_save(checkpoint, checkpoint_path)
     checkpoint_metadata = {
         "bytes": checkpoint_path.stat().st_size,
@@ -1155,7 +1168,7 @@ def run_base_training(
             "raw_fp32_parameter_bytes": model.raw_fp32_parameter_bytes,
         },
         "overfit_gate": overfit_gate,
-        "route": ROUTE,
+        "route": config.route,
         "samples": samples,
         "schema_version": 1,
         "source_commit": config.source_commit,

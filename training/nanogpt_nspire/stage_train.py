@@ -109,6 +109,9 @@ class StageTrainingConfig:
     log_interval: int = 25
     overfit_gate_steps: int = 20
     use_bfloat16: bool = True
+    route_override: str | None = None
+    checkpoint_filename_override: str | None = None
+    required_parent_route_override: str | None = None
 
     @property
     def effective_batch_tokens(self) -> int:
@@ -120,11 +123,14 @@ class StageTrainingConfig:
 
     @property
     def route(self) -> str:
-        return STAGE_ROUTES[self.stage]
+        return self.route_override or STAGE_ROUTES[self.stage]
 
     @property
     def checkpoint_filename(self) -> str:
-        return CHECKPOINT_FILENAMES[self.stage]
+        return (
+            self.checkpoint_filename_override
+            or CHECKPOINT_FILENAMES[self.stage]
+        )
 
     def model_config(self) -> DirectSmallConfig:
         return DirectSmallConfig(
@@ -142,7 +148,10 @@ class StageTrainingConfig:
     def validate(self) -> None:
         if self.stage not in STAGE_ROUTES:
             raise ValueError("stage must be 'cpt' or 'sft'")
-        required_parent = EXPECTED_PARENT_ROUTES[self.stage]
+        required_parent = (
+            self.required_parent_route_override
+            or EXPECTED_PARENT_ROUTES[self.stage]
+        )
         if self.expected_parent_route != required_parent:
             label = self.stage.upper()
             raise ValueError(
@@ -212,6 +221,21 @@ class StageTrainingConfig:
             raise ValueError("dropout must be finite and in [0, 1)")
         if not isinstance(self.use_bfloat16, bool):
             raise ValueError("use_bfloat16 must be boolean")
+        for name in ("route_override", "required_parent_route_override"):
+            value = getattr(self, name)
+            if value is not None and (
+                not isinstance(value, str) or not value.strip()
+            ):
+                raise ValueError(f"{name} must be null or non-empty")
+        if self.checkpoint_filename_override is not None and (
+            not isinstance(self.checkpoint_filename_override, str)
+            or not self.checkpoint_filename_override.endswith(".pt")
+            or Path(self.checkpoint_filename_override).name
+            != self.checkpoint_filename_override
+        ):
+            raise ValueError(
+                "checkpoint_filename_override must be one local .pt filename"
+            )
         self.model_config().validate()
 
 
