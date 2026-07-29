@@ -209,6 +209,14 @@ sorted list. Empty, missing, partial, extra-ID, fractional, or inconsistent
 score containers remain hard failures. This compatibility was fixed from
 provider behavior rather than inferred scores.
 
+The provider request uses short deterministic aliases `C0` through `C7` in the
+already shuffled candidate order. A private in-memory map connects each alias
+to the full trajectory ID. The response must contain the complete alias set
+exactly once before scores are mapped back to trajectory IDs. This removes
+observed long-ID copying errors without using position as a fallback or
+guessing a missing identity. Changing the alias protocol changes the canonical
+request hash, so pre-alias cache entries cannot be silently reused.
+
 Every record stores model ID, rubric version, request-body SHA-256, provider
 request ID, token usage, candidate permutation, retry count, and parsed public
 feedback. Credentials are read only at HTTP call time and are prohibited from

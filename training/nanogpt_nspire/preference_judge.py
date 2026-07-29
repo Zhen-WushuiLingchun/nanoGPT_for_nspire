@@ -359,13 +359,14 @@ def _request_body(
     problem: JudgeProblem,
 ) -> dict[str, object]:
     problem.validate()
+    ordered = ordered_candidates(problem)
     payload = {
         "candidates": [
             {
-                "candidate_id": item.candidate_id,
+                "candidate_id": f"C{index}",
                 "response": item.response,
             }
-            for item in ordered_candidates(problem)
+            for index, item in enumerate(ordered)
         ],
         "mode": problem.mode,
         "question": problem.prompt,
@@ -416,6 +417,7 @@ def _parse_response(
     *,
     expected_model: str,
     expected_candidate_ids: frozenset[str],
+    candidate_id_map: Mapping[str, str],
     request_sha256: str,
     transport_attempts: int,
 ) -> JudgeAnswer:
@@ -498,21 +500,37 @@ def _parse_response(
         raise PreferenceJudgeError(
             "provider candidate score set is invalid"
         )
-    preferred = _required_string(content, "preferred_candidate_id")
-    if preferred not in expected_candidate_ids:
+    preferred_alias = _required_string(
+        content,
+        "preferred_candidate_id",
+    )
+    if preferred_alias not in expected_candidate_ids:
         raise PreferenceJudgeError(
             "provider preferred candidate is unknown"
         )
     maximum = max(item.score for item in scores)
     if next(
-        item.score for item in scores if item.candidate_id == preferred
+        item.score
+        for item in scores
+        if item.candidate_id == preferred_alias
     ) != maximum:
         raise PreferenceJudgeError(
             "provider preferred candidate does not have maximum score"
         )
+    if set(candidate_id_map) != set(expected_candidate_ids):
+        raise PreferenceJudgeError(
+            "internal candidate alias map is inconsistent"
+        )
+    mapped_scores = tuple(
+        CandidateScore(
+            candidate_id=candidate_id_map[item.candidate_id],
+            score=item.score,
+        )
+        for item in scores
+    )
     answer = JudgeAnswer(
-        scores=tuple(scores),
-        preferred_candidate_id=preferred,
+        scores=mapped_scores,
+        preferred_candidate_id=candidate_id_map[preferred_alias],
         rationale=_required_string(content, "rationale"),
         provider_request_id=provider_request_id,
         provider_model=provider_model,
@@ -599,9 +617,12 @@ class PreferenceJudgeClient:
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
-        expected_ids = frozenset(
-            item.candidate_id for item in problem.candidates
-        )
+        ordered = ordered_candidates(problem)
+        candidate_id_map = {
+            f"C{index}": item.candidate_id
+            for index, item in enumerate(ordered)
+        }
+        expected_ids = frozenset(candidate_id_map)
         for attempt in range(1, self.config.maximum_attempts + 1):
             try:
                 with self._request_lock:
@@ -624,6 +645,7 @@ class PreferenceJudgeClient:
                     response,
                     expected_model=self.config.model,
                     expected_candidate_ids=expected_ids,
+                    candidate_id_map=candidate_id_map,
                     request_sha256=str(plan["request_sha256"]),
                     transport_attempts=attempt,
                 )

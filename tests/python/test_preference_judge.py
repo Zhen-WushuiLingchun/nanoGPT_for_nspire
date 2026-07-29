@@ -11,6 +11,7 @@ from nanogpt_nspire.preference_judge import (
     PreferenceJudgeClient,
     PreferenceJudgeConfig,
     PreferenceJudgeError,
+    ordered_candidates,
 )
 from nanogpt_nspire.secret_safety import assert_secret_free
 
@@ -39,10 +40,10 @@ def provider_response(
     if content is None:
         content = {
             "scores": [
-                {"candidate_id": "candidate-a", "score": 4},
-                {"candidate_id": "candidate-b", "score": 0},
+                {"candidate_id": "C0", "score": 4},
+                {"candidate_id": "C1", "score": 0},
             ],
-            "preferred_candidate_id": "candidate-a",
+            "preferred_candidate_id": "C0",
             "rationale": "Candidate A is correct and concise.",
         }
     return json.dumps(
@@ -85,6 +86,11 @@ def test_plan_contains_candidates_but_never_local_ground_truth(
     assert "ground_truth" not in serialized
     assert "84" in serialized
     assert "74" in serialized
+    user_content = plan["body"]["messages"][1]["content"]
+    payload = json.loads(user_content.split("\n", 1)[1])
+    assert {
+        item["candidate_id"] for item in payload["candidates"]
+    } == {"C0", "C1"}
     assert "Authorization" not in serialized
     assert len(plan["request_sha256"]) == 64
     assert_secret_free(plan, context="preference judge plan")
@@ -140,11 +146,13 @@ def test_live_judgment_returns_normalized_public_scores_only(
         "Authorization": f"Bearer {FAKE_SECRET}",
         "Content-Type": "application/json",
     }
+    preferred = ordered_candidates(judge_problem())[0].candidate_id
+    other = ordered_candidates(judge_problem())[1].candidate_id
     assert answer.reward_by_candidate() == {
-        "candidate-a": 1.0,
-        "candidate-b": 0.0,
+        preferred: 1.0,
+        other: 0.0,
     }
-    assert answer.preferred_candidate_id == "candidate-a"
+    assert answer.preferred_candidate_id == preferred
     assert answer.transport_attempts == 1
     public = answer.public_record()
     serialized = json.dumps(public)
@@ -159,10 +167,10 @@ def test_live_judgment_returns_normalized_public_scores_only(
         (
             {
                 "scores": [
-                    {"candidate_id": "candidate-a", "score": 4},
-                    {"candidate_id": "candidate-b", "score": 0},
+                    {"candidate_id": "C0", "score": 4},
+                    {"candidate_id": "C1", "score": 0},
                 ],
-                "preferred_candidate_id": "candidate-b",
+                "preferred_candidate_id": "C1",
                 "rationale": "Bad preference.",
             },
             "preferred",
@@ -170,10 +178,10 @@ def test_live_judgment_returns_normalized_public_scores_only(
         (
             {
                 "scores": [
-                    {"candidate_id": "candidate-a", "score": 5},
-                    {"candidate_id": "candidate-b", "score": 0},
+                    {"candidate_id": "C0", "score": 5},
+                    {"candidate_id": "C1", "score": 0},
                 ],
-                "preferred_candidate_id": "candidate-a",
+                "preferred_candidate_id": "C0",
                 "rationale": "Out of range.",
             },
             "score",
@@ -181,9 +189,9 @@ def test_live_judgment_returns_normalized_public_scores_only(
         (
             {
                 "scores": [
-                    {"candidate_id": "candidate-a", "score": 4},
+                    {"candidate_id": "C0", "score": 4},
                 ],
-                "preferred_candidate_id": "candidate-a",
+                "preferred_candidate_id": "C0",
                 "rationale": "Missing candidate.",
             },
             "candidate",
@@ -213,10 +221,10 @@ def test_score_object_is_strictly_normalized_to_public_list(
     monkeypatch.setenv("DEEPSEEK_API_KEY", FAKE_SECRET)
     content = {
         "scores": {
-            "candidate-a": 4,
-            "candidate-b": 0,
+            "C0": 4,
+            "C1": 0,
         },
-        "preferred_candidate_id": "candidate-a",
+        "preferred_candidate_id": "C0",
         "rationale": "A is correct.",
     }
     client = PreferenceJudgeClient(
@@ -229,9 +237,11 @@ def test_score_object_is_strictly_normalized_to_public_list(
 
     answer = client.judge(judge_problem())
 
+    preferred = ordered_candidates(judge_problem())[0].candidate_id
+    other = ordered_candidates(judge_problem())[1].candidate_id
     assert answer.reward_by_candidate() == {
-        "candidate-a": 1.0,
-        "candidate-b": 0.0,
+        preferred: 1.0,
+        other: 0.0,
     }
     assert isinstance(answer.public_record()["scores"], list)
 
@@ -242,7 +252,7 @@ def test_empty_score_container_reports_only_safe_shape(
     monkeypatch.setenv("DEEPSEEK_API_KEY", FAKE_SECRET)
     content = {
         "scores": {},
-        "preferred_candidate_id": "candidate-a",
+        "preferred_candidate_id": "C0",
         "rationale": "No scores.",
     }
     client = PreferenceJudgeClient(
