@@ -38,6 +38,15 @@ def test_lesson13_routes_share_the_frozen_evaluator() -> None:
     } <= SUPPORTED_ROUTES
 
 
+def test_lesson14_routes_share_the_strict_checkpoint_loader() -> None:
+    assert {
+        "Direct-Control-SFT",
+        "Short-CoT-SFT",
+        "Hybrid-Control-SFT",
+        "Hybrid-Control-SFT-Context512",
+    } <= SUPPORTED_ROUTES
+
+
 def test_assistant_prompt_rejects_context_overflow() -> None:
     with pytest.raises(EvaluationError, match="context"):
         encode_assistant_prompt("x" * 30, block_size=16)

@@ -44,11 +44,15 @@ SUPPORTED_TASKS = frozenset(
 SUPPORTED_ROUTES = frozenset(
     {
         "Combined-Sequence-Logit-SFT",
+        "Direct-Control-SFT",
         "English-Base-Pilot",
+        "Hybrid-Control-SFT",
+        "Hybrid-Control-SFT-Context512",
         "Local-Logit-Distilled-SFT",
         "Local-Teacher-SFT",
         "Math-Physics-CPT",
         "Role-Aware-SFT",
+        "Short-CoT-SFT",
         "Verified-Sequence-SFT",
     }
 )
