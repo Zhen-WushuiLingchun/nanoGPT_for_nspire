@@ -446,7 +446,18 @@ def _parse_response(
         )
     raw_scores = content.get("scores")
     if not isinstance(raw_scores, list) or not raw_scores:
-        raise PreferenceJudgeError("provider scores must be a non-empty list")
+        if isinstance(raw_scores, Mapping):
+            diagnostic = (
+                f"object with {len(raw_scores)} entries"
+            )
+        elif isinstance(raw_scores, list):
+            diagnostic = f"list with {len(raw_scores)} entries"
+        else:
+            diagnostic = type(raw_scores).__name__
+        raise PreferenceJudgeError(
+            "provider scores must be a non-empty list; "
+            f"received {diagnostic}"
+        )
     scores: list[CandidateScore] = []
     for raw_score in raw_scores:
         if (

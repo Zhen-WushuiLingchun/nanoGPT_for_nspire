@@ -206,6 +206,36 @@ def test_response_schema_and_preference_are_strict(
         client.judge(judge_problem())
 
 
+def test_invalid_score_container_reports_only_safe_shape(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DEEPSEEK_API_KEY", FAKE_SECRET)
+    content = {
+        "scores": {
+            "candidate-a": 4,
+            "candidate-b": 0,
+        },
+        "preferred_candidate_id": "candidate-a",
+        "rationale": "A is correct.",
+    }
+    client = PreferenceJudgeClient(
+        PreferenceJudgeConfig(
+            max_requests=1,
+            maximum_attempts=1,
+        ),
+        transport=lambda *_: provider_response(content=content),
+    )
+
+    with pytest.raises(
+        PreferenceJudgeError,
+        match="object with 2 entries",
+    ) as captured:
+        client.judge(judge_problem())
+
+    assert "candidate-a" not in str(captured.value)
+    assert FAKE_SECRET not in str(captured.value)
+
+
 def test_request_budget_is_exact_under_concurrency(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
