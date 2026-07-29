@@ -1,0 +1,257 @@
+{
+  "challenge_evaluation": {
+    "contract": {
+      "decoding": "greedy",
+      "examples": 256,
+      "max_new_tokens": 256,
+      "sha256": "359d24949bbe74ff7ee2a88fb9d70a8dc5f4bd50d569883de2306446538a2b00",
+      "slices": {
+        "in_range": 64,
+        "range_shifted": 64,
+        "sign_shifted": 64,
+        "substitution_adversarial": 64
+      }
+    },
+    "diagnostics": {
+      "parent_direct": {
+        "most_common_final": {
+          "count": 26,
+          "rate": 0.1015625,
+          "text": "The answer is -122."
+        },
+        "prompt_number_use_rate": 0.08203125,
+        "reasoning_final_consistency_rate": null,
+        "unique_finals": 94
+      },
+      "parent_think": {
+        "most_common_final": {
+          "count": 34,
+          "rate": 0.1328125,
+          "text": "The answer is -12."
+        },
+        "prompt_number_use_rate": 0.1953125,
+        "reasoning_final_consistency_rate": 0.265625,
+        "unique_finals": 73
+      },
+      "sft_v2_direct": {
+        "most_common_final": {
+          "count": 45,
+          "rate": 0.17578125,
+          "text": "The answer is -1000."
+        },
+        "prompt_number_use_rate": 0.05859375,
+        "reasoning_final_consistency_rate": null,
+        "unique_finals": 103
+      },
+      "sft_v2_think": {
+        "most_common_final": {
+          "count": 8,
+          "rate": 0.03125,
+          "text": "The answer is -11."
+        },
+        "prompt_number_use_rate": 0.98828125,
+        "reasoning_final_consistency_rate": 0.640625,
+        "unique_finals": 193
+      }
+    },
+    "results": {
+      "parent_direct": {
+        "budget_truncation_rate": 0.0,
+        "correct": 3,
+        "correct_per_1000_generated_tokens": 0.5211047420531527,
+        "format_valid_rate": 1.0,
+        "generated_tokens": 5757,
+        "mode_compliance_rate": 1.0,
+        "per_slice_correct": {
+          "in_range": 1,
+          "range_shifted": 0,
+          "sign_shifted": 2,
+          "substitution_adversarial": 0
+        },
+        "task_accuracy": 0.01171875
+      },
+      "parent_think": {
+        "budget_truncation_rate": 0.0,
+        "correct": 3,
+        "correct_per_1000_generated_tokens": 0.2097902097902098,
+        "format_valid_rate": 1.0,
+        "generated_tokens": 14300,
+        "mode_compliance_rate": 1.0,
+        "per_slice_correct": {
+          "in_range": 1,
+          "range_shifted": 0,
+          "sign_shifted": 2,
+          "substitution_adversarial": 0
+        },
+        "task_accuracy": 0.01171875
+      },
+      "sft_v2_direct": {
+        "budget_truncation_rate": 0.0,
+        "correct": 1,
+        "correct_per_1000_generated_tokens": 0.16989466530750935,
+        "format_valid_rate": 1.0,
+        "generated_tokens": 5886,
+        "mode_compliance_rate": 1.0,
+        "per_slice_correct": {
+          "in_range": 0,
+          "range_shifted": 0,
+          "sign_shifted": 1,
+          "substitution_adversarial": 0
+        },
+        "task_accuracy": 0.00390625
+      },
+      "sft_v2_think": {
+        "budget_truncation_rate": 0.0,
+        "correct": 1,
+        "correct_per_1000_generated_tokens": 0.0606832938891923,
+        "format_valid_rate": 1.0,
+        "generated_tokens": 16479,
+        "mode_compliance_rate": 1.0,
+        "per_slice_correct": {
+          "in_range": 0,
+          "range_shifted": 0,
+          "sign_shifted": 1,
+          "substitution_adversarial": 0
+        },
+        "task_accuracy": 0.00390625
+      }
+    }
+  },
+  "claim_boundary": {
+    "ability": "SFT v2 fixes Think termination on the primary gate but does not improve primary exact accuracy and regresses from 3/256 to 1/256 on the challenge set.",
+    "deployment": "The artifact is a PyTorch FP32 research checkpoint. No quantized GQA export, Host C alignment, Ndless build, or physical-device measurement was completed.",
+    "distillation": "No teacher logits, likelihood distribution, or external teacher response was used.",
+    "rl": "No RL, RLVR, RLAIF, DPO, GRPO, PPO, preference model, or reward model was used."
+  },
+  "data": {
+    "accepted_compact_examples": {
+      "arithmetic": 24000,
+      "gsm8k": 5402,
+      "physics_numeric": 12000,
+      "total": 41402
+    },
+    "challenge_sha256": "359d24949bbe74ff7ee2a88fb9d70a8dc5f4bd50d569883de2306446538a2b00",
+    "corpus": {
+      "families": 41122,
+      "manifest_sha256": "9f45ca7cc079d7cbf64e1e53c0cf7cb584583a65aacc511410f0b8e02c954365",
+      "records": 82244,
+      "tokens": 8881031
+    },
+    "determinism": {
+      "all_generated_files_byte_identical": true,
+      "independent_builds": 2,
+      "verified_files": 10
+    },
+    "gsm8k_rejections": {
+      "calculation_count_not_one_to_four": 1333,
+      "last_calculation_differs_from_final": 315,
+      "result_not_decimal_literal": 37,
+      "total": 2071,
+      "unsupported_calculation_token": 385,
+      "expected_number": 1
+    },
+    "hard_negatives": {
+      "sha256": "f802953412deea0576583e368e64bb66a4a66ff2bbd41368dd5f76727b04296c",
+      "training_eligible": false
+    },
+    "primary_evaluation_sha256": "2b04622efef4886f3edbfb1950946acf8bf3aff07659f737f2ff100ee5bb321c",
+    "root_manifest_sha256": "0837e63e7003c5250f2c2d7cfb486d9388b597da2b10f1fe2b06ad5be141759e",
+    "split_seed": "lesson16-sft-v2-split-v1"
+  },
+  "decision": {
+    "aspirational_think_completion_gate_passed": true,
+    "challenge_regression_observed": true,
+    "lesson17_starting_point": "Retain both the Lesson 15 parent and SFT v2 as an explicit two-start ablation; do not claim SFT v2 is the stronger ability checkpoint.",
+    "primary_gates_passed": true
+  },
+  "lesson": 16,
+  "primary_evaluation": {
+    "contract": {
+      "decoding": "greedy",
+      "examples": 128,
+      "max_new_tokens": 256,
+      "sha256": "2b04622efef4886f3edbfb1950946acf8bf3aff07659f737f2ff100ee5bb321c"
+    },
+    "parent": {
+      "direct": {
+        "budget_truncation_rate": 0.0,
+        "format_valid_rate": 1.0,
+        "task_accuracy": 0.015625
+      },
+      "think": {
+        "budget_truncation_rate": 0.203125,
+        "final_transition_rate": 0.7578125,
+        "format_valid_rate": 0.7578125,
+        "mean_reasoning_tokens": 75.234375,
+        "mode_compliance_rate": 0.7578125,
+        "task_accuracy": 0.015625
+      }
+    },
+    "sft_v2": {
+      "direct": {
+        "budget_truncation_rate": 0.0,
+        "format_valid_rate": 1.0,
+        "mode_compliance_rate": 1.0,
+        "task_accuracy": 0.015625,
+        "unique_finals": 47
+      },
+      "think": {
+        "budget_truncation_rate": 0.0,
+        "final_transition_rate": 1.0,
+        "format_valid_rate": 1.0,
+        "mean_reasoning_tokens": 38.2578125,
+        "mode_compliance_rate": 1.0,
+        "task_accuracy": 0.015625,
+        "unique_finals": 75
+      }
+    }
+  },
+  "schema_version": 1,
+  "source_commits": {
+    "contract_tests": "07b8e63",
+    "data_and_training_pipeline": "8da6198",
+    "extended_data_domain": "10af501",
+    "reasoning_diagnostics": "7d34e88",
+    "training_source": "10af501"
+  },
+  "training": {
+    "checkpoint": {
+      "bytes": 38592622,
+      "route": "GQA-ALiBi-SFT-v2-Context512",
+      "sha256": "e78c78bfbf8a7df1c8c623d27300084d8b67d14827c69fdc523b8b4df1a299ed"
+    },
+    "contract": {
+      "boundary_token_weight": 4.0,
+      "max_learning_rate": 0.0001,
+      "min_learning_rate": 0.00001,
+      "optimizer_updates": 1000,
+      "sampled_tokens": 4096000,
+      "seed": 20260729,
+      "tokens_per_update": 4096,
+      "warmup_steps": 50
+    },
+    "metrics": {
+      "best_step": 1000,
+      "initial_full_validation_loss": 1.1346042723831964,
+      "peak_cuda_memory_allocated_bytes": 447446016,
+      "selected_full_test_loss": 0.24597363400740344,
+      "selected_full_validation_loss": 0.2461233459913866,
+      "update_tokens_per_second": 66662.30486458517,
+      "wall_seconds": 62.382698000001255
+    },
+    "model": {
+      "block_size": 512,
+      "n_embd": 384,
+      "n_head": 6,
+      "n_kv_head": 2,
+      "n_layer": 6,
+      "parameters": 9543552,
+      "position_mode": "alibi",
+      "vocab_size": 264
+    },
+    "parent": {
+      "route": "GQA-ALiBi-Hybrid-SFT-Context512",
+      "sha256": "f385a51f7ac4d53b1a640f9a977308a365bb032a6a2dbe53394ba035169513ee"
+    }
+  }
+}
