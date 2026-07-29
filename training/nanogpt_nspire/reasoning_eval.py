@@ -26,6 +26,10 @@ from nanogpt_nspire.byte_tokenizer import (
     FINAL_ID,
     SPECIAL_TOKEN_NAMES,
 )
+from nanogpt_nspire.efficient_context import (
+    GQA_ALIBI_SFT_ROUTE,
+    GQA_LEARNED_SFT_ROUTE,
+)
 from nanogpt_nspire.models.direct_small_gpt import DirectSmallGPT
 from nanogpt_nspire.reasoning_format import (
     DIRECT_MODE,
@@ -45,6 +49,8 @@ from nanogpt_nspire.training_support import (
 LESSON14_ROUTES = frozenset(
     {
         "Direct-Control-SFT",
+        GQA_ALIBI_SFT_ROUTE,
+        GQA_LEARNED_SFT_ROUTE,
         "Short-CoT-SFT",
         "Hybrid-Control-SFT",
         "Hybrid-Control-SFT-Context512",
@@ -228,7 +234,7 @@ def run_reasoning_evaluation(
     """Evaluate one route/cue/budget on the frozen Lesson 12 families."""
 
     if expected_route not in LESSON14_ROUTES:
-        raise EvaluationError("expected route is not a Lesson 14 route")
+        raise EvaluationError("expected route is not a reasoning route")
     if mode not in SUPPORTED_MODES:
         raise EvaluationError("mode is unsupported")
     output = Path(output_path)

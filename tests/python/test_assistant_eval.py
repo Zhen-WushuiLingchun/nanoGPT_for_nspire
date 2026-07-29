@@ -1,12 +1,15 @@
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 import pytest
+import torch
 
 from nanogpt_nspire.assistant_eval import (
     EvaluationError,
     SUPPORTED_ROUTES,
     encode_assistant_prompt,
+    load_evaluation_model,
     load_evaluation_records,
     parse_last_decimal,
     repeated_phrase_detected,
@@ -18,6 +21,17 @@ from nanogpt_nspire.byte_tokenizer import (
     BOS_ID,
     USER_ID,
 )
+from nanogpt_nspire.efficient_context import (
+    ARCHITECTURE_NAME,
+    GQA_LEARNED_SFT_ROUTE,
+    model_state_sha256,
+)
+from nanogpt_nspire.models.efficient_long_context_gpt import (
+    LEARNED_POSITIONS,
+    EfficientLongContextConfig,
+    EfficientLongContextGPT,
+)
+from nanogpt_nspire.training_support import sha256_file
 
 
 def test_assistant_prompt_uses_real_role_tokens() -> None:
@@ -45,6 +59,61 @@ def test_lesson14_routes_share_the_strict_checkpoint_loader() -> None:
         "Hybrid-Control-SFT",
         "Hybrid-Control-SFT-Context512",
     } <= SUPPORTED_ROUTES
+
+
+def test_lesson15_routes_share_the_strict_checkpoint_loader() -> None:
+    assert {
+        "GQA-Learned-Hybrid-SFT-Context512",
+        "GQA-ALiBi-Hybrid-SFT-Context512",
+    } <= SUPPORTED_ROUTES
+
+
+def test_strict_checkpoint_loader_accepts_efficient_architecture(
+    tmp_path: Path,
+) -> None:
+    config = EfficientLongContextConfig(
+        vocab_size=264,
+        block_size=8,
+        n_layer=1,
+        n_head=4,
+        n_kv_head=2,
+        n_embd=16,
+        mlp_ratio=2,
+        dropout=0.0,
+        bias=False,
+        tie_embeddings=True,
+        position_mode=LEARNED_POSITIONS,
+    )
+    model = EfficientLongContextGPT(config)
+    state = model.state_dict()
+    path = tmp_path / "efficient.pt"
+    torch.save(
+        {
+            "architecture": ARCHITECTURE_NAME,
+            "best_step": 1,
+            "model_config": asdict(config),
+            "model_state_dict": state,
+            "model_state_sha256": model_state_sha256(state),
+            "route": GQA_LEARNED_SFT_ROUTE,
+            "schema_version": 1,
+            "source_commit": "source",
+            "tokenizer": {
+                "kind": "byte_plus_fixed_special_tokens",
+                "vocab_size": 264,
+            },
+        },
+        path,
+    )
+
+    loaded, provenance = load_evaluation_model(
+        path,
+        checkpoint_sha256=sha256_file(path),
+        expected_route=GQA_LEARNED_SFT_ROUTE,
+        device=torch.device("cpu"),
+    )
+
+    assert isinstance(loaded, EfficientLongContextGPT)
+    assert provenance["model_config"] == asdict(config)
 
 
 def test_assistant_prompt_rejects_context_overflow() -> None:

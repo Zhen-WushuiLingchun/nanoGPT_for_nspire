@@ -26,9 +26,18 @@ from nanogpt_nspire.byte_tokenizer import (
     VOCAB_SIZE,
     ByteTokenizer,
 )
+from nanogpt_nspire.efficient_context import (
+    ARCHITECTURE_NAME,
+    GQA_ALIBI_SFT_ROUTE,
+    GQA_LEARNED_SFT_ROUTE,
+    load_efficient_checkpoint,
+)
 from nanogpt_nspire.models.direct_small_gpt import (
     DirectSmallConfig,
     DirectSmallGPT,
+)
+from nanogpt_nspire.models.efficient_long_context_gpt import (
+    EfficientLongContextConfig,
 )
 from nanogpt_nspire.training_support import (
     resolve_device,
@@ -46,6 +55,8 @@ SUPPORTED_ROUTES = frozenset(
         "Combined-Sequence-Logit-SFT",
         "Direct-Control-SFT",
         "English-Base-Pilot",
+        GQA_ALIBI_SFT_ROUTE,
+        GQA_LEARNED_SFT_ROUTE,
         "Hybrid-Control-SFT",
         "Hybrid-Control-SFT-Context512",
         "Local-Logit-Distilled-SFT",
@@ -352,6 +363,31 @@ def load_evaluation_model(
     configuration = raw.get("model_config")
     if not isinstance(configuration, Mapping):
         raise EvaluationError("checkpoint model configuration is missing")
+    if raw.get("architecture") == ARCHITECTURE_NAME:
+        try:
+            efficient_config = EfficientLongContextConfig(
+                **dict(configuration)
+            )
+            efficient_config.validate()
+            model, _ = load_efficient_checkpoint(
+                path,
+                expected_sha256=checkpoint_sha256,
+                expected_route=expected_route,
+                expected_model_config=efficient_config,
+            )
+        except (TypeError, ValueError) as error:
+            raise EvaluationError(
+                "efficient checkpoint model configuration is invalid"
+            ) from error
+        model.to(device)
+        model.eval()
+        return model, {
+            "best_step": raw.get("best_step"),
+            "model_config": asdict(efficient_config),
+            "route": expected_route,
+            "sha256": checkpoint_sha256,
+            "source_commit": raw.get("source_commit"),
+        }
     try:
         model_config = DirectSmallConfig(**dict(configuration))
         model_config.validate()
