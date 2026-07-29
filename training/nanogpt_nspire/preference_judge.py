@@ -179,6 +179,7 @@ class JudgeAnswer:
     provider_model: str
     usage: TokenUsage
     request_sha256: str
+    transport_attempts: int | None
 
     def __post_init__(self) -> None:
         if len(self.scores) < 2:
@@ -235,6 +236,14 @@ class JudgeAnswer:
             raise PreferenceJudgeError(
                 "judge answer usage must be TokenUsage"
             )
+        if self.transport_attempts is not None and (
+            isinstance(self.transport_attempts, bool)
+            or not isinstance(self.transport_attempts, int)
+            or self.transport_attempts <= 0
+        ):
+            raise PreferenceJudgeError(
+                "judge answer transport_attempts must be positive or null"
+            )
 
     def reward_by_candidate(self) -> dict[str, float]:
         return {
@@ -250,6 +259,7 @@ class JudgeAnswer:
             "rationale": self.rationale,
             "request_sha256": self.request_sha256,
             "scores": [asdict(item) for item in self.scores],
+            "transport_attempts": self.transport_attempts,
             "usage": asdict(self.usage),
         }
         assert_secret_free(record, context="judge answer record")
@@ -407,6 +417,7 @@ def _parse_response(
     expected_model: str,
     expected_candidate_ids: frozenset[str],
     request_sha256: str,
+    transport_attempts: int,
 ) -> JudgeAnswer:
     try:
         assert_secret_free(payload, context="preference judge response")
@@ -500,6 +511,7 @@ def _parse_response(
         provider_model=provider_model,
         usage=_parse_usage(raw.get("usage")),
         request_sha256=request_sha256,
+        transport_attempts=transport_attempts,
     )
     answer.public_record()
     return answer
@@ -606,6 +618,7 @@ class PreferenceJudgeClient:
                     expected_model=self.config.model,
                     expected_candidate_ids=expected_ids,
                     request_sha256=str(plan["request_sha256"]),
+                    transport_attempts=attempt,
                 )
             except ProviderTransportError as error:
                 if (

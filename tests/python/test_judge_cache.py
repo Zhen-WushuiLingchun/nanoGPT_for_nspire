@@ -89,6 +89,7 @@ def test_conflicting_duplicate_cache_record_is_rejected(tmp_path) -> None:
                 {"candidate_id": "candidate-a", "score": 4},
                 {"candidate_id": "candidate-b", "score": 0},
             ],
+            "transport_attempts": 1,
             "usage": {
                 "prompt_tokens": 10,
                 "completion_tokens": 5,

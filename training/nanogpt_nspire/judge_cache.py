@@ -26,7 +26,7 @@ JUDGE_CACHE_SCHEMA_VERSION = 1
 _CACHE_FIELDS = frozenset(
     {"answer", "request_sha256", "schema_version"}
 )
-_ANSWER_FIELDS = frozenset(
+_ANSWER_FIELDS_V1 = frozenset(
     {
         "preferred_candidate_id",
         "provider_model",
@@ -36,6 +36,9 @@ _ANSWER_FIELDS = frozenset(
         "scores",
         "usage",
     }
+)
+_ANSWER_FIELDS_V2 = frozenset(
+    {*_ANSWER_FIELDS_V1, "transport_attempts"}
 )
 
 
@@ -87,7 +90,11 @@ def _required_string(mapping: Mapping[str, object], name: str) -> str:
 
 
 def _answer_from_public(value: object) -> JudgeAnswer:
-    if not isinstance(value, Mapping) or frozenset(value) != _ANSWER_FIELDS:
+    if (
+        not isinstance(value, Mapping)
+        or frozenset(value)
+        not in {_ANSWER_FIELDS_V1, _ANSWER_FIELDS_V2}
+    ):
         raise JudgeCacheError("cached judge answer schema is invalid")
     raw_scores = value.get("scores")
     if not isinstance(raw_scores, list):
@@ -141,6 +148,7 @@ def _answer_from_public(value: object) -> JudgeAnswer:
                 value,
                 "request_sha256",
             ),
+            transport_attempts=value.get("transport_attempts"),
         )
     except PreferenceJudgeError as error:
         raise JudgeCacheError(str(error)) from None

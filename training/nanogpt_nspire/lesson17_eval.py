@@ -109,6 +109,73 @@ def summarize_policy_evaluations(
     }
 
 
+def summarize_existing_policy_evaluation(
+    *,
+    checkpoint: Path,
+    checkpoint_sha256: str,
+    route: str,
+    output_dir: Path,
+) -> dict[str, object]:
+    """Recover the summary after all four raw evaluations were persisted."""
+
+    summary_path = output_dir / "summary.json"
+    if summary_path.exists():
+        raise ValueError(f"summary already exists: {summary_path}")
+    primary: dict[str, dict[str, object]] = {}
+    challenge: dict[str, dict[str, object]] = {}
+    for mode in (DIRECT_MODE, THINK_MODE):
+        for destination, prefix in (
+            (primary, "primary"),
+            (challenge, "challenge"),
+        ):
+            path = output_dir / f"{prefix}-{mode}.json"
+            try:
+                raw = json.loads(
+                    path.read_text(
+                        encoding="utf-8",
+                        errors="strict",
+                    )
+                )
+            except (OSError, UnicodeError, json.JSONDecodeError) as error:
+                raise ValueError(
+                    f"could not load persisted {prefix}/{mode}"
+                ) from error
+            if not isinstance(raw, dict):
+                raise ValueError(
+                    f"persisted {prefix}/{mode} must be an object"
+                )
+            stored_checkpoint = raw.get("checkpoint")
+            if (
+                not isinstance(stored_checkpoint, Mapping)
+                or stored_checkpoint.get("sha256")
+                != checkpoint_sha256
+                or stored_checkpoint.get("route") != route
+            ):
+                raise ValueError(
+                    f"persisted {prefix}/{mode} checkpoint mismatch"
+                )
+            destination[mode] = raw
+    summary = {
+        "checkpoint_path": str(checkpoint),
+        "checkpoint_sha256": checkpoint_sha256,
+        "contract": {
+            "challenge_examples_per_mode": 256,
+            "decoding": "greedy",
+            "max_new_tokens": 256,
+            "primary_examples_per_mode": 128,
+        },
+        "recovered_from_complete_raw_evaluations": True,
+        "route": route,
+        "schema_version": 1,
+        **summarize_policy_evaluations(
+            primary_by_mode=primary,
+            challenge_by_mode=challenge,
+        ),
+    }
+    write_json_atomic(summary_path, summary)
+    return summary
+
+
 def run_lesson17_policy_evaluation(
     *,
     checkpoint: Path,
@@ -185,21 +252,30 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--no-bfloat16", action="store_true")
+    parser.add_argument("--summarize-existing", action="store_true")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     arguments = _build_parser().parse_args(argv)
-    summary = run_lesson17_policy_evaluation(
-        checkpoint=arguments.checkpoint,
-        checkpoint_sha256=arguments.checkpoint_sha256,
-        route=arguments.route,
-        primary_evaluation=arguments.primary_evaluation,
-        challenge_evaluation=arguments.challenge_evaluation,
-        output_dir=arguments.output_dir,
-        device=arguments.device,
-        use_bfloat16=not arguments.no_bfloat16,
-    )
+    if arguments.summarize_existing:
+        summary = summarize_existing_policy_evaluation(
+            checkpoint=arguments.checkpoint,
+            checkpoint_sha256=arguments.checkpoint_sha256,
+            route=arguments.route,
+            output_dir=arguments.output_dir,
+        )
+    else:
+        summary = run_lesson17_policy_evaluation(
+            checkpoint=arguments.checkpoint,
+            checkpoint_sha256=arguments.checkpoint_sha256,
+            route=arguments.route,
+            primary_evaluation=arguments.primary_evaluation,
+            challenge_evaluation=arguments.challenge_evaluation,
+            output_dir=arguments.output_dir,
+            device=arguments.device,
+            use_bfloat16=not arguments.no_bfloat16,
+        )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 import json
 import math
@@ -631,6 +632,13 @@ def run_group_policy_training(
         route_rewards: list[RouteReward] = []
         audit_rows: list[dict[str, object]] = []
         judge_records: dict[str, dict[str, object]] = {}
+        sampled_groups: list[
+            tuple[
+                ScheduledPrompt,
+                tuple[RolloutTrajectory, ...],
+                tuple[dict[str, object], ...],
+            ]
+        ] = []
         model.eval()
         for scheduled in scheduled_rows:
             group = sample_mode_group(
@@ -647,39 +655,79 @@ def run_group_policy_training(
                 use_bfloat16=config.use_bfloat16,
             )
             group_scores = tuple(
-                score_mode_completion(
-                    scheduled.problem.evaluation_record(),
-                    item.completion,
+                dict(
+                    score_mode_completion(
+                        scheduled.problem.evaluation_record(),
+                        item.completion,
+                    )
                 )
                 for item in group
             )
-            ai_rewards: Mapping[str, float] | None = None
-            if needs_ai:
-                assert judge_client is not None
-                assert judge_cache is not None
+            sampled_groups.append((scheduled, group, group_scores))
+
+        judgments: dict[
+            str,
+            tuple[Mapping[str, float], dict[str, object]],
+        ] = {}
+        if needs_ai:
+            assert judge_client is not None
+            assert judge_cache is not None
+
+            def judge_group(
+                item: tuple[
+                    ScheduledPrompt,
+                    tuple[RolloutTrajectory, ...],
+                    tuple[dict[str, object], ...],
+                ],
+            ) -> tuple[
+                str,
+                Mapping[str, float],
+                dict[str, object],
+            ]:
+                scheduled, group, _ = item
                 judge_problem = build_judge_problem(scheduled, group)
-                attempts_before = judge_client.transport_attempts
                 answer, cache_hit = judge_with_cache(
                     client=judge_client,
                     problem=judge_problem,
                     cache=judge_cache,
                 )
-                transport_attempts = (
-                    0
-                    if cache_hit
-                    else judge_client.transport_attempts
-                    - attempts_before
-                )
-                ai_rewards = answer.reward_by_candidate()
-                judge_records[scheduled.schedule_id] = {
+                record = {
                     "answer": answer.public_record(),
                     "cache_hit": cache_hit,
                     "candidate_permutation": [
-                        item.candidate_id
-                        for item in ordered_candidates(judge_problem)
+                        candidate.candidate_id
+                        for candidate in ordered_candidates(
+                            judge_problem
+                        )
                     ],
-                    "transport_attempts": transport_attempts,
+                    "transport_attempts": (
+                        0
+                        if cache_hit
+                        else answer.transport_attempts
+                    ),
                 }
+                return (
+                    scheduled.schedule_id,
+                    answer.reward_by_candidate(),
+                    record,
+                )
+
+            with ThreadPoolExecutor(
+                max_workers=config.prompt_groups_per_update,
+            ) as executor:
+                for schedule_id, ai_rewards, record in executor.map(
+                    judge_group,
+                    sampled_groups,
+                ):
+                    judgments[schedule_id] = (ai_rewards, record)
+
+        for scheduled, group, group_scores in sampled_groups:
+            ai_rewards: Mapping[str, float] | None = None
+            if needs_ai:
+                assert judge_client is not None
+                assert judge_cache is not None
+                ai_rewards, record = judgments[scheduled.schedule_id]
+                judge_records[scheduled.schedule_id] = record
             group_rewards = compose_route_rewards(
                 route=config.route,
                 candidate_ids=tuple(
@@ -689,7 +737,7 @@ def run_group_policy_training(
                 ai_rewards=ai_rewards,
             )
             trajectories.extend(group)
-            local_scores.extend(dict(item) for item in group_scores)
+            local_scores.extend(group_scores)
             route_rewards.extend(group_rewards)
             for trajectory, local_score, reward in zip(
                 group,

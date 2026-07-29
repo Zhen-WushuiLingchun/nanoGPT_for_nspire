@@ -145,6 +145,7 @@ def test_live_judgment_returns_normalized_public_scores_only(
         "candidate-b": 0.0,
     }
     assert answer.preferred_candidate_id == "candidate-a"
+    assert answer.transport_attempts == 1
     public = answer.public_record()
     serialized = json.dumps(public)
     assert "reasoning_content" not in serialized
