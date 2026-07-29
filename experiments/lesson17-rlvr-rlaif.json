@@ -1,0 +1,1045 @@
+{
+  "baseline": {
+    "challenge": {
+      "combined": {
+        "correct": 6,
+        "examples": 512,
+        "format_valid_rate": 1.0,
+        "mode_compliance_rate": 1.0,
+        "task_accuracy": 0.01171875
+      },
+      "direct": {
+        "correct": 3,
+        "examples": 256,
+        "format_valid_rate": 1.0,
+        "mode_compliance_rate": 1.0,
+        "task_accuracy": 0.01171875
+      },
+      "think": {
+        "correct": 3,
+        "examples": 256,
+        "format_valid_rate": 1.0,
+        "mode_compliance_rate": 1.0,
+        "task_accuracy": 0.01171875
+      }
+    },
+    "checkpoint_sha256": "f385a51f7ac4d53b1a640f9a977308a365bb032a6a2dbe53394ba035169513ee",
+    "contract": {
+      "challenge_examples_per_mode": 256,
+      "decoding": "greedy",
+      "max_new_tokens": 256,
+      "primary_examples_per_mode": 128
+    },
+    "primary": {
+      "combined": {
+        "correct": 4,
+        "examples": 256,
+        "format_valid_rate": 0.87890625,
+        "mode_compliance_rate": 0.87890625,
+        "task_accuracy": 0.015625
+      },
+      "direct": {
+        "correct": 2,
+        "examples": 128,
+        "format_valid_rate": 1.0,
+        "mode_compliance_rate": 1.0,
+        "task_accuracy": 0.015625
+      },
+      "think": {
+        "correct": 2,
+        "examples": 128,
+        "format_valid_rate": 0.7578125,
+        "mode_compliance_rate": 0.7578125,
+        "task_accuracy": 0.015625
+      }
+    },
+    "route": "GQA-ALiBi-Hybrid-SFT-Context512",
+    "schema_version": 1
+  },
+  "claim_policy": {
+    "ability_improvement_requires": [
+      "mean exact count above SFT-only on primary and challenge",
+      "at least two of three seeds improve both sets",
+      "format and mode compliance at least 95 percent",
+      "zero training-family overlap with either holdout"
+    ]
+  },
+  "evaluation_contract": {
+    "challenge_filename": "challenge_evaluation.jsonl",
+    "challenge_sha256": "359d24949bbe74ff7ee2a88fb9d70a8dc5f4bd50d569883de2306446538a2b00",
+    "max_new_tokens": 256,
+    "primary_filename": "evaluation.jsonl",
+    "primary_sha256": "2b04622efef4886f3edbfb1950946acf8bf3aff07659f737f2ff100ee5bb321c"
+  },
+  "routes": {
+    "combined": {
+      "aggregate": {
+        "baseline": {
+          "challenge_correct": 6,
+          "primary_correct": 4
+        },
+        "challenge": {
+          "mean_correct": 5.333333333333333,
+          "per_seed_correct": [
+            5,
+            4,
+            7
+          ],
+          "population_std_correct": 1.247219128924647
+        },
+        "claim_gate": {
+          "ability_improvement": false,
+          "both_set_means_improve": false,
+          "format_at_least_95_percent": false,
+          "no_holdout_overlap": true,
+          "two_of_three_seeds_improve_both_sets": false
+        },
+        "minimum_format_valid_rate": 0.875,
+        "minimum_mode_compliance_rate": 0.875,
+        "primary": {
+          "mean_correct": 6.0,
+          "per_seed_correct": [
+            6,
+            7,
+            5
+          ],
+          "population_std_correct": 0.816496580927726
+        },
+        "seeds_improving_both_sets": 1
+      },
+      "route": "Lesson17-RLVR-Plus-Direct-RLAIF",
+      "seeds": [
+        {
+          "checkpoint": {
+            "bytes": 38595152,
+            "filename": "lesson17-rlvr-plus-direct-rlaif-seed-20260731.pt",
+            "model_state_sha256": "d90b078392f999d016916e6e875833f8ed6f1e16bc3b39fbb637d0e2c5b36230",
+            "sha256": "ef5e48da7fbd836ee009d1769400a853f6379d35afd3a3296105db0c2720f30b"
+          },
+          "evaluation": {
+            "challenge": {
+              "combined": {
+                "correct": 5,
+                "examples": 512,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.009765625
+              },
+              "direct": {
+                "correct": 4,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.015625
+              },
+              "think": {
+                "correct": 1,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.00390625
+              }
+            },
+            "checkpoint_sha256": "ef5e48da7fbd836ee009d1769400a853f6379d35afd3a3296105db0c2720f30b",
+            "contract": {
+              "challenge_examples_per_mode": 256,
+              "decoding": "greedy",
+              "max_new_tokens": 256,
+              "primary_examples_per_mode": 128
+            },
+            "primary": {
+              "combined": {
+                "correct": 6,
+                "examples": 256,
+                "format_valid_rate": 0.875,
+                "mode_compliance_rate": 0.875,
+                "task_accuracy": 0.0234375
+              },
+              "direct": {
+                "correct": 3,
+                "examples": 128,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0234375
+              },
+              "think": {
+                "correct": 3,
+                "examples": 128,
+                "format_valid_rate": 0.75,
+                "mode_compliance_rate": 0.75,
+                "task_accuracy": 0.0234375
+              }
+            },
+            "route": "Lesson17-RLVR-Plus-Direct-RLAIF",
+            "schema_version": 1
+          },
+          "holdout_overlap_count": 0,
+          "policy_seed": 20260731,
+          "training_audit": {
+            "ai_numeric_pearson": 0.6997231282484293,
+            "ai_reward_mean": 0.02978515625,
+            "cache_hits": 23,
+            "exact_completions": 9,
+            "format_valid_rate": 0.998046875,
+            "high_ai_wrong_numeric": 0,
+            "judge_groups": 64,
+            "low_ai_correct_numeric": 2,
+            "reward_mean": 0.07255859375,
+            "sampled_completions": 512,
+            "transport_attempts_for_uncached_groups": 42,
+            "zero_variance_groups": 54
+          }
+        },
+        {
+          "checkpoint": {
+            "bytes": 38595152,
+            "filename": "lesson17-rlvr-plus-direct-rlaif-seed-20260732.pt",
+            "model_state_sha256": "39dd6b4a2880e93c4b6b3897b779254e6b9d8546169ca175d2f6351f530fe13c",
+            "sha256": "fa60aacf7a60d13d230ac1db109f24e4a5d5a9afb520ccd529cc7849bdc0f54c"
+          },
+          "evaluation": {
+            "challenge": {
+              "combined": {
+                "correct": 4,
+                "examples": 512,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0078125
+              },
+              "direct": {
+                "correct": 3,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.01171875
+              },
+              "think": {
+                "correct": 1,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.00390625
+              }
+            },
+            "checkpoint_sha256": "fa60aacf7a60d13d230ac1db109f24e4a5d5a9afb520ccd529cc7849bdc0f54c",
+            "contract": {
+              "challenge_examples_per_mode": 256,
+              "decoding": "greedy",
+              "max_new_tokens": 256,
+              "primary_examples_per_mode": 128
+            },
+            "primary": {
+              "combined": {
+                "correct": 7,
+                "examples": 256,
+                "format_valid_rate": 0.9140625,
+                "mode_compliance_rate": 0.9140625,
+                "task_accuracy": 0.02734375
+              },
+              "direct": {
+                "correct": 4,
+                "examples": 128,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.03125
+              },
+              "think": {
+                "correct": 3,
+                "examples": 128,
+                "format_valid_rate": 0.828125,
+                "mode_compliance_rate": 0.828125,
+                "task_accuracy": 0.0234375
+              }
+            },
+            "route": "Lesson17-RLVR-Plus-Direct-RLAIF",
+            "schema_version": 1
+          },
+          "holdout_overlap_count": 0,
+          "policy_seed": 20260732,
+          "training_audit": {
+            "ai_numeric_pearson": 0.911787830993786,
+            "ai_reward_mean": 0.01171875,
+            "cache_hits": 30,
+            "exact_completions": 6,
+            "format_valid_rate": 0.99609375,
+            "high_ai_wrong_numeric": 0,
+            "judge_groups": 64,
+            "low_ai_correct_numeric": 0,
+            "reward_mean": 0.06328125,
+            "sampled_completions": 512,
+            "transport_attempts_for_uncached_groups": 35,
+            "zero_variance_groups": 56
+          }
+        },
+        {
+          "checkpoint": {
+            "bytes": 38595152,
+            "filename": "lesson17-rlvr-plus-direct-rlaif-seed-20260733.pt",
+            "model_state_sha256": "8efb65519e8b3ffa2d60f5658acb66e5848f5214d25a840bf5941af6621107b4",
+            "sha256": "02d1528293e3f6586d8c8218b3cf9545cb2ebd7d52f7e3c079333562d67f0624"
+          },
+          "evaluation": {
+            "challenge": {
+              "combined": {
+                "correct": 7,
+                "examples": 512,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.013671875
+              },
+              "direct": {
+                "correct": 4,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.015625
+              },
+              "think": {
+                "correct": 3,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.01171875
+              }
+            },
+            "checkpoint_sha256": "02d1528293e3f6586d8c8218b3cf9545cb2ebd7d52f7e3c079333562d67f0624",
+            "contract": {
+              "challenge_examples_per_mode": 256,
+              "decoding": "greedy",
+              "max_new_tokens": 256,
+              "primary_examples_per_mode": 128
+            },
+            "primary": {
+              "combined": {
+                "correct": 5,
+                "examples": 256,
+                "format_valid_rate": 0.875,
+                "mode_compliance_rate": 0.875,
+                "task_accuracy": 0.01953125
+              },
+              "direct": {
+                "correct": 3,
+                "examples": 128,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0234375
+              },
+              "think": {
+                "correct": 2,
+                "examples": 128,
+                "format_valid_rate": 0.75,
+                "mode_compliance_rate": 0.75,
+                "task_accuracy": 0.015625
+              }
+            },
+            "route": "Lesson17-RLVR-Plus-Direct-RLAIF",
+            "schema_version": 1
+          },
+          "holdout_overlap_count": 0,
+          "policy_seed": 20260733,
+          "training_audit": {
+            "ai_numeric_pearson": 0.9382277088330772,
+            "ai_reward_mean": 0.01708984375,
+            "cache_hits": 10,
+            "exact_completions": 10,
+            "format_valid_rate": 0.99609375,
+            "high_ai_wrong_numeric": 0,
+            "judge_groups": 64,
+            "low_ai_correct_numeric": 2,
+            "reward_mean": 0.07177734375,
+            "sampled_completions": 512,
+            "transport_attempts_for_uncached_groups": 54,
+            "zero_variance_groups": 55
+          }
+        }
+      ]
+    },
+    "rlaif": {
+      "aggregate": {
+        "baseline": {
+          "challenge_correct": 6,
+          "primary_correct": 4
+        },
+        "challenge": {
+          "mean_correct": 6.666666666666667,
+          "per_seed_correct": [
+            5,
+            6,
+            9
+          ],
+          "population_std_correct": 1.699673171197595
+        },
+        "claim_gate": {
+          "ability_improvement": false,
+          "both_set_means_improve": false,
+          "format_at_least_95_percent": false,
+          "no_holdout_overlap": true,
+          "two_of_three_seeds_improve_both_sets": false
+        },
+        "minimum_format_valid_rate": 0.8671875,
+        "minimum_mode_compliance_rate": 0.8671875,
+        "primary": {
+          "mean_correct": 3.0,
+          "per_seed_correct": [
+            0,
+            6,
+            3
+          ],
+          "population_std_correct": 2.449489742783178
+        },
+        "seeds_improving_both_sets": 0
+      },
+      "route": "Lesson17-Direct-RLAIF",
+      "seeds": [
+        {
+          "checkpoint": {
+            "bytes": 38594638,
+            "filename": "lesson17-direct-rlaif-seed-20260731.pt",
+            "model_state_sha256": "a6f553d5ab194f6b20856a49fadcfae99a530c12f4fb67fb87474a5b10130d97",
+            "sha256": "b05148507745dad271c8c46c85ded32f85798f85414133b45fb8373ef60d31f4"
+          },
+          "evaluation": {
+            "challenge": {
+              "combined": {
+                "correct": 5,
+                "examples": 512,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.009765625
+              },
+              "direct": {
+                "correct": 3,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.01171875
+              },
+              "think": {
+                "correct": 2,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0078125
+              }
+            },
+            "checkpoint_sha256": "b05148507745dad271c8c46c85ded32f85798f85414133b45fb8373ef60d31f4",
+            "contract": {
+              "challenge_examples_per_mode": 256,
+              "decoding": "greedy",
+              "max_new_tokens": 256,
+              "primary_examples_per_mode": 128
+            },
+            "primary": {
+              "combined": {
+                "correct": 0,
+                "examples": 256,
+                "format_valid_rate": 0.8671875,
+                "mode_compliance_rate": 0.8671875,
+                "task_accuracy": 0.0
+              },
+              "direct": {
+                "correct": 0,
+                "examples": 128,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0
+              },
+              "think": {
+                "correct": 0,
+                "examples": 128,
+                "format_valid_rate": 0.734375,
+                "mode_compliance_rate": 0.734375,
+                "task_accuracy": 0.0
+              }
+            },
+            "route": "Lesson17-Direct-RLAIF",
+            "schema_version": 1
+          },
+          "holdout_overlap_count": 0,
+          "policy_seed": 20260731,
+          "training_audit": {
+            "ai_numeric_pearson": 0.7561501869826556,
+            "ai_reward_mean": 0.02734375,
+            "cache_hits": 0,
+            "exact_completions": 9,
+            "format_valid_rate": 0.9921875,
+            "high_ai_wrong_numeric": 0,
+            "judge_groups": 64,
+            "low_ai_correct_numeric": 2,
+            "reward_mean": 0.02734375,
+            "sampled_completions": 512,
+            "transport_attempts_for_uncached_groups": 64,
+            "zero_variance_groups": 55
+          }
+        },
+        {
+          "checkpoint": {
+            "bytes": 38594638,
+            "filename": "lesson17-direct-rlaif-seed-20260732.pt",
+            "model_state_sha256": "a5f3b7d48488263cc4efd7737077ddd6856ad5c5a0fe417f518200b6e5769ba5",
+            "sha256": "d6e89628b9ec95bc99a2d4e39e7790f2dea6280c37f9343fa1dd921d301cbf3e"
+          },
+          "evaluation": {
+            "challenge": {
+              "combined": {
+                "correct": 6,
+                "examples": 512,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.01171875
+              },
+              "direct": {
+                "correct": 3,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.01171875
+              },
+              "think": {
+                "correct": 3,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.01171875
+              }
+            },
+            "checkpoint_sha256": "d6e89628b9ec95bc99a2d4e39e7790f2dea6280c37f9343fa1dd921d301cbf3e",
+            "contract": {
+              "challenge_examples_per_mode": 256,
+              "decoding": "greedy",
+              "max_new_tokens": 256,
+              "primary_examples_per_mode": 128
+            },
+            "primary": {
+              "combined": {
+                "correct": 6,
+                "examples": 256,
+                "format_valid_rate": 0.8828125,
+                "mode_compliance_rate": 0.8828125,
+                "task_accuracy": 0.0234375
+              },
+              "direct": {
+                "correct": 3,
+                "examples": 128,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0234375
+              },
+              "think": {
+                "correct": 3,
+                "examples": 128,
+                "format_valid_rate": 0.765625,
+                "mode_compliance_rate": 0.765625,
+                "task_accuracy": 0.0234375
+              }
+            },
+            "route": "Lesson17-Direct-RLAIF",
+            "schema_version": 1
+          },
+          "holdout_overlap_count": 0,
+          "policy_seed": 20260732,
+          "training_audit": {
+            "ai_numeric_pearson": 0.8637648187711868,
+            "ai_reward_mean": 0.01318359375,
+            "cache_hits": 0,
+            "exact_completions": 6,
+            "format_valid_rate": 0.9921875,
+            "high_ai_wrong_numeric": 1,
+            "judge_groups": 64,
+            "low_ai_correct_numeric": 0,
+            "reward_mean": 0.01318359375,
+            "sampled_completions": 512,
+            "transport_attempts_for_uncached_groups": 66,
+            "zero_variance_groups": 57
+          }
+        },
+        {
+          "checkpoint": {
+            "bytes": 38594638,
+            "filename": "lesson17-direct-rlaif-seed-20260733.pt",
+            "model_state_sha256": "5de76446c384cd79f9ed24677f9bb991c68794d52fd0885eaf50117dae7eaad4",
+            "sha256": "fcd3df418ce29f37aed4cdd1a2db71809a61e5b353926766c112495f99b11a82"
+          },
+          "evaluation": {
+            "challenge": {
+              "combined": {
+                "correct": 9,
+                "examples": 512,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.017578125
+              },
+              "direct": {
+                "correct": 5,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.01953125
+              },
+              "think": {
+                "correct": 4,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.015625
+              }
+            },
+            "checkpoint_sha256": "fcd3df418ce29f37aed4cdd1a2db71809a61e5b353926766c112495f99b11a82",
+            "contract": {
+              "challenge_examples_per_mode": 256,
+              "decoding": "greedy",
+              "max_new_tokens": 256,
+              "primary_examples_per_mode": 128
+            },
+            "primary": {
+              "combined": {
+                "correct": 3,
+                "examples": 256,
+                "format_valid_rate": 0.875,
+                "mode_compliance_rate": 0.875,
+                "task_accuracy": 0.01171875
+              },
+              "direct": {
+                "correct": 0,
+                "examples": 128,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0
+              },
+              "think": {
+                "correct": 3,
+                "examples": 128,
+                "format_valid_rate": 0.75,
+                "mode_compliance_rate": 0.75,
+                "task_accuracy": 0.0234375
+              }
+            },
+            "route": "Lesson17-Direct-RLAIF",
+            "schema_version": 1
+          },
+          "holdout_overlap_count": 0,
+          "policy_seed": 20260733,
+          "training_audit": {
+            "ai_numeric_pearson": 0.811121986692223,
+            "ai_reward_mean": 0.0185546875,
+            "cache_hits": 0,
+            "exact_completions": 10,
+            "format_valid_rate": 0.994140625,
+            "high_ai_wrong_numeric": 1,
+            "judge_groups": 64,
+            "low_ai_correct_numeric": 3,
+            "reward_mean": 0.0185546875,
+            "sampled_completions": 512,
+            "transport_attempts_for_uncached_groups": 64,
+            "zero_variance_groups": 57
+          }
+        }
+      ]
+    },
+    "rlvr": {
+      "aggregate": {
+        "baseline": {
+          "challenge_correct": 6,
+          "primary_correct": 4
+        },
+        "challenge": {
+          "mean_correct": 5.333333333333333,
+          "per_seed_correct": [
+            5,
+            4,
+            7
+          ],
+          "population_std_correct": 1.247219128924647
+        },
+        "claim_gate": {
+          "ability_improvement": false,
+          "both_set_means_improve": false,
+          "format_at_least_95_percent": false,
+          "no_holdout_overlap": true,
+          "two_of_three_seeds_improve_both_sets": false
+        },
+        "minimum_format_valid_rate": 0.875,
+        "minimum_mode_compliance_rate": 0.875,
+        "primary": {
+          "mean_correct": 6.0,
+          "per_seed_correct": [
+            6,
+            8,
+            4
+          ],
+          "population_std_correct": 1.632993161855452
+        },
+        "seeds_improving_both_sets": 0
+      },
+      "route": "Lesson17-RLVR",
+      "seeds": [
+        {
+          "checkpoint": {
+            "bytes": 38594278,
+            "filename": "lesson17-rlvr-seed-20260731.pt",
+            "model_state_sha256": "54e71786e4b978b4e9b3c7d9cc64b9f792001409b53e80d0cad94a58c7cb5a5e",
+            "sha256": "6a94dea8c2eb85daa454781b4f48560fd0ecdd5dcd775ff1b45ae8e468bc92b1"
+          },
+          "evaluation": {
+            "challenge": {
+              "combined": {
+                "correct": 5,
+                "examples": 512,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.009765625
+              },
+              "direct": {
+                "correct": 4,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.015625
+              },
+              "think": {
+                "correct": 1,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.00390625
+              }
+            },
+            "checkpoint_sha256": "6a94dea8c2eb85daa454781b4f48560fd0ecdd5dcd775ff1b45ae8e468bc92b1",
+            "contract": {
+              "challenge_examples_per_mode": 256,
+              "decoding": "greedy",
+              "max_new_tokens": 256,
+              "primary_examples_per_mode": 128
+            },
+            "primary": {
+              "combined": {
+                "correct": 6,
+                "examples": 256,
+                "format_valid_rate": 0.875,
+                "mode_compliance_rate": 0.875,
+                "task_accuracy": 0.0234375
+              },
+              "direct": {
+                "correct": 3,
+                "examples": 128,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0234375
+              },
+              "think": {
+                "correct": 3,
+                "examples": 128,
+                "format_valid_rate": 0.75,
+                "mode_compliance_rate": 0.75,
+                "task_accuracy": 0.0234375
+              }
+            },
+            "route": "Lesson17-RLVR",
+            "schema_version": 1
+          },
+          "holdout_overlap_count": 0,
+          "policy_seed": 20260731,
+          "training_audit": {
+            "ai_numeric_pearson": null,
+            "ai_reward_mean": null,
+            "cache_hits": 0,
+            "exact_completions": 10,
+            "format_valid_rate": 0.998046875,
+            "high_ai_wrong_numeric": 0,
+            "judge_groups": 0,
+            "low_ai_correct_numeric": 0,
+            "reward_mean": 0.06845703125000001,
+            "sampled_completions": 512,
+            "transport_attempts_for_uncached_groups": 0,
+            "zero_variance_groups": 55
+          }
+        },
+        {
+          "checkpoint": {
+            "bytes": 38594278,
+            "filename": "lesson17-rlvr-seed-20260732.pt",
+            "model_state_sha256": "4c102c3bd013dcc13bc6aaa9055b0bdaaeee339c22d5bcd211a3ecdb775c0e29",
+            "sha256": "3dc96780eeb5609352fefde2ea244f8c39b50bfd8faedb5512de65346e7e6f9c"
+          },
+          "evaluation": {
+            "challenge": {
+              "combined": {
+                "correct": 4,
+                "examples": 512,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0078125
+              },
+              "direct": {
+                "correct": 2,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0078125
+              },
+              "think": {
+                "correct": 2,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.0078125
+              }
+            },
+            "checkpoint_sha256": "3dc96780eeb5609352fefde2ea244f8c39b50bfd8faedb5512de65346e7e6f9c",
+            "contract": {
+              "challenge_examples_per_mode": 256,
+              "decoding": "greedy",
+              "max_new_tokens": 256,
+              "primary_examples_per_mode": 128
+            },
+            "primary": {
+              "combined": {
+                "correct": 8,
+                "examples": 256,
+                "format_valid_rate": 0.9140625,
+                "mode_compliance_rate": 0.9140625,
+                "task_accuracy": 0.03125
+              },
+              "direct": {
+                "correct": 4,
+                "examples": 128,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.03125
+              },
+              "think": {
+                "correct": 4,
+                "examples": 128,
+                "format_valid_rate": 0.828125,
+                "mode_compliance_rate": 0.828125,
+                "task_accuracy": 0.03125
+              }
+            },
+            "route": "Lesson17-RLVR",
+            "schema_version": 1
+          },
+          "holdout_overlap_count": 0,
+          "policy_seed": 20260732,
+          "training_audit": {
+            "ai_numeric_pearson": null,
+            "ai_reward_mean": null,
+            "cache_hits": 0,
+            "exact_completions": 5,
+            "format_valid_rate": 0.994140625,
+            "high_ai_wrong_numeric": 0,
+            "judge_groups": 0,
+            "low_ai_correct_numeric": 0,
+            "reward_mean": 0.058984375000000006,
+            "sampled_completions": 512,
+            "transport_attempts_for_uncached_groups": 0,
+            "zero_variance_groups": 56
+          }
+        },
+        {
+          "checkpoint": {
+            "bytes": 38594278,
+            "filename": "lesson17-rlvr-seed-20260733.pt",
+            "model_state_sha256": "7062cab62534d25d78938b6799173f2614cda7cd9cb5db6909c03262fc5c9d86",
+            "sha256": "bb083473a4b17700723726d3388d44c80cb8b704cbfd3fd8e500be11211c23cd"
+          },
+          "evaluation": {
+            "challenge": {
+              "combined": {
+                "correct": 7,
+                "examples": 512,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.013671875
+              },
+              "direct": {
+                "correct": 4,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.015625
+              },
+              "think": {
+                "correct": 3,
+                "examples": 256,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.01171875
+              }
+            },
+            "checkpoint_sha256": "bb083473a4b17700723726d3388d44c80cb8b704cbfd3fd8e500be11211c23cd",
+            "contract": {
+              "challenge_examples_per_mode": 256,
+              "decoding": "greedy",
+              "max_new_tokens": 256,
+              "primary_examples_per_mode": 128
+            },
+            "primary": {
+              "combined": {
+                "correct": 4,
+                "examples": 256,
+                "format_valid_rate": 0.875,
+                "mode_compliance_rate": 0.875,
+                "task_accuracy": 0.015625
+              },
+              "direct": {
+                "correct": 2,
+                "examples": 128,
+                "format_valid_rate": 1.0,
+                "mode_compliance_rate": 1.0,
+                "task_accuracy": 0.015625
+              },
+              "think": {
+                "correct": 2,
+                "examples": 128,
+                "format_valid_rate": 0.75,
+                "mode_compliance_rate": 0.75,
+                "task_accuracy": 0.015625
+              }
+            },
+            "route": "Lesson17-RLVR",
+            "schema_version": 1
+          },
+          "holdout_overlap_count": 0,
+          "policy_seed": 20260733,
+          "training_audit": {
+            "ai_numeric_pearson": null,
+            "ai_reward_mean": null,
+            "cache_hits": 0,
+            "exact_completions": 7,
+            "format_valid_rate": 0.994140625,
+            "high_ai_wrong_numeric": 0,
+            "judge_groups": 0,
+            "low_ai_correct_numeric": 0,
+            "reward_mean": 0.0626953125,
+            "sampled_completions": 512,
+            "transport_attempts_for_uncached_groups": 0,
+            "zero_variance_groups": 56
+          }
+        }
+      ]
+    }
+  },
+  "schema_version": 1,
+  "start_screen": {
+    "candidates": [
+      {
+        "checkpoint_sha256": "f385a51f7ac4d53b1a640f9a977308a365bb032a6a2dbe53394ba035169513ee",
+        "metrics": {
+          "completions": 256,
+          "exact_completion_rate": 0.0234375,
+          "exact_completions": 6,
+          "groups": 32,
+          "invalid_format_rate": 0.0,
+          "invalid_formats": 0,
+          "mixed_exact_group_fraction": 0.1875,
+          "mixed_exact_groups": 6
+        },
+        "name": "lesson15-sft",
+        "parent": {
+          "model_config": {
+            "bias": false,
+            "block_size": 512,
+            "dropout": 0.1,
+            "mlp_ratio": 4,
+            "n_embd": 384,
+            "n_head": 6,
+            "n_kv_head": 2,
+            "n_layer": 6,
+            "position_mode": "alibi",
+            "tie_embeddings": true,
+            "vocab_size": 264
+          },
+          "route": "GQA-ALiBi-Hybrid-SFT-Context512",
+          "sha256": "f385a51f7ac4d53b1a640f9a977308a365bb032a6a2dbe53394ba035169513ee",
+          "source_commit": "628c54348e7d40907b60b3a421cf5e68e2588eaf"
+        },
+        "route": "GQA-ALiBi-Hybrid-SFT-Context512"
+      },
+      {
+        "checkpoint_sha256": "e78c78bfbf8a7df1c8c623d27300084d8b67d14827c69fdc523b8b4df1a299ed",
+        "metrics": {
+          "completions": 256,
+          "exact_completion_rate": 0.01953125,
+          "exact_completions": 5,
+          "groups": 32,
+          "invalid_format_rate": 0.00390625,
+          "invalid_formats": 1,
+          "mixed_exact_group_fraction": 0.125,
+          "mixed_exact_groups": 4
+        },
+        "name": "lesson16-sft-v2",
+        "parent": {
+          "model_config": {
+            "bias": false,
+            "block_size": 512,
+            "dropout": 0.1,
+            "mlp_ratio": 4,
+            "n_embd": 384,
+            "n_head": 6,
+            "n_kv_head": 2,
+            "n_layer": 6,
+            "position_mode": "alibi",
+            "tie_embeddings": true,
+            "vocab_size": 264
+          },
+          "route": "GQA-ALiBi-SFT-v2-Context512",
+          "sha256": "e78c78bfbf8a7df1c8c623d27300084d8b67d14827c69fdc523b8b4df1a299ed",
+          "source_commit": "10af501"
+        },
+        "route": "GQA-ALiBi-SFT-v2-Context512"
+      }
+    ],
+    "configuration": {
+      "api_calls": 0,
+      "group_size": 8,
+      "max_new_tokens": 256,
+      "policy_seed": 20260731,
+      "prompt_count": 32,
+      "selection_order": [
+        "mixed_exact_group_fraction",
+        "exact_completion_rate",
+        "negative_invalid_format_rate",
+        "sft_v2_exact_tie_break"
+      ],
+      "temperature": 0.8,
+      "updates": 0,
+      "use_bfloat16": true
+    },
+    "holdout_family_count": 1041,
+    "problem_pool_family_count": 64,
+    "schema_version": 1,
+    "selected": {
+      "checkpoint_sha256": "f385a51f7ac4d53b1a640f9a977308a365bb032a6a2dbe53394ba035169513ee",
+      "metrics": {
+        "completions": 256,
+        "exact_completion_rate": 0.0234375,
+        "exact_completions": 6,
+        "groups": 32,
+        "invalid_format_rate": 0.0,
+        "invalid_formats": 0,
+        "mixed_exact_group_fraction": 0.1875,
+        "mixed_exact_groups": 6
+      },
+      "name": "lesson15-sft",
+      "parent": {
+        "model_config": {
+          "bias": false,
+          "block_size": 512,
+          "dropout": 0.1,
+          "mlp_ratio": 4,
+          "n_embd": 384,
+          "n_head": 6,
+          "n_kv_head": 2,
+          "n_layer": 6,
+          "position_mode": "alibi",
+          "tie_embeddings": true,
+          "vocab_size": 264
+        },
+        "route": "GQA-ALiBi-Hybrid-SFT-Context512",
+        "sha256": "f385a51f7ac4d53b1a640f9a977308a365bb032a6a2dbe53394ba035169513ee",
+        "source_commit": "628c54348e7d40907b60b3a421cf5e68e2588eaf"
+      },
+      "route": "GQA-ALiBi-Hybrid-SFT-Context512"
+    }
+  }
+}

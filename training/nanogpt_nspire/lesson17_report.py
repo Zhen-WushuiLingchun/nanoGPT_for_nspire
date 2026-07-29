@@ -33,6 +33,56 @@ ROUTE_DIRECTORIES = {
 }
 
 
+def public_evaluation_summary(
+    summary: Mapping[str, object],
+) -> dict[str, object]:
+    """Drop machine-local paths while preserving the audited evaluation."""
+
+    required = {
+        "challenge",
+        "checkpoint_sha256",
+        "contract",
+        "primary",
+        "route",
+        "schema_version",
+    }
+    missing = sorted(required - summary.keys())
+    if missing:
+        raise ValueError(
+            "evaluation summary is missing fields: "
+            + ", ".join(missing)
+        )
+    return {
+        key: summary[key]
+        for key in sorted(required)
+    }
+
+
+def _public_checkpoint(
+    checkpoint: object,
+) -> dict[str, object]:
+    if not isinstance(checkpoint, Mapping):
+        raise ValueError("training checkpoint record is missing")
+    required = {
+        "bytes",
+        "model_state_sha256",
+        "path",
+        "sha256",
+    }
+    missing = sorted(required - checkpoint.keys())
+    if missing:
+        raise ValueError(
+            "training checkpoint is missing fields: "
+            + ", ".join(missing)
+        )
+    return {
+        "bytes": checkpoint["bytes"],
+        "filename": Path(str(checkpoint["path"])).name,
+        "model_state_sha256": checkpoint["model_state_sha256"],
+        "sha256": checkpoint["sha256"],
+    }
+
+
 def _combined(
     summary: Mapping[str, object],
     set_name: str,
@@ -78,7 +128,7 @@ def aggregate_route_evaluations(
     seeds: Sequence[Mapping[str, object]],
     no_holdout_overlap: bool,
 ) -> dict[str, object]:
-    """Apply the frozen both-set, two-seed, format, and leakage gates."""
+    """Apply the frozen both-set, three-seed, format, and leakage gates."""
 
     if len(seeds) != 3:
         raise ValueError("exactly three seed summaries are required")
@@ -277,9 +327,10 @@ def build_lesson17_experiment(
     primary_evaluation: Path,
     challenge_evaluation: Path,
 ) -> dict[str, object]:
-    baseline = _load_json(
+    baseline_raw = _load_json(
         evaluation_root / "sft-only" / "summary.json"
     )
+    baseline = public_evaluation_summary(baseline_raw)
     holdout_families = {
         str(row["family_id"])
         for path in (primary_evaluation, challenge_evaluation)
@@ -310,8 +361,8 @@ def build_lesson17_experiment(
             )
             seed_records.append(
                 {
-                    "checkpoint": run["checkpoint"],
-                    "evaluation": evaluation,
+                    "checkpoint": _public_checkpoint(run["checkpoint"]),
+                    "evaluation": public_evaluation_summary(evaluation),
                     "holdout_overlap_count": len(overlap),
                     "policy_seed": seed,
                     "training_audit": _training_audit(
@@ -343,10 +394,10 @@ def build_lesson17_experiment(
             ]
         },
         "evaluation_contract": {
-            "challenge_path": str(challenge_evaluation),
+            "challenge_filename": challenge_evaluation.name,
             "challenge_sha256": sha256_file(challenge_evaluation),
             "max_new_tokens": 256,
-            "primary_path": str(primary_evaluation),
+            "primary_filename": primary_evaluation.name,
             "primary_sha256": sha256_file(primary_evaluation),
         },
         "routes": routes,

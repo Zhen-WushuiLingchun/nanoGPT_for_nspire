@@ -27,7 +27,7 @@ English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、�
 - 已完成：[第十四课：可控短 CoT、固定 token 公平比较与 512 context](docs/lessons/14-controllable-cot-and-context.md)
 - 已完成：[第十五课：256-token 推理、GQA、ALiBi 与计算器边界](docs/lessons/15-long-output-gqa-alibi.md)
 - 已完成：[第十六课：紧凑可验证 SFT v2、终止边界与“自洽但算错”](docs/lessons/16-compact-verified-sft-v2.md)
-- 已设计：[第十七课输入：RLVR/RLAIF 冻结协议](docs/plans/2026-07-29-lesson16-sft-v2-rlvr-rlaif-design.md)
+- 已完成：[第十七课：RLVR、direct-RLAIF 与奖励稀疏/奖励错位](docs/lessons/17-rlvr-rlaif-and-reward-hacking.md)
 - 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
@@ -147,6 +147,15 @@ Lesson 16 用 24,000 个算术、12,000 个数值物理 family 和 5,402 条通�
 reasoning/final 局部一致，也没有学会可靠计算。因此下一阶段保留父模型与 v2
 双起点：数值能力主线使用本地 exact/unit verifier 做 RLVR，DeepSeek AI
 feedback 独立用于解释清晰度和物理合理性；不把 API 合成答案写成严格蒸馏。
+
+Lesson 17 从无更新 screen 选择了 mixed-exact group 更多的 Lesson 15
+checkpoint，随后用三组固定 seed 分别训练 RLVR、direct-RLAIF 和组合路线。
+每条路线每 seed 采样 512 个 completion，但 64 个 group 中有 54–57 个奖励
+零方差。RLVR、direct-RLAIF、组合路线的 Primary 三种子 mean exact 分别为
+`6.00/256`、`3.00/256`、`6.00/256`，Challenge 分别为 `5.33/512`、
+`6.67/512`、`5.33/512`；SFT-only 是 `4/256` 与 `6/512`。三条路线都未同时
+改善两套，也都未通过 95% format/mode 门，因此不宣称获得可泛化 RL 能力，
+不把最好 seed 事后挑出量化或上真机。训练 family 与两份 holdout 的交集均为零。
 
 ## 快速开始
 

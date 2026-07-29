@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from nanogpt_nspire.lesson17_report import aggregate_route_evaluations
+from nanogpt_nspire.lesson17_report import (
+    aggregate_route_evaluations,
+    public_evaluation_summary,
+)
 
 
 def _summary(
@@ -30,7 +33,7 @@ def _summary(
     }
 
 
-def test_claim_gate_requires_both_set_means_and_two_seed_support() -> None:
+def test_claim_gate_requires_both_set_means_and_two_of_three_support() -> None:
     baseline = _summary(primary=4, challenge=6)
     result = aggregate_route_evaluations(
         baseline=baseline,
@@ -79,3 +82,20 @@ def test_overlap_alone_blocks_claim() -> None:
 
     assert result["claim_gate"]["no_holdout_overlap"] is False
     assert result["claim_gate"]["ability_improvement"] is False
+
+
+def test_public_evaluation_summary_drops_machine_local_path() -> None:
+    summary = _summary(primary=4, challenge=6)
+    summary.update(
+        {
+            "checkpoint_path": r"F:\private\checkpoint.pt",
+            "contract": {"decoding": "greedy"},
+            "route": "test-route",
+            "schema_version": 1,
+        }
+    )
+
+    public = public_evaluation_summary(summary)
+
+    assert "checkpoint_path" not in public
+    assert public["checkpoint_sha256"] == "a" * 64
