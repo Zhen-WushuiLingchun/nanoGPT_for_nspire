@@ -502,11 +502,13 @@ class PreferenceJudgeClient:
         config: PreferenceJudgeConfig | None = None,
         *,
         transport: Transport | None = None,
+        credential_provider: Callable[[], str] = get_deepseek_api_key,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self.config = config or PreferenceJudgeConfig()
         self.config.validate()
         self._transport = transport or _default_transport
+        self._credential_provider = credential_provider
         self._sleep = sleep
         self._logical_requests = 0
         self._transport_attempts = 0
@@ -558,7 +560,11 @@ class PreferenceJudgeClient:
                     "preference judge request budget exhausted"
                 )
             self._logical_requests += 1
-        api_key = get_deepseek_api_key()
+        api_key = self._credential_provider()
+        if not isinstance(api_key, str) or not api_key:
+            raise PreferenceJudgeError(
+                "preference judge credential provider returned no key"
+            )
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",

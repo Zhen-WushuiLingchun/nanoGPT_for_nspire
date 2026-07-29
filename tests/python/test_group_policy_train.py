@@ -9,6 +9,7 @@ from nanogpt_nspire.group_policy_train import (
     build_judge_problem,
     compose_route_rewards,
     frozen_policy_training_config,
+    smoke_policy_training_config,
 )
 from nanogpt_nspire.lesson17_data import RLProblem, ScheduledPrompt
 from nanogpt_nspire.lesson17_routes import (
@@ -169,3 +170,24 @@ def test_frozen_policy_config_has_16_rollouts_and_32_steps(tmp_path) -> None:
             seed=20260731,
             group_size=4,
         )
+
+
+def test_smoke_profile_is_small_and_cannot_be_mistaken_for_formal(
+    tmp_path,
+) -> None:
+    config = smoke_policy_training_config(
+        route=RLVR_ROUTE,
+        output_dir=tmp_path / "smoke",
+        start_checkpoint=tmp_path / "start.pt",
+        start_checkpoint_sha256="a" * 64,
+        start_route=GQA_ALIBI_SFT_V2_ROUTE,
+        source_commit="source",
+        seed=20260731,
+    )
+
+    assert config.rollout_updates == 1
+    assert config.group_size == 2
+    assert config.max_new_tokens == 32
+    assert config.policy_epochs == 1
+    assert config.optimizer_steps == 1
+    assert config.public_record()["profile"] == "smoke"

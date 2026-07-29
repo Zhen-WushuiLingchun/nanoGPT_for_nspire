@@ -228,6 +228,10 @@ class PolicyTrainingConfig:
     use_bfloat16: bool = True
 
     @property
+    def profile(self) -> str:
+        return "formal"
+
+    @property
     def optimizer_steps(self) -> int:
         return self.rollout_updates * self.policy_epochs
 
@@ -303,6 +307,7 @@ class PolicyTrainingConfig:
                 }
             },
             "optimizer_steps": self.optimizer_steps,
+            "profile": self.profile,
             "output_dir": str(self.output_dir),
             "start_checkpoint": str(self.start_checkpoint),
         }
@@ -354,6 +359,116 @@ def frozen_policy_training_config(
         source_commit=source_commit,
         seed=seed,
         **defaults,
+    )
+    config.validate()
+    return config
+
+
+@dataclass(frozen=True)
+class SmokePolicyTrainingConfig(PolicyTrainingConfig):
+    """Explicit one-update profile that cannot satisfy the formal contract."""
+
+    @property
+    def profile(self) -> str:
+        return "smoke"
+
+    def validate(self) -> None:
+        if self.route not in TRAINABLE_ROUTES:
+            raise ValueError("training route is unsupported")
+        if self.start_route not in START_ROUTES:
+            raise ValueError("start route is unsupported")
+        if (
+            not isinstance(self.start_checkpoint_sha256, str)
+            or _SHA256_PATTERN.fullmatch(
+                self.start_checkpoint_sha256
+            )
+            is None
+        ):
+            raise ValueError("start checkpoint SHA-256 is invalid")
+        if not isinstance(self.source_commit, str) or not self.source_commit:
+            raise ValueError("source_commit must be non-empty")
+        if self.seed not in FORMAL_POLICY_SEEDS:
+            raise ValueError("seed is not a frozen policy seed")
+        expected = {
+            "rollout_updates": 1,
+            "prompt_groups_per_update": 4,
+            "group_size": 2,
+            "max_new_tokens": 32,
+            "policy_epochs": 1,
+            "policy_micro_batch_size": 2,
+        }
+        for name, value in expected.items():
+            if getattr(self, name) != value:
+                raise ValueError(
+                    f"smoke {name} must equal {value}"
+                )
+        for name in (
+            "temperature",
+            "learning_rate",
+            "clip_epsilon",
+            "kl_beta",
+            "max_grad_norm",
+            "weight_decay",
+            "beta1",
+            "beta2",
+        ):
+            value = getattr(self, name)
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+            ):
+                raise ValueError(f"smoke {name} must be finite")
+        if self.temperature <= 0 or self.learning_rate <= 0:
+            raise ValueError(
+                "smoke temperature and learning rate must be positive"
+            )
+        if not isinstance(self.device, str) or not self.device:
+            raise ValueError("device must be non-empty")
+        if not isinstance(self.use_bfloat16, bool):
+            raise ValueError("use_bfloat16 must be boolean")
+        assert_secret_free(
+            self.public_record(),
+            context="smoke policy training configuration",
+        )
+
+
+def smoke_policy_training_config(
+    *,
+    route: str,
+    output_dir: str | Path,
+    start_checkpoint: str | Path,
+    start_checkpoint_sha256: str,
+    start_route: str,
+    source_commit: str,
+    seed: int,
+    device: str = "cuda",
+    use_bfloat16: bool = True,
+) -> SmokePolicyTrainingConfig:
+    config = SmokePolicyTrainingConfig(
+        route=route,
+        output_dir=Path(output_dir),
+        start_checkpoint=Path(start_checkpoint),
+        start_checkpoint_sha256=start_checkpoint_sha256,
+        start_route=start_route,
+        source_commit=source_commit,
+        seed=seed,
+        device=device,
+        rollout_updates=1,
+        prompt_groups_per_update=4,
+        group_size=2,
+        max_new_tokens=32,
+        temperature=0.8,
+        policy_epochs=1,
+        policy_micro_batch_size=2,
+        learning_rate=5e-6,
+        clip_epsilon=0.2,
+        kl_beta=0.02,
+        max_grad_norm=1.0,
+        weight_decay=0.0,
+        beta1=0.9,
+        beta2=0.95,
+        use_bfloat16=use_bfloat16,
     )
     config.validate()
     return config
