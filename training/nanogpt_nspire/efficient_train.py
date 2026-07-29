@@ -122,6 +122,20 @@ class EfficientTrainingConfig:
     def model_config(self) -> EfficientLongContextConfig:
         return lesson15_efficient_config(self.position_mode)
 
+    def training_loss(
+        self,
+        logits: torch.Tensor,
+        targets: torch.Tensor,
+        target_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        """Return the stage-specific optimization loss.
+
+        Validation remains the ordinary masked cross-entropy so that route
+        comparisons keep the same selection metric.
+        """
+
+        return masked_cross_entropy(logits, targets, target_mask)
+
     def validate(self) -> None:
         if self.stage not in {"cpt", "sft"}:
             raise ValueError("stage must be 'cpt' or 'sft'")
@@ -278,7 +292,7 @@ def _run_efficient_overfit_gate(
             enabled=config.use_bfloat16,
         ):
             logits, _ = model(batch.inputs)
-            return masked_cross_entropy(
+            return config.training_loss(
                 logits,
                 batch.targets,
                 batch.target_mask,
@@ -427,7 +441,7 @@ def run_efficient_training(
                 enabled=config.use_bfloat16,
             ):
                 logits, _ = model(batch.inputs)
-                loss = masked_cross_entropy(
+                loss = config.training_loss(
                     logits,
                     batch.targets,
                     batch.target_mask,

@@ -29,6 +29,7 @@ from nanogpt_nspire.byte_tokenizer import (
 from nanogpt_nspire.efficient_context import (
     ARCHITECTURE_NAME,
     GQA_ALIBI_SFT_ROUTE,
+    GQA_ALIBI_SFT_V2_ROUTE,
     GQA_LEARNED_SFT_ROUTE,
     load_efficient_checkpoint,
 )
@@ -56,6 +57,7 @@ SUPPORTED_ROUTES = frozenset(
         "Direct-Control-SFT",
         "English-Base-Pilot",
         GQA_ALIBI_SFT_ROUTE,
+        GQA_ALIBI_SFT_V2_ROUTE,
         GQA_LEARNED_SFT_ROUTE,
         "Hybrid-Control-SFT",
         "Hybrid-Control-SFT-Context512",

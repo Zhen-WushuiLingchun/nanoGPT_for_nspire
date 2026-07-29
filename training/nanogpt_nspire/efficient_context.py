@@ -38,6 +38,7 @@ GQA_LEARNED_CPT_ROUTE = "GQA-Learned-Context512-CPT"
 GQA_ALIBI_CPT_ROUTE = "GQA-ALiBi-Context512-CPT"
 GQA_LEARNED_SFT_ROUTE = "GQA-Learned-Hybrid-SFT-Context512"
 GQA_ALIBI_SFT_ROUTE = "GQA-ALiBi-Hybrid-SFT-Context512"
+GQA_ALIBI_SFT_V2_ROUTE = "GQA-ALiBi-SFT-v2-Context512"
 INIT_ROUTES = {
     LEARNED_POSITIONS: GQA_LEARNED_INIT_ROUTE,
     ALIBI_POSITIONS: GQA_ALIBI_INIT_ROUTE,
@@ -51,7 +52,12 @@ SFT_ROUTES = {
     ALIBI_POSITIONS: GQA_ALIBI_SFT_ROUTE,
 }
 ALL_EFFICIENT_ROUTES = frozenset(
-    {*INIT_ROUTES.values(), *CPT_ROUTES.values(), *SFT_ROUTES.values()}
+    {
+        *INIT_ROUTES.values(),
+        *CPT_ROUTES.values(),
+        *SFT_ROUTES.values(),
+        GQA_ALIBI_SFT_V2_ROUTE,
+    }
 )
 ARCHITECTURE_NAME = "efficient_long_context_gpt"
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")

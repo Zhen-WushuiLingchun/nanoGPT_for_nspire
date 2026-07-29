@@ -28,6 +28,7 @@ from nanogpt_nspire.byte_tokenizer import (
 )
 from nanogpt_nspire.efficient_context import (
     GQA_ALIBI_SFT_ROUTE,
+    GQA_ALIBI_SFT_V2_ROUTE,
     GQA_LEARNED_SFT_ROUTE,
 )
 from nanogpt_nspire.models.direct_small_gpt import DirectSmallGPT
@@ -50,6 +51,7 @@ LESSON14_ROUTES = frozenset(
     {
         "Direct-Control-SFT",
         GQA_ALIBI_SFT_ROUTE,
+        GQA_ALIBI_SFT_V2_ROUTE,
         GQA_LEARNED_SFT_ROUTE,
         "Short-CoT-SFT",
         "Hybrid-Control-SFT",
