@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from decimal import Decimal, InvalidOperation
 import json
 from pathlib import Path
+import re
 from typing import Mapping, Sequence
 
 from nanogpt_nspire.assistant_eval import (
     EvaluationError,
     load_evaluation_model,
     load_evaluation_records,
+    parse_last_decimal,
 )
 from nanogpt_nspire.efficient_context import (
     GQA_ALIBI_SFT_ROUTE,
@@ -40,6 +43,9 @@ CHALLENGE_SLICES = frozenset(
 CHALLENGE_ROUTES = frozenset(
     {GQA_ALIBI_SFT_ROUTE, GQA_ALIBI_SFT_V2_ROUTE}
 )
+_NUMBER_PATTERN = re.compile(
+    r"(?<![\w/])[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?![\w/])"
+)
 
 
 def _rate(rows: Sequence[Mapping[str, object]], field: str) -> float:
@@ -47,6 +53,36 @@ def _rate(rows: Sequence[Mapping[str, object]], field: str) -> float:
         bool(dict(row["score"])[field])  # type: ignore[arg-type]
         for row in rows
     ) / len(rows)
+
+
+def _numbers(text: object) -> frozenset[Decimal]:
+    if not isinstance(text, str):
+        return frozenset()
+    values: set[Decimal] = set()
+    for match in _NUMBER_PATTERN.finditer(text):
+        try:
+            value = Decimal(match.group(0).replace(",", ""))
+        except InvalidOperation:
+            continue
+        if value.is_finite():
+            values.add(value)
+    return frozenset(values)
+
+
+def _reasoning_matches_final(row: Mapping[str, object]) -> bool | None:
+    completion = dict(row["completion"])  # type: ignore[arg-type]
+    reasoning = completion.get("reasoning_text")
+    final = completion.get("final_text")
+    if not isinstance(reasoning, str) or not reasoning.strip():
+        return None
+    if not isinstance(final, str):
+        return False
+    try:
+        return Decimal(parse_last_decimal(reasoning)) == Decimal(
+            parse_last_decimal(final)
+        )
+    except (EvaluationError, InvalidOperation):
+        return False
 
 
 def _group_metrics(
@@ -58,6 +94,32 @@ def _group_metrics(
     )
     correct = sum(
         bool(dict(row["score"])["task_correct"])  # type: ignore[arg-type]
+        for row in rows
+    )
+    finals = Counter(
+        str(dict(row["completion"]).get("final_text", ""))  # type: ignore[arg-type]
+        for row in rows
+    )
+    common_final, common_count = finals.most_common(1)[0]
+    reasoning_consistency = tuple(
+        value
+        for value in (
+            _reasoning_matches_final(row) for row in rows
+        )
+        if value is not None
+    )
+    prompt_number_use = sum(
+        bool(
+            _numbers(row.get("prompt"))
+            & (
+                _numbers(
+                    dict(row["completion"]).get("reasoning_text")  # type: ignore[arg-type]
+                )
+                | _numbers(
+                    dict(row["completion"]).get("final_text")  # type: ignore[arg-type]
+                )
+            )
+        )
         for row in rows
     )
     return {
@@ -94,8 +156,22 @@ def _group_metrics(
         )
         / len(rows),
         "mode_compliance_rate": _rate(rows, "mode_compliant"),
+        "most_common_final": {
+            "count": common_count,
+            "rate": common_count / len(rows),
+            "text": common_final,
+        },
+        "prompt_number_use_rate": prompt_number_use / len(rows),
+        "numeric_accuracy": _rate(rows, "numeric_correct"),
+        "reasoning_final_consistency_rate": (
+            sum(reasoning_consistency) / len(reasoning_consistency)
+            if reasoning_consistency
+            else None
+        ),
         "role_leak_rate": _rate(rows, "special_token_leak"),
         "task_accuracy": correct / len(rows),
+        "unit_accuracy": _rate(rows, "unit_correct"),
+        "unique_finals": len(finals),
     }
 
 

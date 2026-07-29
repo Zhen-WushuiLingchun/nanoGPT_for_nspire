@@ -19,16 +19,21 @@ def _row(
             "context_exhausted": False,
             "elapsed_seconds": 1.0,
             "final_tokens": 2,
+            "final_text": "The answer is 7.",
             "final_transition": True,
             "generated_tokens": generated_tokens,
+            "reasoning_text": "Compute 3 + 4 = 7.",
             "reasoning_tokens": 3,
         },
         "score": {
             "format_valid": correct,
             "mode_compliant": correct,
+            "numeric_correct": correct,
             "special_token_leak": False,
             "task_correct": correct,
+            "unit_correct": True,
         },
+        "prompt": "Calculate 3 + 4.",
         "slice": slice_name,
         "task": task,
     }
@@ -56,6 +61,8 @@ def test_challenge_summary_preserves_slice_and_token_efficiency() -> None:
     assert summary["metrics"]["correct_per_1000_generated_tokens"] == 25.0
     assert summary["per_slice"]["in_range"]["task_accuracy"] == 1.0
     assert summary["per_slice"]["range_shifted"]["task_accuracy"] == 0.0
+    assert summary["metrics"]["prompt_number_use_rate"] == 1.0
+    assert summary["metrics"]["reasoning_final_consistency_rate"] == 1.0
 
 
 def test_challenge_summary_rejects_unknown_slice() -> None:
