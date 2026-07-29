@@ -9,6 +9,7 @@ from nanogpt_nspire.lesson16_data import (
     Lesson16DataError,
     build_compact_examples,
     compact_gsm8k_example,
+    generate_lesson16_arithmetic_examples,
     parse_verified_calculation,
 )
 from nanogpt_nspire.math_curriculum import ArithmeticExample
@@ -114,3 +115,18 @@ def test_project_examples_use_short_verified_reasoning() -> None:
         "gsm8k": 1,
         "physics_numeric": 1,
     }
+
+
+def test_extended_arithmetic_generator_reaches_frozen_count() -> None:
+    first = generate_lesson16_arithmetic_examples(
+        count=24_000,
+        seed=20260729,
+    )
+    second = generate_lesson16_arithmetic_examples(
+        count=24_000,
+        seed=20260729,
+    )
+
+    assert len(first) == 24_000
+    assert first == second
+    assert len({item.family_id for item in first}) == 24_000

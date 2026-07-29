@@ -11,17 +11,19 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import random
 import re
 import shutil
 import tempfile
 from typing import Iterable, Mapping, Sequence
+import unicodedata
 
 from nanogpt_nspire.assistant_eval import load_evaluation_records
 from nanogpt_nspire.lesson12_curriculum import (
-    GSM8KExample,
     PhysicsExample,
     canonical_jsonl_bytes,
     generate_physics_examples,
+    parse_gsm8k_final_answer,
     verify_physics_example,
 )
 from nanogpt_nspire.lesson12_data import PINNED_INPUTS
@@ -101,6 +103,47 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _normalize_question(value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise Lesson16DataError("GSM8K question must be non-empty text")
+    normalized = unicodedata.normalize("NFKC", value)
+    normalized = normalized.replace("\r\n", "\n").replace("\r", "\n")
+    normalized = "\n".join(
+        " ".join(line.split()) for line in normalized.split("\n")
+    ).strip()
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    if "\ufffd" in normalized:
+        raise Lesson16DataError(
+            "GSM8K question contains a replacement character"
+        )
+    for character in normalized:
+        if (
+            unicodedata.category(character) == "Cc"
+            and character not in {"\n", "\t"}
+        ):
+            raise Lesson16DataError(
+                "GSM8K question contains a control character"
+            )
+    try:
+        normalized.encode("utf-8", errors="strict")
+    except UnicodeEncodeError as error:
+        raise Lesson16DataError(
+            "GSM8K question is not valid UTF-8"
+        ) from error
+    return normalized
+
+
+def _gsm_family_id(question: str) -> str:
+    payload = json.dumps(
+        {"question": question},
+        ensure_ascii=True,
+        separators=(",", ":"),
+        sort_keys=True,
+        allow_nan=False,
+    ).encode("ascii")
+    return f"gsm8k-{hashlib.sha256(payload).hexdigest()[:24]}"
 
 
 def _write_bytes(path: Path, payload: bytes) -> None:
@@ -328,17 +371,22 @@ def compact_gsm8k_example(
 
     if not isinstance(record, Mapping):
         raise Lesson16DataError("GSM8K record must be a mapping")
-    try:
-        base = GSM8KExample.from_record(
-            record,
-            source_split="train",
-            row_index=row_index,
-        )
-    except ValueError as error:
-        raise Lesson16DataError(str(error)) from error
+    if (
+        isinstance(row_index, bool)
+        or not isinstance(row_index, int)
+        or row_index < 0
+    ):
+        raise Lesson16DataError("row_index must be non-negative")
+    if "question" not in record or "answer" not in record:
+        raise Lesson16DataError("GSM8K record requires question and answer")
+    question = _normalize_question(record["question"])
     raw_answer = record.get("answer")
     if not isinstance(raw_answer, str):
         raise Lesson16DataError("GSM8K answer must be text")
+    try:
+        exact_answer = parse_gsm8k_final_answer(raw_answer)
+    except ValueError as error:
+        raise Lesson16DataError(str(error)) from error
     annotations = GSM_ANNOTATION.findall(raw_answer)
     if not 1 <= len(annotations) <= MAX_CALCULATION_STEPS:
         raise Lesson16DataError(
@@ -348,7 +396,7 @@ def compact_gsm8k_example(
         parse_verified_calculation(value) for value in annotations
     )
     try:
-        expected = Decimal(base.exact_answer)
+        expected = Decimal(exact_answer)
     except InvalidOperation as error:
         raise Lesson16DataError(
             "GSM8K final answer must be decimal"
@@ -361,14 +409,15 @@ def compact_gsm8k_example(
         f"Compute {item.expression} = {item.result}."
         for item in calculations
     )
+    family_id = _gsm_family_id(question)
     return Lesson16Example(
-        record_id=f"{base.record_id}-compact",
-        family_id=base.family_id,
+        record_id=f"{family_id}:train:{row_index}-compact",
+        family_id=family_id,
         task="gsm8k",
-        prompt=base.question,
+        prompt=question,
         reasoning=reasoning,
-        final_answer=base.direct_answer,
-        exact_answer=base.exact_answer,
+        final_answer=f"The answer is {exact_answer}.",
+        exact_answer=exact_answer,
         expected_unit=None,
         source_id="gsm8k",
         license_id="MIT",
@@ -398,6 +447,93 @@ def _compact_arithmetic(item: ArithmeticExample) -> Lesson16Example:
         license_id="MIT",
         reasoning_steps=steps,
     )
+
+
+def generate_lesson16_arithmetic_examples(
+    *,
+    count: int,
+    seed: int,
+) -> tuple[ArithmeticExample, ...]:
+    """Generate a larger balanced domain without changing older lessons."""
+
+    if isinstance(count, bool) or not isinstance(count, int) or count <= 0:
+        raise Lesson16DataError("count must be a positive integer")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise Lesson16DataError("seed must be an integer")
+    generator = random.Random(seed)
+    examples: list[ArithmeticExample] = []
+    seen: set[str] = set()
+    attempts = 0
+    while len(examples) < count:
+        attempts += 1
+        if attempts > count * 100:
+            raise Lesson16DataError(
+                "could not generate enough Lesson 16 arithmetic families"
+            )
+        route = attempts % 8
+        if route == 0:
+            item = ArithmeticExample.create(
+                left=generator.randint(-5_000, 5_000),
+                operator="+",
+                right=generator.randint(-5_000, 5_000),
+            )
+        elif route == 1:
+            item = ArithmeticExample.create(
+                left=generator.randint(-5_000, 5_000),
+                operator="-",
+                right=generator.randint(-5_000, 5_000),
+            )
+        elif route == 2:
+            item = ArithmeticExample.create(
+                left=generator.randint(-200, 200),
+                operator="*",
+                right=generator.randint(-200, 200),
+            )
+        elif route == 3:
+            divisor = generator.randint(1, 100)
+            quotient = generator.randint(-500, 500)
+            item = ArithmeticExample.create(
+                left=divisor * quotient,
+                operator="/",
+                right=divisor,
+            )
+        elif route == 4:
+            item = ArithmeticExample.create(
+                left=Decimal(generator.randint(-99_999, 99_999))
+                / Decimal(10),
+                operator="+",
+                right=Decimal(generator.randint(-99_999, 99_999))
+                / Decimal(100),
+            )
+        elif route == 5:
+            item = ArithmeticExample.create(
+                left=Decimal(generator.randint(-999, 999))
+                / Decimal(10),
+                operator="*",
+                right=Decimal(generator.randint(-999, 999))
+                / Decimal(10),
+            )
+        elif route == 6:
+            item = ArithmeticExample.create(
+                left=generator.randint(-100, 500),
+                operator="+",
+                right=generator.randint(-100, 500),
+                outer_operator="*",
+                outer_right=generator.randint(-30, 30),
+            )
+        else:
+            item = ArithmeticExample.create(
+                left=Decimal(generator.randint(-99_999, 99_999))
+                / Decimal(10),
+                operator="-",
+                right=Decimal(generator.randint(-99_999, 99_999))
+                / Decimal(100),
+            )
+        if item.family_id in seen:
+            continue
+        seen.add(item.family_id)
+        examples.append(item)
+    return tuple(examples)
 
 
 def _physics_substitution(item: PhysicsExample) -> str:
@@ -919,7 +1055,7 @@ def main(argv: list[str] | None = None) -> int:
         evaluation_path=arguments.evaluation,
         output_dir=arguments.output_dir,
         registry_path=arguments.registry_path,
-        arithmetic=generate_arithmetic_examples(
+        arithmetic=generate_lesson16_arithmetic_examples(
             count=arguments.arithmetic_count,
             seed=arguments.seed,
         ),
