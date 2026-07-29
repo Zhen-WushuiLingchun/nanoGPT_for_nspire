@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Mapping
 from dataclasses import asdict
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -54,6 +55,29 @@ ALL_EFFICIENT_ROUTES = frozenset(
 )
 ARCHITECTURE_NAME = "efficient_long_context_gpt"
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+
+
+def model_state_sha256(state: Mapping[str, object]) -> str:
+    """Hash tensor names, dtypes, shapes, and values canonically."""
+
+    digest = hashlib.sha256()
+    for name in sorted(state):
+        value = state[name]
+        if not isinstance(name, str) or not isinstance(value, torch.Tensor):
+            raise ValueError("model state must map names to tensors")
+        tensor = value.detach().cpu().contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(tensor.dtype).encode("ascii"))
+        digest.update(b"\0")
+        digest.update(
+            json.dumps(list(tensor.shape), separators=(",", ":")).encode(
+                "ascii"
+            )
+        )
+        digest.update(b"\0")
+        digest.update(tensor.numpy().tobytes(order="C"))
+    return digest.hexdigest()
 
 
 def lesson15_efficient_config(
@@ -230,12 +254,16 @@ def create_efficient_init_checkpoint(
             "vocab_size": VOCAB_SIZE,
         },
     }
+    checkpoint["model_state_sha256"] = model_state_sha256(
+        checkpoint["model_state_dict"]
+    )
     _atomic_torch_save(checkpoint, destination)
     return {
         "checkpoint_bytes": destination.stat().st_size,
         "checkpoint_path": str(destination),
         "checkpoint_sha256": sha256_file(destination),
         "kv_cache_bytes_fp32": model.kv_cache_bytes_fp32,
+        "model_state_sha256": checkpoint["model_state_sha256"],
         "parameter_count": model.parameter_count,
         "position_mode": position_mode,
         "route": INIT_ROUTES[position_mode],
@@ -293,6 +321,13 @@ def load_efficient_checkpoint(
     state = raw.get("model_state_dict")
     if not isinstance(state, Mapping):
         raise ValueError("efficient checkpoint state is missing")
+    declared_state_hash = raw.get("model_state_sha256")
+    if (
+        not isinstance(declared_state_hash, str)
+        or _SHA256_PATTERN.fullmatch(declared_state_hash) is None
+        or model_state_sha256(state) != declared_state_hash
+    ):
+        raise ValueError("efficient checkpoint model-state hash mismatch")
     model = EfficientLongContextGPT(expected_model_config)
     reference = model.state_dict()
     if set(state) != set(reference):

@@ -38,6 +38,7 @@ from nanogpt_nspire.efficient_context import (
     SFT_ROUTES,
     lesson15_efficient_config,
     load_efficient_checkpoint,
+    model_state_sha256,
 )
 from nanogpt_nspire.models.efficient_long_context_gpt import (
     POSITION_MODES,
@@ -543,6 +544,7 @@ def run_efficient_training(
         },
         "training_seed": config.seed,
     }
+    checkpoint["model_state_sha256"] = model_state_sha256(best_state)
     checkpoint_path = config.output_dir / config.checkpoint_filename
     _atomic_torch_save(checkpoint, checkpoint_path)
     configuration = asdict(config)

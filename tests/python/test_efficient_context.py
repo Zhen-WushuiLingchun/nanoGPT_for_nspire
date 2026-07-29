@@ -13,6 +13,7 @@ from nanogpt_nspire.efficient_context import (
     convert_mha_qkv_tensor,
     create_efficient_init_checkpoint,
     load_efficient_checkpoint,
+    model_state_sha256,
 )
 from nanogpt_nspire.models.direct_small_gpt import (
     DirectSmallConfig,
@@ -52,6 +53,24 @@ def test_qkv_conversion_copies_query_and_averages_groups() -> None:
         converted[6:8],
         torch.tensor([[3.0] * 4, [13.0] * 4]),
     )
+
+
+def test_model_state_hash_is_order_independent_and_value_sensitive() -> None:
+    left = {
+        "b": torch.tensor([2.0]),
+        "a": torch.tensor([1.0]),
+    }
+    reordered = {
+        "a": torch.tensor([1.0]),
+        "b": torch.tensor([2.0]),
+    }
+    changed = {
+        "a": torch.tensor([1.0]),
+        "b": torch.tensor([3.0]),
+    }
+
+    assert model_state_sha256(left) == model_state_sha256(reordered)
+    assert model_state_sha256(left) != model_state_sha256(changed)
 
 
 def _source_config() -> DirectSmallConfig:
@@ -135,6 +154,7 @@ def test_checkpoint_conversion_is_complete_and_strict(
     target_state = loaded.state_dict()
 
     assert provenance["route"] == expected_route
+    assert summary["model_state_sha256"] == model_state_sha256(target_state)
     assert (
         "position_embedding.weight" in target_state
     ) is (position_mode == LEARNED_POSITIONS)
