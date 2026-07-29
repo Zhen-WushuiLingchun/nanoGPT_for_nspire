@@ -80,6 +80,7 @@ def test_plan_contains_candidates_but_never_local_ground_truth(
 
     assert plan["endpoint"] == "https://api.deepseek.com/chat/completions"
     assert plan["body"]["model"] == "deepseek-v4-pro"
+    assert plan["body"]["max_tokens"] == 4096
     assert "expected_answer" not in serialized
     assert "ground_truth" not in serialized
     assert "84" in serialized

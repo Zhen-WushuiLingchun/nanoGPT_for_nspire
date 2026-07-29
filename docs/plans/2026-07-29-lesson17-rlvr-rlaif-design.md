@@ -193,6 +193,12 @@ stored. Scores are divided by four to obtain `[0,1]`. Invalid model format
 forces the AI reward to zero, but local numeric correctness is not part of the
 RLAIF-only reward.
 
+The public output budget is 4096 provider tokens. A pre-training live probe
+with 1024 tokens produced empty public content on all three bounded retries
+because high thinking consumed the available output budget. No score was
+accepted or cached. The budget was raised before any AI-rewarded policy update;
+model, rubric, reward mapping, and all policy hyperparameters remained fixed.
+
 Every record stores model ID, rubric version, request-body SHA-256, provider
 request ID, token usage, candidate permutation, retry count, and parsed public
 feedback. Credentials are read only at HTTP call time and are prohibited from

@@ -95,7 +95,7 @@ class PreferenceJudgeConfig:
     base_url: str = DEEPSEEK_BASE_URL
     model: str = DEEPSEEK_MODEL
     max_requests: int = 512
-    max_tokens: int = 1024
+    max_tokens: int = 4096
     maximum_attempts: int = 3
     retry_delay_seconds: float = 1.0
     timeout_seconds: float = 90.0
