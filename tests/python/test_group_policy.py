@@ -102,7 +102,10 @@ def test_group_advantages_are_normalized_inside_each_prompt_group() -> None:
     )
 
     assert advantages[:2].mean().item() == pytest.approx(0.0)
-    assert advantages[:2].pow(2).mean().sqrt().item() == pytest.approx(1.0)
+    assert advantages[:2].pow(2).mean().sqrt().item() == pytest.approx(
+        1.0,
+        abs=3e-6,
+    )
     assert advantages[2:].tolist() == [0.0, 0.0]
 
 

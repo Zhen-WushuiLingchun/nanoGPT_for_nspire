@@ -97,7 +97,8 @@ Formal schedule per route and policy seed:
 | field | value |
 |---|---:|
 | policy seeds | 20260731, 20260732, 20260733 |
-| optimizer updates | 16 |
+| rollout batches | 16 |
+| optimizer updates | 32 (2 per rollout batch) |
 | prompt groups/update | 4 |
 | candidates/group | 8 |
 | sampled completions/route/seed | 512 |
@@ -105,6 +106,7 @@ Formal schedule per route and policy seed:
 | modes/update | 2 Direct + 2 Think |
 | sampling temperature | 0.8 |
 | policy epochs/rollout batch | 2 |
+| policy microbatch | 4 trajectories, gradient-accumulated per epoch |
 | optimizer | AdamW |
 | learning rate | `5e-6` |
 | GRPO clip epsilon | 0.2 |
@@ -112,6 +114,15 @@ Formal schedule per route and policy seed:
 | max gradient norm | 1.0 |
 
 All routes use the final update; holdout metrics do not select a checkpoint.
+
+Before any RL result was produced, implementation exposed an ambiguity in the
+original table: 16 batches and two genuine policy epochs cannot also mean only
+16 optimizer steps. Lesson 17 therefore freezes 16 rollout batches and one
+optimizer step after each of the two policy epochs, for 32 steps total. Each
+epoch covers all 32 trajectories with four-trajectory gradient-accumulation
+microbatches; the accumulated loss is weighted by generated-token count. This
+clarification was made before the start screen or any policy training, and is
+identical across all three trainable routes.
 
 ## Policy objective
 

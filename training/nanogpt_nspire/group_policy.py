@@ -133,7 +133,7 @@ def normalize_group_advantages(
     rewards: Sequence[float],
     group_ids: Sequence[str],
     device: torch.device,
-    epsilon: float = 1e-8,
+    epsilon: float = 1e-6,
 ) -> torch.Tensor:
     """Return population-standardized rewards independently per prompt."""
 

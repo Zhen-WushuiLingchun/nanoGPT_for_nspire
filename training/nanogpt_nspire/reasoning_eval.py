@@ -32,6 +32,7 @@ from nanogpt_nspire.efficient_context import (
     GQA_LEARNED_SFT_ROUTE,
 )
 from nanogpt_nspire.models.direct_small_gpt import DirectSmallGPT
+from nanogpt_nspire.lesson17_routes import ALL_LESSON17_ROUTES
 from nanogpt_nspire.reasoning_format import (
     DIRECT_MODE,
     THINK_MODE,
@@ -56,6 +57,7 @@ LESSON14_ROUTES = frozenset(
         "Short-CoT-SFT",
         "Hybrid-Control-SFT",
         "Hybrid-Control-SFT-Context512",
+        *ALL_LESSON17_ROUTES,
     }
 )
 

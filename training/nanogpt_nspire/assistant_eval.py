@@ -33,6 +33,7 @@ from nanogpt_nspire.efficient_context import (
     GQA_LEARNED_SFT_ROUTE,
     load_efficient_checkpoint,
 )
+from nanogpt_nspire.lesson17_routes import ALL_LESSON17_ROUTES
 from nanogpt_nspire.models.direct_small_gpt import (
     DirectSmallConfig,
     DirectSmallGPT,
@@ -67,6 +68,7 @@ SUPPORTED_ROUTES = frozenset(
         "Role-Aware-SFT",
         "Short-CoT-SFT",
         "Verified-Sequence-SFT",
+        *ALL_LESSON17_ROUTES,
     }
 )
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")

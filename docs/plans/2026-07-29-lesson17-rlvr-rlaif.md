@@ -65,7 +65,8 @@ python -m pytest tests/python/test_rl_rollout.py -q
 - generated-token-only clipped ratio objective;
 - fixed-reference sampled KL;
 - right-padding excluded by a loss mask;
-- two policy epochs per rollout batch;
+- two genuine policy epochs and optimizer steps per rollout batch;
+- four-trajectory microbatches accumulated within each policy epoch;
 - finite loss/gradient checks;
 - strict parent route/hash/model architecture;
 - checkpoint and trajectory summaries remain credential-free.
@@ -137,7 +138,8 @@ python -m pytest tests/python/test_preference_judge.py -q
 
 **Contract**
 
-- 16 updates, four groups/update, eight candidates/group;
+- 16 rollout batches and 32 optimizer steps, four groups/batch, eight
+  candidates/group;
 - 256-token rollout cap, temperature 0.8;
 - two policy epochs, LR `5e-6`, clip `0.2`, KL beta `0.02`;
 - exact same prompt/mode schedule per seed and route;

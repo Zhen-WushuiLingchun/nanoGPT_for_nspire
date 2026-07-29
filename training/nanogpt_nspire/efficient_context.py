@@ -18,6 +18,7 @@ from nanogpt_nspire.context_extension import (
     CONTEXT512_CPT_ROUTE,
     EXTENDED_ARCHITECTURE,
 )
+from nanogpt_nspire.lesson17_routes import ALL_LESSON17_ROUTES
 from nanogpt_nspire.models.direct_small_gpt import (
     DirectSmallConfig,
 )
@@ -57,6 +58,7 @@ ALL_EFFICIENT_ROUTES = frozenset(
         *CPT_ROUTES.values(),
         *SFT_ROUTES.values(),
         GQA_ALIBI_SFT_V2_ROUTE,
+        *ALL_LESSON17_ROUTES,
     }
 )
 ARCHITECTURE_NAME = "efficient_long_context_gpt"

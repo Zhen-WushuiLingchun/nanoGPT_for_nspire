@@ -20,6 +20,7 @@ from nanogpt_nspire.efficient_context import (
     GQA_ALIBI_SFT_ROUTE,
     GQA_ALIBI_SFT_V2_ROUTE,
 )
+from nanogpt_nspire.lesson17_routes import ALL_LESSON17_ROUTES
 from nanogpt_nspire.reasoning_eval import (
     generate_mode_completion,
     score_mode_completion,
@@ -41,7 +42,11 @@ CHALLENGE_SLICES = frozenset(
     }
 )
 CHALLENGE_ROUTES = frozenset(
-    {GQA_ALIBI_SFT_ROUTE, GQA_ALIBI_SFT_V2_ROUTE}
+    {
+        GQA_ALIBI_SFT_ROUTE,
+        GQA_ALIBI_SFT_V2_ROUTE,
+        *ALL_LESSON17_ROUTES,
+    }
 )
 _NUMBER_PATTERN = re.compile(
     r"(?<![\w/])[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?![\w/])"
