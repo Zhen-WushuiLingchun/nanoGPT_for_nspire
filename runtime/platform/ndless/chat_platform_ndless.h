@@ -22,7 +22,8 @@ typedef enum ng_ndless_event_kind {
     NG_NDLESS_EVENT_SCROLL_DOWN = 7,
     NG_NDLESS_EVENT_NEW_CHAT = 8,
     NG_NDLESS_EVENT_CANCEL = 9,
-    NG_NDLESS_EVENT_EXIT = 10
+    NG_NDLESS_EVENT_EXIT = 10,
+    NG_NDLESS_EVENT_TOGGLE_MODE = 11
 } ng_ndless_event_kind;
 
 typedef struct ng_ndless_event {

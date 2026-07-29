@@ -135,9 +135,13 @@ static ng_status ng_load_deployment_model(
 
 static const char *ng_model_label(const ng_model *model) {
     if (model->spec.model_storage == (uint32_t)NG_MODEL_STORAGE_W4A8) {
-        return "QUANT W4A8";
+        if (model->spec.tokenizer_type
+            == (uint32_t)NG_TOKENIZER_BYTE_SPECIAL) {
+            return "GQA W4";
+        }
+        return "W4A8";
     }
-    return "SMALL FP32";
+    return "FP32";
 }
 
 static void ng_set_ui_error(ng_chat *chat, const char *message) {
@@ -198,6 +202,9 @@ static int ng_handle_event(
         case NG_NDLESS_EVENT_NEW_CHAT:
             ng_chat_new_chat(chat);
             status = NG_CHAT_OK;
+            break;
+        case NG_NDLESS_EVENT_TOGGLE_MODE:
+            status = ng_chat_toggle_mode(chat);
             break;
         case NG_NDLESS_EVENT_CANCEL:
             if (chat->phase == NG_CHAT_PHASE_GENERATING) {

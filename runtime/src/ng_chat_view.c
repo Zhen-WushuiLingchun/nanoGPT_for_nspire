@@ -169,7 +169,11 @@ static void ng_view_header(
     ng_text_builder builder = {context, sizeof(context), 0u};
     size_t block_size =
         chat->model == NULL ? 128u : (size_t)chat->model->spec.block_size;
-    int label_x;
+    const char *mode_label = chat->mode == NG_CHAT_MODE_THINK
+        ? "THINK"
+        : "DIRECT";
+    int mode_x = NG_CHAT_VIEW_WIDTH - 7
+        - (int)(strlen(mode_label) * (size_t)NG_GFX_GLYPH_ADVANCE);
 
     ng_gfx_fill_rect(
         surface,
@@ -183,27 +187,29 @@ static void ng_view_header(
         surface,
         10,
         8,
-        "NANOGPT // N-SPIRE",
+        "NANOGPT",
         NG_CHAT_COLOR_TEXT);
     ng_builder_uint(&builder, chat->context_tokens);
     ng_builder_char(&builder, '/');
     ng_builder_uint(&builder, block_size);
-    ng_gfx_draw_text(surface, 183, 8, context, NG_CHAT_COLOR_MUTED);
+    ng_gfx_draw_text(surface, 76, 8, context, NG_CHAT_COLOR_MUTED);
     if (model_label == NULL) {
         model_label = "MODEL";
     }
-    label_x =
-        NG_CHAT_VIEW_WIDTH - 8
-        - (int)(strlen(model_label) * (size_t)NG_GFX_GLYPH_ADVANCE);
-    if (label_x < 228) {
-        label_x = 228;
-    }
     ng_gfx_draw_text(
         surface,
-        label_x,
+        156,
         8,
         model_label,
         NG_CHAT_COLOR_AMBER);
+    ng_gfx_draw_text(
+        surface,
+        mode_x,
+        8,
+        mode_label,
+        chat->mode == NG_CHAT_MODE_THINK
+            ? NG_CHAT_COLOR_CORAL
+            : NG_CHAT_COLOR_MINT);
 }
 
 static void ng_view_transcript(
@@ -251,19 +257,19 @@ static void ng_view_transcript(
             surface,
             50,
             88,
-            "ENTER SEND  MENU NEW CHAT",
+            "TAB MODE | ENTER SEND",
             NG_CHAT_COLOR_TEXT);
         ng_gfx_draw_text(
             surface,
             50,
             100,
-            "CTRL+ESC EXIT",
+            "THINK HAS ITS OWN CELL",
             NG_CHAT_COLOR_MUTED);
         ng_gfx_draw_text(
             surface,
             50,
             116,
-            "NO CHAT HISTORY SAVED",
+            "CTRL+ESC EXIT | NO SAVE",
             NG_CHAT_COLOR_AMBER);
     }
     for (index = 0u; index < chat->cell_count; ++index) {
@@ -271,6 +277,7 @@ static void ng_view_transcript(
         const char *label;
         uint16_t accent;
         uint16_t fill;
+        uint16_t text_color = NG_CHAT_COLOR_TEXT;
         int height = ng_view_cell_height(chat, index);
         if (cell->role == NG_CHAT_ROLE_USER) {
             label = "USER";
@@ -280,6 +287,11 @@ static void ng_view_transcript(
             label = "AI";
             accent = NG_CHAT_COLOR_MINT;
             fill = NG_CHAT_COLOR_PANEL;
+        } else if (cell->role == NG_CHAT_ROLE_THINK) {
+            label = "THINK";
+            accent = NG_CHAT_COLOR_CORAL;
+            fill = NG_CHAT_COLOR_PANEL_ALT;
+            text_color = NG_CHAT_COLOR_MUTED;
         } else {
             label = "SYS";
             accent = NG_CHAT_COLOR_CORAL;
@@ -326,9 +338,11 @@ static void ng_view_transcript(
             chat->transcript_text + cell->text_offset,
             cell->text_length,
             NG_VIEW_CELL_COLUMNS,
-            NG_CHAT_COLOR_TEXT);
+            text_color);
         if (index + 1u == chat->cell_count
-            && cell->role == NG_CHAT_ROLE_ASSISTANT
+            && (
+                cell->role == NG_CHAT_ROLE_ASSISTANT
+                || cell->role == NG_CHAT_ROLE_THINK)
             && chat->phase == NG_CHAT_PHASE_GENERATING) {
             ng_gfx_fill_rect(
                 surface,
@@ -347,7 +361,7 @@ static void ng_view_input(ng_surface *surface, const ng_chat *chat) {
     size_t visible_start = 0u;
     size_t visible_length;
     size_t visible_cursor;
-    const size_t columns = 48u;
+    const size_t columns = 46u;
 
     ng_gfx_fill_rect(
         surface,
@@ -369,8 +383,10 @@ static void ng_view_input(ng_surface *surface, const ng_chat *chat) {
         surface,
         12,
         NG_VIEW_INPUT_TOP + 14,
-        ">",
-        NG_CHAT_COLOR_AMBER);
+        chat->mode == NG_CHAT_MODE_THINK ? "T>" : "D>",
+        chat->mode == NG_CHAT_MODE_THINK
+            ? NG_CHAT_COLOR_CORAL
+            : NG_CHAT_COLOR_AMBER);
     if (chat->input_cursor > columns) {
         visible_start = chat->input_cursor - columns;
     }
@@ -380,7 +396,7 @@ static void ng_view_input(ng_surface *surface, const ng_chat *chat) {
     }
     ng_gfx_draw_text_n(
         surface,
-        24,
+        30,
         NG_VIEW_INPUT_TOP + 14,
         chat->input + visible_start,
         visible_length,
@@ -388,11 +404,13 @@ static void ng_view_input(ng_surface *surface, const ng_chat *chat) {
     visible_cursor = chat->input_cursor - visible_start;
     ng_gfx_fill_rect(
         surface,
-        24 + (int)(visible_cursor * (size_t)NG_GFX_GLYPH_ADVANCE),
+        30 + (int)(visible_cursor * (size_t)NG_GFX_GLYPH_ADVANCE),
         NG_VIEW_INPUT_TOP + 22,
         5,
         1,
-        NG_CHAT_COLOR_AMBER);
+        chat->mode == NG_CHAT_MODE_THINK
+            ? NG_CHAT_COLOR_CORAL
+            : NG_CHAT_COLOR_AMBER);
 }
 
 static void ng_view_footer(ng_surface *surface, const ng_chat *chat) {

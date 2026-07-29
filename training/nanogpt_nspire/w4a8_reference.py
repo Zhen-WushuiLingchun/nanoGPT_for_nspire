@@ -14,6 +14,8 @@ from torch.nn import functional as F
 from nanogpt_nspire.alignment import ProbeResult
 from nanogpt_nspire.export_format import (
     MODEL_STORAGE_W4A8,
+    POSITION_ALIBI,
+    POSITION_LEARNED,
     STORAGE_FP32,
     STORAGE_INT4_GROUPWISE,
     ModelFormatError,
@@ -21,6 +23,7 @@ from nanogpt_nspire.export_format import (
     TensorView,
     parse_model_file,
 )
+from nanogpt_nspire.models.efficient_long_context_gpt import alibi_slopes
 from nanogpt_nspire.export_model import (
     BLOCK_TENSOR_ID_BASE,
     BLOCK_TENSOR_ID_STRIDE,
@@ -172,9 +175,17 @@ class W4A8Reference:
         self.block_size = parsed.spec.block_size
         self.n_layer = parsed.spec.n_layer
         self.n_head = parsed.spec.n_head
+        self.n_kv_head = parsed.spec.effective_n_kv_head
         self.n_embd = parsed.spec.n_embd
         self.mlp_ratio = parsed.spec.mlp_ratio
         self.head_dim = self.n_embd // self.n_head
+        self.kv_width = self.n_kv_head * self.head_dim
+        self.query_heads_per_kv = self.n_head // self.n_kv_head
+        self.position_mode = parsed.spec.position_mode
+        self.alibi_slopes = torch.tensor(
+            alibi_slopes(self.n_head),
+            dtype=torch.float32,
+        )
         self.matrices = {
             tensor_id: _w4_tensor(view)
             for tensor_id, view in parsed.tensors.items()
@@ -188,7 +199,7 @@ class W4A8Reference:
         self.key_cache = torch.zeros(
             self.n_layer,
             self.block_size,
-            self.n_embd,
+            self.kv_width,
             dtype=torch.float32,
         )
         self.value_cache = torch.zeros_like(self.key_cache)
@@ -231,10 +242,12 @@ class W4A8Reference:
         if sequence_length == 0 or sequence_length > self.block_size:
             raise ValueError("token sequence length is outside the context")
         positions = torch.arange(sequence_length, device=token_ids.device)
-        hidden = (
-            self._embedding(TOKEN_EMBEDDING_TENSOR_ID, token_ids)
-            + self._embedding(POSITION_EMBEDDING_TENSOR_ID, positions)
-        )
+        hidden = self._embedding(TOKEN_EMBEDDING_TENSOR_ID, token_ids)
+        if self.position_mode == POSITION_LEARNED:
+            hidden = hidden + self._embedding(
+                POSITION_EMBEDDING_TENSOR_ID,
+                positions,
+            )
         for layer in range(self.n_layer):
             attention_norm = self.vectors[
                 self._block_id(layer, 0)
@@ -247,21 +260,46 @@ class W4A8Reference:
                 1.0e-5,
             )
             qkv = self._linear(self._block_id(layer, 1), normalized)
-            query, key, value = qkv.split(self.n_embd, dim=-1)
+            query, key, value = qkv.split(
+                (self.n_embd, self.kv_width, self.kv_width),
+                dim=-1,
+            )
 
-            def split_heads(tensor: torch.Tensor) -> torch.Tensor:
+            def split_heads(
+                tensor: torch.Tensor,
+                head_count: int,
+            ) -> torch.Tensor:
                 return tensor.view(
                     tensor.shape[0],
                     sequence_length,
-                    self.n_head,
+                    head_count,
                     self.head_dim,
                 ).transpose(1, 2)
 
-            query = split_heads(query)
-            key = split_heads(key)
-            value = split_heads(value)
+            query = split_heads(query, self.n_head)
+            key = split_heads(key, self.n_kv_head)
+            value = split_heads(value, self.n_kv_head)
+            key = key.repeat_interleave(self.query_heads_per_kv, dim=1)
+            value = value.repeat_interleave(
+                self.query_heads_per_kv,
+                dim=1,
+            )
             scores = query @ key.transpose(-2, -1)
             scores *= 1.0 / math.sqrt(self.head_dim)
+            if self.position_mode == POSITION_ALIBI:
+                distances = (
+                    positions[:, None] - positions[None, :]
+                ).clamp_min(0)
+                scores = scores - (
+                    self.alibi_slopes.to(scores.device)
+                    .view(1, self.n_head, 1, 1)
+                    * distances.to(scores.dtype).view(
+                        1,
+                        1,
+                        sequence_length,
+                        sequence_length,
+                    )
+                )
             causal = torch.ones(
                 sequence_length,
                 sequence_length,
@@ -333,6 +371,7 @@ class W4A8Reference:
         }
         self.key_cache = self.key_cache.to(target)
         self.value_cache = self.value_cache.to(target)
+        self.alibi_slopes = self.alibi_slopes.to(target)
         return self
 
     def eval(self) -> W4A8Reference:
@@ -354,11 +393,13 @@ class W4A8Reference:
         if self.position >= self.block_size:
             raise ValueError("runtime context is full")
         token = torch.tensor(token_id, dtype=torch.long)
-        position = torch.tensor(self.position, dtype=torch.long)
-        hidden = (
-            self._embedding(TOKEN_EMBEDDING_TENSOR_ID, token)
-            + self._embedding(POSITION_EMBEDDING_TENSOR_ID, position)
-        )
+        hidden = self._embedding(TOKEN_EMBEDDING_TENSOR_ID, token)
+        if self.position_mode == POSITION_LEARNED:
+            position = torch.tensor(self.position, dtype=torch.long)
+            hidden = hidden + self._embedding(
+                POSITION_EMBEDDING_TENSOR_ID,
+                position,
+            )
         for layer in range(self.n_layer):
             normalized = F.layer_norm(
                 hidden,
@@ -368,27 +409,41 @@ class W4A8Reference:
                 1.0e-5,
             )
             qkv = self._linear(self._block_id(layer, 1), normalized)
-            query, key, value = qkv.split(self.n_embd)
+            query, key, value = qkv.split(
+                (self.n_embd, self.kv_width, self.kv_width)
+            )
             self.key_cache[layer, self.position].copy_(key)
             self.value_cache[layer, self.position].copy_(value)
             context_parts = []
             for head in range(self.n_head):
                 begin = head * self.head_dim
                 end = begin + self.head_dim
+                kv_head = head // self.query_heads_per_kv
+                kv_begin = kv_head * self.head_dim
+                kv_end = kv_begin + self.head_dim
                 keys = self.key_cache[
                     layer,
                     : self.position + 1,
-                    begin:end,
+                    kv_begin:kv_end,
                 ]
                 values = self.value_cache[
                     layer,
                     : self.position + 1,
-                    begin:end,
+                    kv_begin:kv_end,
                 ]
                 scores = (
                     keys @ query[begin:end]
                     * (1.0 / math.sqrt(self.head_dim))
                 )
+                if self.position_mode == POSITION_ALIBI:
+                    distances = torch.arange(
+                        self.position,
+                        -1,
+                        -1,
+                        dtype=torch.float32,
+                        device=scores.device,
+                    )
+                    scores = scores - self.alibi_slopes[head] * distances
                 context_parts.append(torch.softmax(scores, dim=0) @ values)
             context = torch.cat(context_parts)
             hidden = hidden + self._linear(

@@ -30,4 +30,5 @@ fi
 
 printf 'export NDLESS_SDK=%q\n' "$ndless_sdk"
 printf 'export _NDLESS_TOOLCHAIN_PATH=%q\n' "$toolchain_bin"
-printf 'export PATH=%q:%q:$PATH\n' "$ndless_sdk/bin" "$toolchain_bin"
+combined_path="$ndless_sdk/bin:$toolchain_bin:$PATH"
+printf 'export PATH=%q\n' "$combined_path"

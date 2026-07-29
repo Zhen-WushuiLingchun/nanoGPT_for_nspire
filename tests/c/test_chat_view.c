@@ -113,7 +113,7 @@ static void test_deterministic_full_view(void) {
         pixels,
         (size_t)NG_CHAT_VIEW_WIDTH * (size_t)NG_CHAT_VIEW_HEIGHT);
     fprintf(stderr, "chat view hash: %08x\n", (unsigned)hash);
-    CHECK(hash == 0x863cca82u);
+    CHECK(hash == 0x206105dbu);
     CHECK(pixels[0] == NG_CHAT_COLOR_BORDER);
     CHECK(
         pixels[

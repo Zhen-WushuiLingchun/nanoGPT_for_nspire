@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NG_FORMAT_VERSION 1u
+#define NG_LEGACY_FORMAT_VERSION 1u
+#define NG_FORMAT_VERSION 2u
 #define NG_ENDIAN_MARKER 0x01020304u
 #define NG_FLAG_LITTLE_ENDIAN (1u << 0u)
 #define NG_FLAG_TIED_EMBEDDING (1u << 1u)
@@ -14,8 +15,6 @@
 #define NG_KNOWN_FLAGS                                                       \
     (NG_FLAG_LITTLE_ENDIAN | NG_FLAG_TIED_EMBEDDING | NG_FLAG_BIAS           \
      | NG_FLAG_TANH_GELU)
-#define NG_TOKENIZER_CHARACTER_UTF8 1u
-
 static const uint8_t ng_magic[8] = {
     (uint8_t)'N',
     (uint8_t)'G',
@@ -109,6 +108,9 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
     size_t float_scratch;
     size_t float_scratch_bytes;
     size_t mlp_width;
+    size_t head_width;
+    size_t kv_width;
+    size_t qkv_width;
     size_t padded_mlp_width;
     size_t activation_scale_count = 0u;
     if (spec == NULL) {
@@ -120,23 +122,39 @@ size_t ng_model_estimate_arena_bytes(const ng_model_spec *spec) {
             &mlp_width)) {
         return 0u;
     }
+    if (spec->n_head == 0u || spec->n_kv_head == 0u) {
+        return 0u;
+    }
+    head_width = (size_t)spec->n_embd / (size_t)spec->n_head;
+    if (!ng_checked_multiply(
+            (size_t)spec->n_kv_head,
+            head_width,
+            &kv_width)
+        || !ng_checked_multiply(kv_width, 2u, &qkv_width)
+        || !ng_checked_add(
+            qkv_width,
+            (size_t)spec->n_embd,
+            &qkv_width)) {
+        return 0u;
+    }
     padded_mlp_width = mlp_width;
     if (!ng_checked_multiply(
             (size_t)spec->n_layer,
             (size_t)spec->block_size,
             &kv_values)
-        || !ng_checked_multiply(kv_values, (size_t)spec->n_embd, &kv_values)
+        || !ng_checked_multiply(kv_values, kv_width, &kv_values)
         || !ng_checked_multiply(kv_values, 2u, &kv_values)
         || !ng_checked_multiply(kv_values, sizeof(float), &kv_bytes)) {
         return 0u;
     }
     /*
      * Shared float scratch: hidden + normalized + fused QKV + attention
-     * context + projection = 7*C, followed by MLP, logits and one head's
-     * attention scores. Heads are evaluated serially, so scores need T rather
-     * than n_head*T values.
+     * context + projection, followed by MLP, logits and one head's attention
+     * scores. Heads are evaluated serially, so scores need T rather than
+     * n_head*T values.
      */
-    if (!ng_checked_multiply((size_t)spec->n_embd, 7u, &float_scratch)
+    if (!ng_checked_multiply((size_t)spec->n_embd, 4u, &float_scratch)
+        || !ng_checked_add(float_scratch, qkv_width, &float_scratch)
         || !ng_checked_add(float_scratch, mlp_width, &float_scratch)
         || !ng_checked_add(
             float_scratch,
@@ -265,6 +283,7 @@ static int ng_expected_tensor(
     uint32_t *tensor_id,
     uint32_t *rank,
     uint32_t shape[4]) {
+    uint32_t prefix_count;
     uint32_t final_index;
     if (spec == NULL || tensor_id == NULL || rank == NULL || shape == NULL) {
         return 0;
@@ -273,7 +292,10 @@ static int ng_expected_tensor(
     shape[1] = 0u;
     shape[2] = 0u;
     shape[3] = 0u;
-    final_index = 2u + 6u * spec->n_layer;
+    prefix_count = spec->position_mode == (uint32_t)NG_POSITION_LEARNED
+        ? 2u
+        : 1u;
+    final_index = prefix_count + 6u * spec->n_layer;
     if (index == 0u) {
         *tensor_id = NG_TENSOR_TOKEN_EMBEDDING;
         *rank = 2u;
@@ -281,7 +303,8 @@ static int ng_expected_tensor(
         shape[1] = spec->n_embd;
         return 1;
     }
-    if (index == 1u) {
+    if (spec->position_mode == (uint32_t)NG_POSITION_LEARNED
+        && index == 1u) {
         *tensor_id = NG_TENSOR_POSITION_EMBEDDING;
         *rank = 2u;
         shape[0] = spec->block_size;
@@ -294,8 +317,8 @@ static int ng_expected_tensor(
         shape[0] = spec->n_embd;
         return 1;
     }
-    if (index > 1u && index < final_index) {
-        uint32_t relative = index - 2u;
+    if (index >= prefix_count && index < final_index) {
+        uint32_t relative = index - prefix_count;
         uint32_t block = relative / 6u;
         uint32_t slot = relative % 6u;
         *tensor_id = NG_TENSOR_BLOCK_BASE
@@ -307,7 +330,9 @@ static int ng_expected_tensor(
         } else {
             *rank = 2u;
             if (slot == 1u) {
-                shape[0] = 3u * spec->n_embd;
+                uint32_t head_width = spec->n_embd / spec->n_head;
+                uint32_t kv_width = spec->n_kv_head * head_width;
+                shape[0] = spec->n_embd + 2u * kv_width;
                 shape[1] = spec->n_embd;
             } else if (slot == 2u) {
                 shape[0] = spec->n_embd;
@@ -405,7 +430,8 @@ static ng_status ng_validate_header(
     declared_file_bytes = ng_read_u32(bytes + 24u);
     model->payload_crc32 = ng_read_u32(bytes + 28u);
     model->header_crc32 = ng_read_u32(bytes + 32u);
-    if (version != NG_FORMAT_VERSION
+    if ((version != NG_LEGACY_FORMAT_VERSION
+            && version != NG_FORMAT_VERSION)
         || header_bytes != NG_FILE_HEADER_BYTES
         || endian != NG_ENDIAN_MARKER) {
         ng_error_set(error, "unsupported header version or endian marker");
@@ -459,29 +485,49 @@ static ng_status ng_validate_header(
     tokenizer_type = ng_read_u32(bytes + 108u);
     model->spec.activation_quantization = ng_read_u32(bytes + 112u);
     model->spec.activation_group_size = ng_read_u32(bytes + 116u);
+    model->spec.tokenizer_type = tokenizer_type;
     model->spec.tie_embeddings = 1u;
     model->spec.bias = 0u;
 
-    if (ng_read_u32(bytes + 120u) != 0u
-        || ng_read_u32(bytes + 124u) != 0u) {
-        ng_error_set(error, "reserved header fields are nonzero");
-        return NG_STATUS_FORMAT;
+    if (version == NG_LEGACY_FORMAT_VERSION) {
+        if (ng_read_u32(bytes + 120u) != 0u
+            || ng_read_u32(bytes + 124u) != 0u) {
+            ng_error_set(error, "legacy reserved fields are nonzero");
+            return NG_STATUS_FORMAT;
+        }
+        model->spec.n_kv_head = model->spec.n_head;
+        model->spec.position_mode = (uint32_t)NG_POSITION_LEARNED;
+    } else {
+        model->spec.n_kv_head = ng_read_u32(bytes + 120u);
+        model->spec.position_mode = ng_read_u32(bytes + 124u);
     }
     if (model->tensor_count == 0u
         || model->tensor_count > NG_MAX_TENSORS
         || model->spec.vocab_size == 0u
         || model->spec.vocab_size > NG_MAX_VOCAB_SIZE
         || model->spec.block_size == 0u
-        || model->spec.block_size > 128u
+        || model->spec.block_size > 512u
         || model->spec.n_layer == 0u
         || model->spec.n_head == 0u
+        || model->spec.n_kv_head == 0u
+        || model->spec.n_head % model->spec.n_kv_head != 0u
         || model->spec.n_embd == 0u
         || model->spec.mlp_ratio == 0u
-        || model->spec.n_embd % model->spec.n_head != 0u) {
+        || model->spec.n_embd % model->spec.n_head != 0u
+        || (
+            model->spec.position_mode != (uint32_t)NG_POSITION_LEARNED
+            && model->spec.position_mode != (uint32_t)NG_POSITION_ALIBI)) {
         ng_error_set(error, "model dimensions are invalid");
         return NG_STATUS_FORMAT;
     }
-    if (model->tensor_count != 2u + 6u * model->spec.n_layer + 1u) {
+    if (model->tensor_count
+        != (
+            (
+                model->spec.position_mode == (uint32_t)NG_POSITION_LEARNED
+                ? 2u
+                : 1u)
+            + 6u * model->spec.n_layer
+            + 1u)) {
         ng_error_set(error, "tensor count does not match architecture");
         return NG_STATUS_FORMAT;
     }
@@ -512,8 +558,16 @@ static ng_status ng_validate_header(
         ng_error_set(error, "model storage route is unsupported");
         return NG_STATUS_FORMAT;
     }
-    if (tokenizer_type != NG_TOKENIZER_CHARACTER_UTF8) {
+    if (tokenizer_type != (uint32_t)NG_TOKENIZER_CHARACTER_UTF8
+        && tokenizer_type != (uint32_t)NG_TOKENIZER_BYTE_SPECIAL) {
         ng_error_set(error, "tokenizer type is unsupported");
+        return NG_STATUS_FORMAT;
+    }
+    if (tokenizer_type == (uint32_t)NG_TOKENIZER_BYTE_SPECIAL
+        && (
+            model->spec.vocab_size != (uint32_t)NG_BYTE_SPECIAL_VOCAB_SIZE
+            || *vocabulary_bytes != 0u)) {
+        ng_error_set(error, "byte-special tokenizer metadata is invalid");
         return NG_STATUS_FORMAT;
     }
     if (tensor_entry_bytes != NG_TENSOR_ENTRY_BYTES
@@ -555,6 +609,25 @@ static ng_status ng_parse_vocabulary(
     if (!ng_checked_add(vocabulary_offset, vocabulary_bytes, &end)) {
         ng_error_set(error, "vocabulary length overflows");
         return NG_STATUS_FORMAT;
+    }
+    if (model->spec.tokenizer_type
+        == (uint32_t)NG_TOKENIZER_BYTE_SPECIAL) {
+        if (vocabulary_bytes != 0u) {
+            ng_error_set(error, "byte-special vocabulary must be empty");
+            return NG_STATUS_FORMAT;
+        }
+        for (index = 0u; index < (uint32_t)NG_BYTE_TOKEN_COUNT; ++index) {
+            model->byte_vocabulary[index] = (uint8_t)index;
+            model->vocabulary[index].bytes = &model->byte_vocabulary[index];
+            model->vocabulary[index].length = 1u;
+        }
+        for (index = (uint32_t)NG_BYTE_TOKEN_COUNT;
+             index < model->spec.vocab_size;
+             ++index) {
+            model->vocabulary[index].bytes = NULL;
+            model->vocabulary[index].length = 0u;
+        }
+        return NG_STATUS_OK;
     }
     for (index = 0u; index < model->spec.vocab_size; ++index) {
         uint16_t token_bytes;

@@ -10,7 +10,8 @@ import zlib
 
 
 FILE_MAGIC = b"NGNSP001"
-FORMAT_VERSION = 1
+LEGACY_FORMAT_VERSION = 1
+FORMAT_VERSION = 2
 ENDIAN_MARKER = 0x01020304
 FILE_HEADER_BYTES = 128
 TENSOR_ENTRY_BYTES = 64
@@ -27,6 +28,22 @@ ACTIVATION_NONE = 0
 ACTIVATION_DYNAMIC_INT8_GROUPWISE = 1
 
 TOKENIZER_CHARACTER_UTF8 = 1
+TOKENIZER_BYTE_SPECIAL = 2
+
+POSITION_LEARNED = 1
+POSITION_ALIBI = 2
+
+BYTE_SPECIAL_VOCAB_SIZE = 264
+BYTE_SPECIAL_NAMES = (
+    "<BOS>",
+    "<EOS>",
+    "<USER>",
+    "<ASSISTANT>",
+    "<TOOL>",
+    "<THINK>",
+    "<FINAL>",
+    "<PAD>",
+)
 
 FLAG_LITTLE_ENDIAN = 1 << 0
 FLAG_TIED_EMBEDDING = 1 << 1
@@ -90,6 +107,19 @@ class ModelSpec:
     weight_group_size: int = 0
     activation_quantization: int = ACTIVATION_NONE
     activation_group_size: int = 0
+    n_kv_head: int = 0
+    position_mode: int = POSITION_LEARNED
+    tokenizer_type: int = TOKENIZER_CHARACTER_UTF8
+
+    def __post_init__(self) -> None:
+        if self.n_kv_head == 0:
+            object.__setattr__(self, "n_kv_head", self.n_head)
+
+    @property
+    def effective_n_kv_head(self) -> int:
+        """Return the stored KV-head count, defaulting legacy specs to MHA."""
+
+        return self.n_kv_head
 
     def validate(self) -> None:
         for name in (
@@ -103,6 +133,24 @@ class ModelSpec:
             _positive_int(getattr(self, name), name)
         if self.n_embd % self.n_head:
             raise ModelFormatError("n_embd must be divisible by n_head")
+        n_kv_head = self.effective_n_kv_head
+        _positive_int(n_kv_head, "n_kv_head")
+        if self.n_head % n_kv_head:
+            raise ModelFormatError("n_head must be divisible by n_kv_head")
+        if self.position_mode not in {POSITION_LEARNED, POSITION_ALIBI}:
+            raise ModelFormatError("position_mode is unsupported")
+        if self.tokenizer_type not in {
+            TOKENIZER_CHARACTER_UTF8,
+            TOKENIZER_BYTE_SPECIAL,
+        }:
+            raise ModelFormatError("tokenizer_type is unsupported")
+        if (
+            self.tokenizer_type == TOKENIZER_BYTE_SPECIAL
+            and self.vocab_size != BYTE_SPECIAL_VOCAB_SIZE
+        ):
+            raise ModelFormatError(
+                "byte-special tokenizer requires the frozen 264-token vocabulary"
+            )
         if not isinstance(self.tie_embeddings, bool):
             raise ModelFormatError("tie_embeddings must be boolean")
         if not isinstance(self.bias, bool):
@@ -245,7 +293,28 @@ def _validate_tensor_payload(
     return tensor.shape, data, auxiliary, element_count
 
 
-def _encode_vocabulary(vocabulary: Sequence[str]) -> bytes:
+def _byte_special_vocabulary() -> tuple[str, ...]:
+    return tuple(chr(index) for index in range(256)) + BYTE_SPECIAL_NAMES
+
+
+def _encode_vocabulary(
+    vocabulary: Sequence[str],
+    *,
+    tokenizer_type: int,
+) -> bytes:
+    if tokenizer_type == TOKENIZER_BYTE_SPECIAL:
+        if len(vocabulary) not in {0, BYTE_SPECIAL_VOCAB_SIZE}:
+            raise ModelFormatError(
+                "byte-special vocabulary must be empty or canonical"
+            )
+        if (
+            len(vocabulary) == BYTE_SPECIAL_VOCAB_SIZE
+            and tuple(vocabulary) != _byte_special_vocabulary()
+        ):
+            raise ModelFormatError(
+                "byte-special vocabulary does not match the frozen protocol"
+            )
+        return b""
     output = bytearray()
     for index, token in enumerate(vocabulary):
         if not isinstance(token, str):
@@ -286,9 +355,15 @@ def build_model_file(
     spec.validate()
     if not isinstance(vocabulary, Sequence):
         raise ModelFormatError("vocabulary must be a sequence")
-    if len(vocabulary) != spec.vocab_size:
+    if (
+        spec.tokenizer_type == TOKENIZER_CHARACTER_UTF8
+        and len(vocabulary) != spec.vocab_size
+    ):
         raise ModelFormatError("vocabulary count does not match vocab_size")
-    vocabulary_bytes = _encode_vocabulary(vocabulary)
+    vocabulary_bytes = _encode_vocabulary(
+        vocabulary,
+        tokenizer_type=spec.tokenizer_type,
+    )
     if not isinstance(tensors, Sequence) or not tensors:
         raise ModelFormatError("tensors must be a non-empty sequence")
 
@@ -417,11 +492,11 @@ def build_model_file(
         spec.weight_group_size,
         quantized_min,
         quantized_max,
-        TOKENIZER_CHARACTER_UTF8,
+        spec.tokenizer_type,
         spec.activation_quantization,
         spec.activation_group_size,
-        0,
-        0,
+        spec.effective_n_kv_head,
+        spec.position_mode,
     ]
     payload_crc32 = zlib.crc32(blob[FILE_HEADER_BYTES:]) & 0xFFFFFFFF
     header_values[6] = payload_crc32
@@ -501,7 +576,8 @@ def parse_model_file(
     fields = unpacked[1:]
     if magic != FILE_MAGIC:
         raise ModelFormatError("model magic does not match")
-    if fields[0] != FORMAT_VERSION:
+    version = fields[0]
+    if version not in {LEGACY_FORMAT_VERSION, FORMAT_VERSION}:
         raise ModelFormatError("unsupported format version")
     if fields[1] != FILE_HEADER_BYTES:
         raise ModelFormatError("header size does not match format v1")
@@ -555,11 +631,19 @@ def parse_model_file(
         tokenizer_type,
         activation_quantization,
         activation_group_size,
-        reserved0,
-        reserved1,
+        raw_n_kv_head,
+        raw_position_mode,
     ) = fields[7:]
-    if reserved0 != 0 or reserved1 != 0:
-        raise ModelFormatError("reserved header fields must be zero")
+    if version == LEGACY_FORMAT_VERSION:
+        if raw_n_kv_head != 0 or raw_position_mode != 0:
+            raise ModelFormatError(
+                "legacy reserved header fields must be zero"
+            )
+        n_kv_head = n_head
+        position_mode = POSITION_LEARNED
+    else:
+        n_kv_head = raw_n_kv_head
+        position_mode = raw_position_mode
     if tensor_count == 0:
         raise ModelFormatError("tensor table must not be empty")
     if tensor_entry_bytes != TENSOR_ENTRY_BYTES:
@@ -576,7 +660,10 @@ def parse_model_file(
         raise ModelFormatError("data offset is not aligned")
     if data_offset + data_bytes != len(blob):
         raise ModelFormatError("data byte count is invalid")
-    if tokenizer_type != TOKENIZER_CHARACTER_UTF8:
+    if tokenizer_type not in {
+        TOKENIZER_CHARACTER_UTF8,
+        TOKENIZER_BYTE_SPECIAL,
+    }:
         raise ModelFormatError("unsupported tokenizer type")
 
     quantized_min = _decode_signed_u32(raw_quantized_min)
@@ -599,14 +686,24 @@ def parse_model_file(
         weight_group_size=weight_group_size,
         activation_quantization=activation_quantization,
         activation_group_size=activation_group_size,
+        n_kv_head=n_kv_head,
+        position_mode=position_mode,
+        tokenizer_type=tokenizer_type,
     )
     spec.validate()
-    vocabulary = _decode_vocabulary(
-        blob,
-        offset=vocabulary_offset,
-        length=vocabulary_bytes,
-        count=vocab_size,
-    )
+    if tokenizer_type == TOKENIZER_BYTE_SPECIAL:
+        if vocabulary_bytes != 0:
+            raise ModelFormatError(
+                "byte-special tokenizer must not store a vocabulary payload"
+            )
+        vocabulary = _byte_special_vocabulary()
+    else:
+        vocabulary = _decode_vocabulary(
+            blob,
+            offset=vocabulary_offset,
+            length=vocabulary_bytes,
+            count=vocab_size,
+        )
 
     views: dict[int, TensorView] = {}
     occupied: list[tuple[int, int, str]] = []

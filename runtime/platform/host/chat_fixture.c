@@ -118,7 +118,7 @@ int main(int argument_count, char **arguments) {
 
     ng_chat_init(&chat, NULL, NULL);
     chat.tracked_peak_bytes = 8415168u;
-    if (!render_fixture(arguments[1], &chat, "Q-V2 W4A8", pixels)) {
+    if (!render_fixture(arguments[1], &chat, "GQA W4", pixels)) {
         return 1;
     }
 
@@ -135,22 +135,27 @@ int main(int argument_count, char **arguments) {
     chat.context_tokens = 73u;
     chat.ttft_ms = 820u;
     chat.decode_milli_tokens_per_second = 12400u;
-    if (!render_fixture(arguments[2], &chat, "Q-V2 W4A8", pixels)) {
+    if (!render_fixture(arguments[2], &chat, "GQA W4", pixels)) {
         return 1;
     }
 
     ng_chat_new_chat(&chat);
-    populate_conversation(&chat);
+    (void)ng_chat_toggle_mode(&chat);
     (void)ng_chat_append_cell(
         &chat,
-        NG_CHAT_ROLE_ASSISTANT,
-        "The mask is lower triangular because",
-        36u);
+        NG_CHAT_ROLE_USER,
+        "What is 12 times 7?",
+        19u);
+    (void)ng_chat_append_cell(
+        &chat,
+        NG_CHAT_ROLE_THINK,
+        "Use multiplication: 12 * 7 =",
+        28u);
     chat.phase = NG_CHAT_PHASE_GENERATING;
     chat.context_tokens = 97u;
     chat.ttft_ms = 910u;
     chat.decode_milli_tokens_per_second = 8700u;
-    if (!render_fixture(arguments[3], &chat, "Q-V2 W4A8", pixels)) {
+    if (!render_fixture(arguments[3], &chat, "GQA W4", pixels)) {
         return 1;
     }
 
@@ -162,7 +167,7 @@ int main(int argument_count, char **arguments) {
         chat.error_message,
         "CONTEXT FULL - MENU FOR NEW CHAT",
         32u);
-    if (!render_fixture(arguments[4], &chat, "Q-V2 W4A8", pixels)) {
+    if (!render_fixture(arguments[4], &chat, "GQA W4", pixels)) {
         return 1;
     }
 

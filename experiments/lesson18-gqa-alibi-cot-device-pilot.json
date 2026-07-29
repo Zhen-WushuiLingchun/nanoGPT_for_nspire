@@ -1,0 +1,120 @@
+{
+  "alignment": {
+    "direct": {
+      "greedy_exact": true,
+      "max_absolute_error": 1.9073486328125e-06,
+      "max_absolute_error_gate": 0.0002,
+      "pass": true,
+      "prompt": "Hello",
+      "rmse": 3.806657238074901e-07,
+      "rmse_gate": 5e-05
+    },
+    "think": {
+      "greedy_exact": true,
+      "max_absolute_error": 0.03193378448486328,
+      "max_absolute_error_gate": 0.0002,
+      "pass": false,
+      "prompt": "What is 12 times 7?",
+      "rmse": 0.013266369526076379,
+      "rmse_gate": 5e-05
+    }
+  },
+  "claim_boundary": {
+    "ability": "The model controls Direct/Think/Final format but is not a fluent open-domain assistant or a reliable mathematical reasoner.",
+    "device": "Calculator-side upload and full SHA-256 readback passed. The user reports application launch and Direct generation, while fixed-prompt sequence matching, Think UI, speed, and peak RAM remain unverified.",
+    "quantization": "The two recorded bad outputs are shared by the FP32 source checkpoint and packed W4A8 model, so they are not attributed to INT4 quantization.",
+    "rl": "No Lesson 17 RL checkpoint is deployed and no RL improvement is claimed."
+  },
+  "deployment": {
+    "directory": "/nanoGPT",
+    "files": {
+      "model.ngm.tns": {
+        "bytes": 5387968,
+        "sha256": "91d52d9d693059fb38f6f2c151bf470d9027b770b467dc11c50ec2106d9beadf"
+      },
+      "nanogpt-chat.tns": {
+        "bytes": 62310,
+        "sha256": "e0581d074e71db78a9af3c428be1e60b19686fc21aa0d94b6a9c55de601570b6"
+      }
+    },
+    "final_directory_contains_only_formal_files": true,
+    "model_full_sha256_readback_passed": true,
+    "physical_execution_user_reported": true,
+    "physical_fixed_prompt_match_verified": false,
+    "program_full_sha256_readback_passed": true,
+    "rollback_backups_removed": true,
+    "temporary_files_removed": true,
+    "transport": "usbipd -> WSL Ubuntu-22.04 -> phy-nlinkctl"
+  },
+  "host_samples": {
+    "direct": {
+      "answer": "The answer is 10000.",
+      "prompt": "Hello"
+    },
+    "direct_prompt_sweep": [
+      {
+        "answer": "The answer is 10000.",
+        "prompt": "hello"
+      },
+      {
+        "answer": "The answer is 10.",
+        "prompt": "what is 1 plus 1?"
+      },
+      {
+        "answer": "The power is 20 W.",
+        "prompt": "WHAT IS 1 PLUS 1?"
+      },
+      {
+        "answer": "The answer is 100.",
+        "prompt": "What is 12 times 7?"
+      },
+      {
+        "answer": "The answer is 1000.",
+        "prompt": "Explain gravity."
+      },
+      {
+        "answer": "The answer is 100000.",
+        "prompt": "do not say 10000"
+      }
+    ],
+    "think": {
+      "answer": "The force is 12 N.",
+      "prompt": "What is 12 times 7?",
+      "reasoning": "Formula F = m a. Substitute F = 12 * 7 = 12 N."
+    }
+  },
+  "lesson": 18,
+  "model": {
+    "activation": "dynamic_int8_groupwise",
+    "block_size": 512,
+    "format_version": 2,
+    "model_and_arena_lower_bound_bytes": 8553280,
+    "model_storage": "packed_int4",
+    "n_embd": 384,
+    "n_head": 6,
+    "n_kv_head": 2,
+    "n_layer": 6,
+    "output_bytes": 5387968,
+    "output_sha256": "91d52d9d693059fb38f6f2c151bf470d9027b770b467dc11c50ec2106d9beadf",
+    "position_mode": "alibi",
+    "route": "GQA-ALiBi-SFT-v2-Context512",
+    "runtime_arena_bytes": 3165312,
+    "source_checkpoint_sha256": "e78c78bfbf8a7df1c8c623d27300084d8b67d14827c69fdc523b8b4df1a299ed",
+    "tokenizer": "byte_plus_fixed_special_tokens",
+    "vocab_size": 264,
+    "weight_group_size": 64
+  },
+  "schema_version": 1,
+  "ui": {
+    "default_max_generation_tokens": 256,
+    "direct_cue": "FINAL",
+    "modes": [
+      "direct",
+      "think"
+    ],
+    "privacy": "New Chat and Exit clear volatile transcript state; conversations are not saved.",
+    "think_cue": "THINK",
+    "think_reasoning_cell": true,
+    "toggle_key": "Tab"
+  }
+}

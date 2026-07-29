@@ -159,12 +159,52 @@ static void test_reset_and_shutdown_zero_private_state(void) {
     CHECK(bytes_are_zero(&chat, sizeof(chat)));
 }
 
+static void test_byte_special_direct_and_think_prompts(void) {
+    ng_model model;
+    ng_runtime runtime;
+    ng_chat chat;
+
+    (void)memset(&model, 0, sizeof(model));
+    (void)memset(&runtime, 0, sizeof(runtime));
+    model.spec.vocab_size = NG_BYTE_SPECIAL_VOCAB_SIZE;
+    model.spec.block_size = 512u;
+    model.spec.tokenizer_type = NG_TOKENIZER_BYTE_SPECIAL;
+
+    ng_chat_init(&chat, &model, &runtime);
+    CHECK(chat.mode == NG_CHAT_MODE_DIRECT);
+    CHECK(ng_chat_input_insert(&chat, 'H') == NG_CHAT_OK);
+    CHECK(ng_chat_input_insert(&chat, 'i') == NG_CHAT_OK);
+    CHECK(ng_chat_submit(&chat, 10u) == NG_CHAT_OK);
+    CHECK(chat.pending_count == 6u);
+    CHECK(chat.pending_tokens[0] == NG_TOKEN_BOS);
+    CHECK(chat.pending_tokens[1] == NG_TOKEN_USER);
+    CHECK(chat.pending_tokens[2] == (uint32_t)'H');
+    CHECK(chat.pending_tokens[3] == (uint32_t)'i');
+    CHECK(chat.pending_tokens[4] == NG_TOKEN_ASSISTANT);
+    CHECK(chat.pending_tokens[5] == NG_TOKEN_FINAL);
+    CHECK(chat.cells[1].role == NG_CHAT_ROLE_ASSISTANT);
+    CHECK(ng_chat_toggle_mode(&chat) == NG_CHAT_INVALID);
+
+    ng_chat_new_chat(&chat);
+    CHECK(ng_chat_toggle_mode(&chat) == NG_CHAT_OK);
+    CHECK(chat.mode == NG_CHAT_MODE_THINK);
+    CHECK(ng_chat_input_insert(&chat, 'x') == NG_CHAT_OK);
+    CHECK(ng_chat_submit(&chat, 20u) == NG_CHAT_OK);
+    CHECK(chat.pending_count == 5u);
+    CHECK(chat.pending_tokens[3] == NG_TOKEN_ASSISTANT);
+    CHECK(chat.pending_tokens[4] == NG_TOKEN_THINK);
+    CHECK(chat.cells[1].role == NG_CHAT_ROLE_THINK);
+
+    ng_chat_shutdown(&chat);
+}
+
 int main(void) {
     test_input_editing();
     test_input_capacity_is_transactional();
     test_cells_and_overflow();
     test_cell_capacity();
     test_reset_and_shutdown_zero_private_state();
+    test_byte_special_direct_and_think_prompts();
     if (failures != 0) {
         fprintf(stderr, "%d chat state checks failed\n", failures);
         return 1;

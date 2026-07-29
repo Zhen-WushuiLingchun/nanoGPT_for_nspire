@@ -12,9 +12,11 @@ from nanogpt_nspire.export_format import (
     FORMAT_VERSION,
     MODEL_STORAGE_FP32,
     MODEL_STORAGE_W4A8,
+    POSITION_ALIBI,
     STORAGE_FP32,
     STORAGE_INT4_GROUPWISE,
     TENSOR_ENTRY_BYTES,
+    TOKENIZER_BYTE_SPECIAL,
     ModelFormatError,
     ModelSpec,
     TensorPayload,
@@ -99,7 +101,7 @@ def _set_tensor_field(
 
 def test_format_layout_sizes_and_markers_are_frozen() -> None:
     assert FILE_MAGIC == b"NGNSP001"
-    assert FORMAT_VERSION == 1
+    assert FORMAT_VERSION == 2
     assert ENDIAN_MARKER == 0x01020304
     assert FILE_HEADER_BYTES == 128
     assert TENSOR_ENTRY_BYTES == 64
@@ -115,6 +117,30 @@ def test_build_and_parse_mixed_storage_file() -> None:
     assert parsed.spec == _spec()
     assert parsed.vocabulary == ("\n", "a", "é")
     assert tuple(parsed.tensors) == (1, 2)
+
+
+def test_format_v2_byte_special_gqa_metadata_round_trips() -> None:
+    spec = _spec(
+        vocab_size=264,
+        block_size=512,
+        n_head=6,
+        n_embd=384,
+        n_kv_head=2,
+        position_mode=POSITION_ALIBI,
+        tokenizer_type=TOKENIZER_BYTE_SPECIAL,
+    )
+    data = build_model_file(
+        spec=spec,
+        vocabulary=(),
+        tensors=_tensors(),
+    )
+    parsed = parse_model_file(data)
+
+    assert parsed.spec == spec
+    assert parsed.vocabulary[65] == "A"
+    assert parsed.vocabulary[256] == "<BOS>"
+    assert parsed.vocabulary[261] == "<THINK>"
+    assert parsed.vocabulary[262] == "<FINAL>"
     fp32 = parsed.tensors[1]
     assert fp32.storage == STORAGE_FP32
     assert fp32.shape == (2, 2)
@@ -136,7 +162,7 @@ def test_build_and_parse_mixed_storage_file() -> None:
     "mutation, message",
     [
         (lambda data: data.__setitem__(0, ord("X")), "magic"),
-        (lambda data: data.__setitem__(8, 2), "version"),
+        (lambda data: data.__setitem__(8, 3), "version"),
         (lambda data: data.__setitem__(16, 5), "endian"),
     ],
 )

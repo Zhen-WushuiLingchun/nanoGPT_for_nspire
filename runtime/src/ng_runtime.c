@@ -78,10 +78,14 @@ static int ng_all_tensors_are_aligned(const ng_model *model) {
 
 static void ng_runtime_assign_arena(ng_runtime *runtime) {
     const ng_model_spec *spec = &runtime->model->spec;
+    size_t head_width = (
+        (size_t)spec->n_embd / (size_t)spec->n_head);
+    size_t kv_width = (size_t)spec->n_kv_head * head_width;
+    size_t qkv_width = (size_t)spec->n_embd + 2u * kv_width;
     size_t cache_values = (
         (size_t)spec->n_layer
         * (size_t)spec->block_size
-        * (size_t)spec->n_embd);
+        * kv_width);
     size_t mlp_width = (
         (size_t)spec->mlp_ratio
         * (size_t)spec->n_embd);
@@ -95,7 +99,7 @@ static void ng_runtime_assign_arena(ng_runtime *runtime) {
     runtime->normalized = cursor;
     cursor += spec->n_embd;
     runtime->qkv = cursor;
-    cursor += 3u * spec->n_embd;
+    cursor += qkv_width;
     runtime->attention = cursor;
     cursor += spec->n_embd;
     runtime->projection = cursor;
@@ -200,6 +204,28 @@ size_t ng_runtime_context_length(const ng_runtime *runtime) {
     return runtime == NULL ? 0u : runtime->position;
 }
 
+static uint32_t ng_largest_power_of_two(uint32_t value) {
+    uint32_t result = 1u;
+    while (result <= value / 2u) {
+        result *= 2u;
+    }
+    return result;
+}
+
+static float ng_alibi_slope(uint32_t head_count, uint32_t head) {
+    uint32_t closest = ng_largest_power_of_two(head_count);
+    if (head < closest) {
+        return powf(
+            2.0f,
+            -8.0f * (float)(head + 1u) / (float)closest);
+    }
+    return powf(
+        2.0f,
+        -4.0f
+            * (float)(2u * (head - closest) + 1u)
+            / (float)closest);
+}
+
 static ng_status ng_attention(
     ng_runtime *runtime,
     uint32_t layer,
@@ -207,38 +233,48 @@ static ng_status ng_attention(
     const ng_model_spec *spec = &runtime->model->spec;
     size_t width = (size_t)spec->n_embd;
     size_t head_width = width / (size_t)spec->n_head;
+    size_t kv_width = (size_t)spec->n_kv_head * head_width;
+    size_t query_heads_per_kv = (
+        (size_t)spec->n_head / (size_t)spec->n_kv_head);
     size_t sequence_length = runtime->position + 1u;
     size_t layer_cache = (
         (size_t)layer
         * (size_t)spec->block_size
-        * width);
-    size_t current_cache = layer_cache + runtime->position * width;
+        * kv_width);
+    size_t current_cache = layer_cache + runtime->position * kv_width;
     float scale = 1.0f / sqrtf((float)head_width);
     uint32_t head;
     (void)memcpy(
         runtime->key_cache + current_cache,
         runtime->qkv + width,
-        width * sizeof(float));
+        kv_width * sizeof(float));
     (void)memcpy(
         runtime->value_cache + current_cache,
-        runtime->qkv + 2u * width,
-        width * sizeof(float));
+        runtime->qkv + width + kv_width,
+        kv_width * sizeof(float));
     for (head = 0u; head < spec->n_head; ++head) {
         size_t head_offset = (size_t)head * head_width;
+        size_t kv_head = (size_t)head / query_heads_per_kv;
+        size_t kv_head_offset = kv_head * head_width;
+        float slope = spec->position_mode == (uint32_t)NG_POSITION_ALIBI
+            ? ng_alibi_slope(spec->n_head, head)
+            : 0.0f;
         size_t previous;
         size_t component;
         for (previous = 0u; previous < sequence_length; ++previous) {
             const float *key = (
                 runtime->key_cache
                 + layer_cache
-                + previous * width
-                + head_offset);
+                + previous * kv_width
+                + kv_head_offset);
             const float *query = runtime->qkv + head_offset;
             float score = 0.0f;
             for (component = 0u; component < head_width; ++component) {
                 score += query[component] * key[component];
             }
-            runtime->scores[previous] = score * scale;
+            runtime->scores[previous] = (
+                score * scale
+                - slope * (float)(runtime->position - previous));
         }
         ng_softmax_f32(
             runtime->scores,
@@ -250,8 +286,8 @@ static ng_status ng_attention(
                 const float *cached_value = (
                     runtime->value_cache
                     + layer_cache
-                    + previous * width
-                    + head_offset);
+                    + previous * kv_width
+                    + kv_head_offset);
                 value += (
                     runtime->scores[previous]
                     * cached_value[component]);
@@ -392,8 +428,10 @@ ng_status ng_runtime_forward_token(
         runtime->model,
         NG_TENSOR_FINAL_NORM);
     if (token_embedding == NULL
-        || position_embedding == NULL
-        || final_norm == NULL) {
+        || final_norm == NULL
+        || (
+            spec->position_mode == (uint32_t)NG_POSITION_LEARNED
+            && position_embedding == NULL)) {
         ng_runtime_error(error, "required model tensor is missing");
         return NG_STATUS_FORMAT;
     }
@@ -402,17 +440,21 @@ ng_status ng_runtime_forward_token(
             token_id,
             runtime->hidden,
             error)
-        != NG_STATUS_OK
-        || ng_embedding_row(
-            position_embedding,
-            (uint32_t)runtime->position,
-            runtime->normalized,
-            error)
         != NG_STATUS_OK) {
         return NG_STATUS_FORMAT;
     }
-    for (index = 0u; index < width; ++index) {
-        runtime->hidden[index] += runtime->normalized[index];
+    if (spec->position_mode == (uint32_t)NG_POSITION_LEARNED) {
+        if (ng_embedding_row(
+                position_embedding,
+                (uint32_t)runtime->position,
+                runtime->normalized,
+                error)
+            != NG_STATUS_OK) {
+            return NG_STATUS_FORMAT;
+        }
+        for (index = 0u; index < width; ++index) {
+            runtime->hidden[index] += runtime->normalized[index];
+        }
     }
     for (layer = 0u; layer < spec->n_layer; ++layer) {
         const float *attention_norm = ng_fp32_tensor(

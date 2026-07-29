@@ -14,7 +14,7 @@ extern "C" {
 #define NG_FILE_LIMIT_BYTES (6u * 1024u * 1024u)
 #define NG_INFERENCE_MEMORY_LIMIT_BYTES (24u * 1024u * 1024u)
 #define NG_MAX_TENSORS 64u
-#define NG_MAX_VOCAB_SIZE 256u
+#define NG_MAX_VOCAB_SIZE 512u
 #define NG_ERROR_MESSAGE_BYTES 192u
 
 #define NG_HEADER_PAYLOAD_CRC32_OFFSET 28u
@@ -26,6 +26,23 @@ extern "C" {
 #define NG_TENSOR_BLOCK_BASE 100u
 #define NG_TENSOR_BLOCK_STRIDE 10u
 #define NG_TENSOR_FINAL_NORM 1000u
+
+#define NG_TOKENIZER_CHARACTER_UTF8 1u
+#define NG_TOKENIZER_BYTE_SPECIAL 2u
+
+#define NG_POSITION_LEARNED 1u
+#define NG_POSITION_ALIBI 2u
+
+#define NG_BYTE_TOKEN_COUNT 256u
+#define NG_TOKEN_BOS 256u
+#define NG_TOKEN_EOS 257u
+#define NG_TOKEN_USER 258u
+#define NG_TOKEN_ASSISTANT 259u
+#define NG_TOKEN_TOOL 260u
+#define NG_TOKEN_THINK 261u
+#define NG_TOKEN_FINAL 262u
+#define NG_TOKEN_PAD 263u
+#define NG_BYTE_SPECIAL_VOCAB_SIZE 264u
 
 typedef enum ng_status {
     NG_STATUS_OK = 0,
@@ -67,6 +84,9 @@ typedef struct ng_model_spec {
     uint32_t weight_group_size;
     uint32_t activation_quantization;
     uint32_t activation_group_size;
+    uint32_t n_kv_head;
+    uint32_t position_mode;
+    uint32_t tokenizer_type;
     uint8_t tie_embeddings;
     uint8_t bias;
 } ng_model_spec;
@@ -97,6 +117,7 @@ typedef struct ng_model {
     uint32_t tensor_count;
     ng_tensor_view tensors[NG_MAX_TENSORS];
     ng_vocab_token vocabulary[NG_MAX_VOCAB_SIZE];
+    uint8_t byte_vocabulary[NG_BYTE_TOKEN_COUNT];
     size_t required_arena_bytes;
     uint32_t payload_crc32;
     uint32_t header_crc32;

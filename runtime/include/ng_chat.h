@@ -16,7 +16,7 @@ extern "C" {
 #define NG_CHAT_MAX_CELLS 24u
 #define NG_CHAT_MAX_PENDING_TOKENS 256u
 #define NG_CHAT_ERROR_BYTES 96u
-#define NG_CHAT_DEFAULT_GENERATION_TOKENS 32u
+#define NG_CHAT_DEFAULT_GENERATION_TOKENS 256u
 
 typedef enum ng_chat_status {
     NG_CHAT_OK = 0,
@@ -30,8 +30,14 @@ typedef enum ng_chat_status {
 typedef enum ng_chat_role {
     NG_CHAT_ROLE_USER = 1,
     NG_CHAT_ROLE_ASSISTANT = 2,
-    NG_CHAT_ROLE_SYSTEM = 3
+    NG_CHAT_ROLE_SYSTEM = 3,
+    NG_CHAT_ROLE_THINK = 4
 } ng_chat_role;
+
+typedef enum ng_chat_mode {
+    NG_CHAT_MODE_DIRECT = 1,
+    NG_CHAT_MODE_THINK = 2
+} ng_chat_mode;
 
 typedef enum ng_chat_phase {
     NG_CHAT_PHASE_IDLE = 0,
@@ -66,6 +72,7 @@ typedef struct ng_chat {
     size_t pending_index;
     const float *last_logits;
 
+    ng_chat_mode mode;
     ng_chat_phase phase;
     size_t max_generation_tokens;
     size_t generated_tokens;
@@ -108,6 +115,7 @@ ng_chat_status ng_chat_append_to_last_cell(
 ng_chat_status ng_chat_submit(ng_chat *chat, uint32_t now_ms);
 ng_chat_status ng_chat_step(ng_chat *chat, uint32_t now_ms);
 ng_chat_status ng_chat_cancel(ng_chat *chat);
+ng_chat_status ng_chat_toggle_mode(ng_chat *chat);
 
 void ng_chat_new_chat(ng_chat *chat);
 void ng_chat_shutdown(ng_chat *chat);

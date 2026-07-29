@@ -258,6 +258,21 @@ else()
     )
 endif()
 
+add_executable(chat_probe runtime/platform/host/chat_probe.c)
+target_link_libraries(chat_probe PRIVATE nanogpt_runtime)
+if(MSVC)
+    target_compile_options(chat_probe PRIVATE /W4 /WX)
+else()
+    target_compile_options(
+        chat_probe
+        PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Werror
+    )
+endif()
+
 add_executable(chat_fixture runtime/platform/host/chat_fixture.c)
 target_link_libraries(chat_fixture PRIVATE nanogpt_ui)
 if(MSVC)

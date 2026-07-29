@@ -1,9 +1,15 @@
 # nanoGPT for Nspire
 
+> **项目状态：已完成（Research Complete，2026-07-29）**
+>
+> 本仓库作为“从 Transformer 基础到 TI-Nspire 真机部署”的教学与研究原型
+> 已结项。最终模型不是可靠的通用助手；失败模式、负结果和真机边界均作为项目
+> 结论保留。
+
 这是一个边学 Transformer、边把小型 GPT 推理移植到 TI-Nspire CX II CAS 的项目。
 
 第一阶段从 Tiny Shakespeare 字符模型开始，依次比较直接训练小模型、量化模型和
-蒸馏小模型；通过 Host C 数值对齐后，再进入 Ndless 真机推理。第二阶段正在构建
+蒸馏小模型；通过 Host C 数值对齐后，再进入 Ndless 真机推理。第二阶段已完成
 English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、强 teacher
 蒸馏、可验证 RL/CoT、重新量化与真机部署。官方 nanoGPT 源码保存在
 [`upstream/nanoGPT/`](upstream/nanoGPT/)，不会与我们的实现混写。
@@ -28,7 +34,38 @@ English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、�
 - 已完成：[第十五课：256-token 推理、GQA、ALiBi 与计算器边界](docs/lessons/15-long-output-gqa-alibi.md)
 - 已完成：[第十六课：紧凑可验证 SFT v2、终止边界与“自洽但算错”](docs/lessons/16-compact-verified-sft-v2.md)
 - 已完成：[第十七课：RLVR、direct-RLAIF 与奖励稀疏/奖励错位](docs/lessons/17-rlvr-rlaif-and-reward-hacking.md)
-- 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
+- 已完成（Host/ARM/传输/真机启动）：[第十八课：GQA-ALiBi W4A8、可控 CoT 界面与真机部署](docs/lessons/18-gqa-alibi-cot-device-pilot.md)
+- 已结项：18 课研究路线、量化 C runtime、Ndless UI 和两代真机部署均已完成
+
+## 结项结论
+
+这个项目的目标不是制造一个可以与现代云端 LLM 竞争的计算器助手，而是完整走通
+并测量一条受极端存储、RAM 和算力限制的语言模型路线。结项证据包括：
+
+- 从字符模型到 byte tokenizer、Base/CPT/SFT、teacher-logit 蒸馏、可控 CoT、
+  RLVR/direct-RLAIF 的 18 课实验链；
+- Direct-Small、Quantized-Small、Distilled-Small 的同架构与同部署预算比较；
+- packed W4A8、不展开 FP32 matrix 的 Host C 推理和 PyTorch/C 对齐；
+- Ndless 像素对话界面、volatile New Chat/Exit、TTFT/tokens/s/context/tracked
+  RAM 显示和独立模型文件；
+- 旧 Quantized-Small 真机照片的三组观察值：约 `0.9–1.2 char-token/s`、
+  `5–15 s TTFT`、`8.2 MiB tracked RAM`；
+- prompt-ending 修复版在真机对不同 prompt 产生不同 continuation，并逐字符
+  匹配 Host/Python reference；
+- Lesson 16 GQA-ALiBi SFT v2 已量化为 5,387,968-byte `.ngm v2`，与新版
+  62,310-byte Ndless 程序一起通过真机完整 SHA-256 回读；用户随后确认新版能
+  启动并完成 Direct 生成；
+- 设备端最终只保留两个正式文件，没有 `.upload` 或 `.previous` 副本。
+
+三张照片的速度与 TTFT 来自不同 prompt/context，因此是重复真机观察范围，
+不是固定 prompt 的严格 benchmark。`8.2 MiB` 是程序已知内存区域的 tracked
+总量，不是计算器 OS 级 peak heap；退出后的 Documents/LCD 恢复也没有单独
+拍照留档。它们作为测量边界保留，但不再阻塞教学研究项目结项。
+
+最终能力结论同样属于成果：约 9.5M 参数的 byte-level 模型能学会角色、格式、
+`<THINK>/<FINAL>` 控制和局部英文，却没有学会可靠的开放域语言或可泛化数学
+推理。SFT、严格 logit 蒸馏、合成数据、RLVR 和 RLAIF 都没有消除这个容量/
+数据/优化边界；看似流畅的 CoT 也不等于正确推理。
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
 体积门和量化误差门均通过，因此该产物保留为 diagnostic。Lesson 07 只把
@@ -156,6 +193,19 @@ checkpoint，随后用三组固定 seed 分别训练 RLVR、direct-RLAIF 和组�
 `6.67/512`、`5.33/512`；SFT-only 是 `4/256` 与 `6/512`。三条路线都未同时
 改善两套，也都未通过 95% format/mode 门，因此不宣称获得可泛化 RL 能力，
 不把最好 seed 事后挑出量化或上真机。训练 family 与两份 holdout 的交集均为零。
+
+Lesson 18 没有部署一个失败 gate 后事后挑出的 RL seed，而是把格式最稳定的
+Lesson 16 SFT v2 做成 `.ngm v2`。新格式和 C runtime 支持 264-token
+byte-special tokenizer、512 context、6:2 GQA 和 ALiBi，5,387,968-byte W4A8
+模型加 3,165,312-byte arena 的静态下界为 8.16 MiB。界面用 `Tab` 切换
+Direct/Think，并把 `<THINK>` 到 `<FINAL>` 的正文显示为独立 cell。Host 的
+Direct 短序列通过严格 logits gate；96-token Think 的贪心序列一致，但累积
+logits 误差未通过旧 gate。Host 样例仍会把 `12 times 7` 错答为 `12 N`，而且
+FP32 与 W4A8 正文相同，所以这是能力失败，不是量化失败。两个文件已上传到
+`/nanoGPT/` 并完整 SHA-256 回读，设备端无 `.previous/.upload`；真机启动、
+Direct 生成已由用户报告，但固定 prompt 对齐、Think cell、速度与 RAM 仍待
+屏幕实测。额外 Host sweep 证明 prompt 和大小写会改变输出；频繁出现的
+`10/100/1000/10000` 是窄 SFT 分布形成的模型吸引盆，而非前端固定忽略输入。
 
 ## 快速开始
 

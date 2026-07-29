@@ -25,7 +25,7 @@ static const ng_special_binding ng_special_bindings[] = {
     {&KEY_NSPIRE_DOWN, NG_NDLESS_EVENT_SCROLL_DOWN},
     {&KEY_NSPIRE_MENU, NG_NDLESS_EVENT_NEW_CHAT},
     {&KEY_NSPIRE_ESC, NG_NDLESS_EVENT_CANCEL},
-    {&KEY_NSPIRE_TAB, NG_NDLESS_EVENT_NONE}
+    {&KEY_NSPIRE_TAB, NG_NDLESS_EVENT_TOGGLE_MODE}
 };
 
 static const ng_text_binding ng_text_bindings[] = {
