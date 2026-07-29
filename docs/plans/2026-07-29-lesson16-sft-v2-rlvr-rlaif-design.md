@@ -19,8 +19,9 @@ Lesson 16 prepares and evaluates SFT v2. Lesson 17 executes the RL routes.
    95% under a 256-token allowance?
 2. Can balanced number, sign, unit, and formula coverage reduce common-number
    attractors on frozen and range-shifted prompts?
-3. Can hard negatives teach consistency between prompt values, substitution,
-   intermediate arithmetic, and final answer?
+3. Do compact, independently verified positive targets improve consistency
+   between prompt values, substitution, intermediate arithmetic, and final
+   answer on held-out hard-negative probes?
 4. Does Think improve exact accuracy over Direct in the same checkpoint under
    the same output-token cap?
 
@@ -34,8 +35,9 @@ Lesson 16 prepares and evaluates SFT v2. Lesson 17 executes the RL routes.
 - Frozen family-level exclusion for every existing evaluation family.
 - Balanced operators, signs, decimals, magnitude buckets, formula families,
   and unit spellings.
-- Explicit hard negatives stored as preference/checker examples, never as
-  positive next-token targets.
+- Explicit hard negatives are stored as adversarial evaluation and future
+  preference/RL examples, never as positive next-token targets. Pure SFT does
+  not learn from records that never participate in its loss.
 - Every numeric target independently recomputed by a non-`eval` parser.
 - DeepSeek-generated visible text is labeled synthetic hard-target data, not
   logit distillation.
