@@ -1,0 +1,249 @@
+{
+  "claim_boundary": {
+    "context512": "PyTorch-only research checkpoint; the current C loader rejects block_size above 128, and no Nspire export or physical-device test was performed.",
+    "cot": "The experiment demonstrates learned output-mode control, not learned general reasoning. Exact-answer accuracy remains at or below 2/128.",
+    "distillation": "No external API or logit teacher was used in Lesson 14. These are hard-label SFT routes.",
+    "rl": "No RL, RLVR, preference optimization, or reward model was used."
+  },
+  "context_extension": {
+    "architecture": {
+      "base_parameters": 10821504,
+      "block_size_after": 512,
+      "block_size_before": 256,
+      "initialization": "copy positions 0..255 exactly; initialize positions 256..511 by repeating the learned 0..255 table",
+      "new_position_parameters": 98304
+    },
+    "continued_pretraining": {
+      "best_step": 250,
+      "checkpoint_sha256": "556bb6d7377f8eb69b5a77ac4c6ae084482bb76359732cc5f322eb3e21545548",
+      "initial_validation_loss": 2.2141592263579777,
+      "route": "Math-Physics-CPT-Context512",
+      "selected_test_loss": 1.4608655477220982,
+      "selected_validation_loss": 1.5122716455959697,
+      "training_tokens": 1024000,
+      "wall_seconds": 15.717810300004203
+    },
+    "hybrid_sft": {
+      "best_step": 1000,
+      "checkpoint_sha256": "95df2cbb25c070b377cfb87f667de985a7b21bd88242fa6d2e93ff9e1702fd0e",
+      "direct_accuracy_48": 0.015625,
+      "route": "Hybrid-Control-SFT-Context512",
+      "selected_test_loss": 0.8531256135189405,
+      "selected_validation_loss": 0.8484684713424322,
+      "think_accuracy_48": 0.0,
+      "think_accuracy_96": 0.0078125,
+      "training_tokens": 4096000,
+      "wall_seconds": 56.36348549998365
+    },
+    "kv_cache": {
+      "bytes_at_256": 4718592,
+      "bytes_at_512": 9437184,
+      "layout": "2 * layers * context * width * sizeof(float)"
+    },
+    "position_loss": {
+      "after_250_cpt_steps": {
+        "all_positions": 1.55282114487041,
+        "positions_0_255": 1.54118001577162,
+        "positions_256_511": 1.56446121153803
+      },
+      "eligible_targets": 328697,
+      "initial": {
+        "all_positions": 2.1989299631526564,
+        "positions_0_255": 1.5311925051509585,
+        "positions_256_511": 2.8666064798934934
+      }
+    }
+  },
+  "data": {
+    "accepted_families_before_context_filter": 20337,
+    "corpora": {
+      "cot_256": {
+        "families": 15999,
+        "manifest_sha256": "9c7998b048080cf457018cdc4b329b24d30916a48d2878b60e058b4ab80e0604",
+        "records": 15999,
+        "tokens": 1428538
+      },
+      "direct_256": {
+        "families": 15999,
+        "manifest_sha256": "5356298e9fbc993777ed00f88ea40d0dd0c45f078cbae2cd0874f32ebe0d5aa0",
+        "records": 15999,
+        "tokens": 961360
+      },
+      "hybrid_256": {
+        "families": 15999,
+        "manifest_sha256": "e9cd1dd3fc45e10ddea36b16b19231b764611ff7674ec89b15e895f314942a20",
+        "records": 31998,
+        "tokens": 2389898
+      },
+      "hybrid_512": {
+        "families": 19283,
+        "manifest_sha256": "8bd752c26a364f617b50a87dac1c79e581b6e61c524466ee1658065f701725e0",
+        "records": 38566,
+        "tokens": 4253758
+      }
+    },
+    "deterministic_rebuild": true,
+    "frozen_evaluation_families": 785,
+    "frozen_evaluation_sha256": "2b04622efef4886f3edbfb1950946acf8bf3aff07659f737f2ff100ee5bb321c",
+    "frozen_families_training_eligible": false,
+    "gsm8k_train_sha256": "17f347dc51477c50d4efb83959dbb7c56297aba886e5544ee2aaed3024813465",
+    "root_manifest_sha256": "305ab2912f0405764ad8550af02301c7ee178361d372cd5358040b009ad8288a"
+  },
+  "evaluation": {
+    "contract": {
+      "answer_scoring": "Only text generated after the seeded or generated FINAL control token is scored.",
+      "decoding": "greedy",
+      "examples": 128,
+      "primary_output_token_budget": 48,
+      "secondary_output_token_budget": 96,
+      "tasks": [
+        "arithmetic",
+        "arithmetic_easy",
+        "gsm8k",
+        "physics_numeric"
+      ]
+    },
+    "results": [
+      {
+        "budget": 48,
+        "budget_truncation_rate": 0.0,
+        "context_truncation_rate": 0.0,
+        "final_transition_rate": 0.0,
+        "format_valid_rate": 1.0,
+        "mode": "direct",
+        "mode_compliance_rate": 1.0,
+        "route": "Direct-Control-SFT",
+        "task_accuracy": 0.0078125,
+        "unique_finals": 63
+      },
+      {
+        "budget": 48,
+        "budget_truncation_rate": 0.4375,
+        "context_truncation_rate": 0.0234375,
+        "final_transition_rate": 0.671875,
+        "format_valid_rate": 0.453125,
+        "mode": "think",
+        "mode_compliance_rate": 0.640625,
+        "route": "Short-CoT-SFT",
+        "task_accuracy": 0.0,
+        "unique_finals": 51
+      },
+      {
+        "budget": 48,
+        "budget_truncation_rate": 0.0,
+        "context_truncation_rate": 0.0,
+        "final_transition_rate": 0.0,
+        "format_valid_rate": 1.0,
+        "mode": "direct",
+        "mode_compliance_rate": 1.0,
+        "route": "Hybrid-Control-SFT",
+        "task_accuracy": 0.015625,
+        "unique_finals": 60
+      },
+      {
+        "budget": 48,
+        "budget_truncation_rate": 0.40625,
+        "context_truncation_rate": 0.015625,
+        "final_transition_rate": 0.6484375,
+        "format_valid_rate": 0.4453125,
+        "mode": "think",
+        "mode_compliance_rate": 0.625,
+        "route": "Hybrid-Control-SFT",
+        "task_accuracy": 0.015625,
+        "unique_finals": 49
+      },
+      {
+        "budget": 96,
+        "budget_truncation_rate": 0.0,
+        "context_truncation_rate": 0.0,
+        "final_transition_rate": 0.0,
+        "format_valid_rate": 1.0,
+        "mode": "direct",
+        "mode_compliance_rate": 1.0,
+        "route": "Direct-Control-SFT",
+        "task_accuracy": 0.0078125,
+        "unique_finals": 63
+      },
+      {
+        "budget": 96,
+        "budget_truncation_rate": 0.03125,
+        "context_truncation_rate": 0.078125,
+        "final_transition_rate": 0.796875,
+        "format_valid_rate": 0.78125,
+        "mode": "think",
+        "mode_compliance_rate": 0.796875,
+        "route": "Short-CoT-SFT",
+        "task_accuracy": 0.0,
+        "unique_finals": 69
+      },
+      {
+        "budget": 96,
+        "budget_truncation_rate": 0.0,
+        "context_truncation_rate": 0.0,
+        "final_transition_rate": 0.0,
+        "format_valid_rate": 1.0,
+        "mode": "direct",
+        "mode_compliance_rate": 1.0,
+        "route": "Hybrid-Control-SFT",
+        "task_accuracy": 0.015625,
+        "unique_finals": 60
+      },
+      {
+        "budget": 96,
+        "budget_truncation_rate": 0.0390625,
+        "context_truncation_rate": 0.046875,
+        "final_transition_rate": 0.7734375,
+        "format_valid_rate": 0.7734375,
+        "mode": "think",
+        "mode_compliance_rate": 0.7734375,
+        "route": "Hybrid-Control-SFT",
+        "task_accuracy": 0.015625,
+        "unique_finals": 74
+      }
+    ]
+  },
+  "fairness": {
+    "architecture": "6 layers / 6 heads / width 384 / context 256 / vocabulary 264",
+    "base_checkpoint_route": "Math-Physics-CPT",
+    "base_checkpoint_sha256": "ab17a536a58f664f49ff75d176baff7e219996d7d57ce2b6d097eec0b4f89dfb",
+    "optimizer_updates": 1000,
+    "same_family_set": true,
+    "same_seed": 20260728,
+    "sampled_tokens_per_route": 4096000,
+    "tokens_per_update": 4096
+  },
+  "lesson": 14,
+  "routes": {
+    "Direct-Control-SFT": {
+      "best_step": 1000,
+      "checkpoint_bytes": 43704555,
+      "checkpoint_sha256": "496cf717e82d27fbd7a820b8f6376b25a9dbda25d233599c685259c8f800290a",
+      "selected_test_loss": 0.3494117736929329,
+      "selected_validation_loss": 0.34268343800399775,
+      "wall_seconds": 51.400983900006395
+    },
+    "Hybrid-Control-SFT": {
+      "best_step": 1000,
+      "checkpoint_bytes": 43704555,
+      "checkpoint_sha256": "e3cba123e233bddc8845d3797205dfde79e47e5cf9e08f0f70b966c57870649d",
+      "selected_test_loss": 0.32122925915229156,
+      "selected_validation_loss": 0.30918451260659985,
+      "wall_seconds": 53.848949900013395
+    },
+    "Short-CoT-SFT": {
+      "best_step": 1000,
+      "checkpoint_bytes": 43704491,
+      "checkpoint_sha256": "6806645f4d2baa77bf2cccc9b12cc3da553f13917f8bfd66bd221cc09012fc7d",
+      "selected_test_loss": 0.2986993018510126,
+      "selected_validation_loss": 0.2839017211789943,
+      "wall_seconds": 51.944550300017
+    }
+  },
+  "schema_version": 1,
+  "source_commits": {
+    "context_position_evaluator": "fb49bec",
+    "data_and_format": "8661749",
+    "mode_evaluator": "af43c19",
+    "training_and_context": "4458f452933dcbe0d00270d6eaecc89452d3b6de"
+  }
+}

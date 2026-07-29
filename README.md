@@ -24,6 +24,7 @@ English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、�
 - 已完成：[第十一课：CUDA、模型预算、公开语料与首个 English Base pilot](docs/lessons/11-english-base-pilot.md)
 - 已完成：[第十二课：数学物理 CPT、角色 SFT 与精确能力诊断](docs/lessons/12-math-physics-cpt-and-sft.md)
 - 已完成：[第十三课：外部合成数据 SFT、本地 logit teacher 与严格蒸馏](docs/lessons/13-external-and-local-teachers.md)
+- 已完成：[第十四课：可控短 CoT、固定 token 公平比较与 512 context](docs/lessons/14-controllable-cot-and-context.md)
 - 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
@@ -112,6 +113,18 @@ validation/test 与 reference 字节一致。Synthetic-SFT 把格式有效率提
 97.66%，但 exact 仍为 `2/128`；合成数据再叠加 local-logit 后为 `1/128`。
 因此更丰富的正确解释和 soft likelihood 都改变了输出分布，却仍未让当前
 10.8M byte-level student 学会可泛化的计算算法。
+
+Lesson 14 使用已有 `<THINK>` / `<FINAL>` token 训练 Direct、Short-CoT 与
+Hybrid-Control 三条同架构、同 4,096,000 sampled-token 路线。48-token 冻结
+评测中，三者分别为 `1/128`、`0/128`，Hybrid 用 direct/think cue 都是
+`2/128`；96-token 诊断显著减少 CoT 截断，但没有增加正确题。因此本课证明
+SFT 能教会可切换的输出格式，却没有证明 10.8M byte model 学会了可泛化推理。
+
+独立的 256→512 context pilot 保留旧位置、复制初始化新位置并做 250-step
+长序列 CPT。新位置 validation loss 从 `2.8666` 降到 `1.5645`，旧位置从
+`1.5312` 小幅变为 `1.5412`。当前 FP32 MHA KV cache 也从 `4.50 MiB` 翻倍到
+`9.00 MiB`；该 checkpoint 仅在 PyTorch 端验证，现有 C loader 仍拒绝
+`block_size > 128`，所以尚未宣称完成 Nspire 导出、数值对齐或真机部署。
 
 ## 快速开始
 

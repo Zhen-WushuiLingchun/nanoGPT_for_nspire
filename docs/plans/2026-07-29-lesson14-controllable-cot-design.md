@@ -151,8 +151,8 @@ therefore:
 
 1. copies every 256-token CPT tensor exactly;
 2. copies learned position rows 0--255 exactly;
-3. deterministically initializes rows 256--511 with the model's original
-   `N(0, 0.02)` rule;
+3. initializes rows 256--511 by repeating the learned rows 0--255, preserving
+   the old prefix exactly while making the positional alias explicit;
 4. continues CPT on 512-token windows;
 5. optionally trains the hybrid SFT corpus at 512.
 
@@ -194,4 +194,3 @@ deployment until that format/runtime gate is deliberately revised and aligned.
 - A CoT completion without `<FINAL>` is not allowed to receive answer credit.
 - A 512 model is not described as Nspire-ready without export, Host C
   alignment, memory measurement, and physical-device evidence.
-
