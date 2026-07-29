@@ -25,6 +25,8 @@ English-only 数学物理助手：byte tokenizer、英语 Base、角色 SFT、�
 - 已完成：[第十二课：数学物理 CPT、角色 SFT 与精确能力诊断](docs/lessons/12-math-physics-cpt-and-sft.md)
 - 已完成：[第十三课：外部合成数据 SFT、本地 logit teacher 与严格蒸馏](docs/lessons/13-external-and-local-teachers.md)
 - 已完成：[第十四课：可控短 CoT、固定 token 公平比较与 512 context](docs/lessons/14-controllable-cot-and-context.md)
+- 已完成：[第十五课：256-token 推理、GQA、ALiBi 与计算器边界](docs/lessons/15-long-output-gqa-alibi.md)
+- 已设计：[第十六课：SFT v2 与 RLVR/RLAIF 冻结协议](docs/plans/2026-07-29-lesson16-sft-v2-rlvr-rlaif-design.md)
 - 待真机复测门：prompt-ending 修复版输出、重复速度/TTFT、真实峰值 RAM、退出显示恢复
 
 Lesson 06 的 Teacher v1 虽优于 Direct-Small，但未通过预注册质量门；INT4
@@ -125,6 +127,20 @@ SFT 能教会可切换的输出格式，却没有证明 10.8M byte model 学会�
 `1.5312` 小幅变为 `1.5412`。当前 FP32 MHA KV cache 也从 `4.50 MiB` 翻倍到
 `9.00 MiB`；该 checkpoint 仅在 PyTorch 端验证，现有 C loader 仍拒绝
 `block_size > 128`，所以尚未宣称完成 Nspire 导出、数值对齐或真机部署。
+
+Lesson 15 把 Direct 与 Think 的主输出预算都提高到 256 token。在相同 128 题上，
+512-MHA 的 Direct/Think 为 `2/128` 与 `1/128`；两条 2-group GQA 路线的
+Direct/Think 都为 `2/128`。256 token 消除了 context truncation，却没有让更长
+CoT 变成可靠计算。GQA 把 512-context FP32 KV 理论预算从 `9.00 MiB` 降到
+`3.00 MiB`；同预算 uptraining/SFT 中，ALiBi 的完整 validation/test loss 为
+`0.8196/0.8452`，略优于 MHA 的 `0.8282/0.8531`，但仍只是 PyTorch 研究
+checkpoint。PyTorch 原生 GQA kernel 在这套小形状诊断中更慢，且并非 Nspire
+执行环境，因此未保留；后续仍需量化 GQA C kernel、Host 对齐和真机测量。
+
+下一阶段先做更短、更可终止、数值覆盖更均衡的 SFT v2。数学与数值物理的能力
+主线使用本地 exact/unit verifier 做 RLVR；DeepSeek AI feedback 独立用于解释
+清晰度、物理合理性和 reasoning/final 一致性。两类 reward 将通过 SFT-only、
+RLVR、RLAIF 和组合路线分别比较，不把 API 合成答案写成严格蒸馏。
 
 ## 快速开始
 

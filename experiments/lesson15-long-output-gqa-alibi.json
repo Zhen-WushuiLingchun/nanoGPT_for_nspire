@@ -1,0 +1,288 @@
+{
+  "architecture": {
+    "alibi_slopes": [
+      0.25,
+      0.0625,
+      0.015625,
+      0.00390625,
+      0.5,
+      0.125
+    ],
+    "common": {
+      "block_size": 512,
+      "head_dimension": 64,
+      "n_embd": 384,
+      "n_head": 6,
+      "n_layer": 6,
+      "vocab_size": 264
+    },
+    "variants": {
+      "GQA-ALiBi": {
+        "fp32_parameter_bytes": 38174208,
+        "kv_cache_bytes_fp32": 3145728,
+        "n_kv_head": 2,
+        "parameters": 9543552,
+        "position_mode": "alibi"
+      },
+      "GQA-Learned": {
+        "fp32_parameter_bytes": 38960640,
+        "kv_cache_bytes_fp32": 3145728,
+        "n_kv_head": 2,
+        "parameters": 9740160,
+        "position_mode": "learned"
+      },
+      "MHA-Learned": {
+        "fp32_parameter_bytes": 43679232,
+        "kv_cache_bytes_fp32": 9437184,
+        "n_kv_head": 6,
+        "parameters": 10919808,
+        "position_mode": "learned"
+      }
+    }
+  },
+  "checkpoint_conversion": {
+    "contract": "Copy Q exactly; average each contiguous group of three MHA K heads and V heads into one GQA K/V head; copy all compatible non-position tensors exactly; omit the learned position table only for ALiBi.",
+    "determinism": {
+      "file_bytes_are_canonical": false,
+      "reason": "PyTorch zip checkpoint serialization does not promise byte-identical storage layout.",
+      "tensor_state_hash_is_canonical": true
+    },
+    "parent_checkpoint_sha256": "556bb6d7377f8eb69b5a77ac4c6ae084482bb76359732cc5f322eb3e21545548",
+    "parent_route": "Math-Physics-CPT-Context512",
+    "variants": {
+      "alibi": {
+        "checkpoint_bytes": 38189069,
+        "checkpoint_sha256": "941a978f4bffee16ab5ab4543e014528eb893ab245e647012f52d73a9b9a5355",
+        "model_state_sha256": "e1c0424b93d6f1ac2750eb35ea08e9578c30892efd23fd2981dae6c155555770"
+      },
+      "learned": {
+        "checkpoint_bytes": 38975929,
+        "checkpoint_sha256": "250d65ae8f2a32a395129f26b0dca4ccb6ec4c0f8bf53a5dc9805e11c614bb69",
+        "model_state_sha256": "046d5a6df06bf6f7a37aea1a7f45cbaa1023fe1579d1334d85f974f859f7405f"
+      }
+    }
+  },
+  "claim_boundary": {
+    "ability": "A 256-token allowance improves completion and removes context truncation, but exact accuracy remains at 1-2/128. Longer text is not evidence of correct reasoning.",
+    "alibi": "The position split is measured only inside the trained 512-token window. It is not evidence of extrapolation beyond position 511.",
+    "deployment": "GQA and ALiBi are PyTorch research checkpoints. No NGM export, Host C alignment, Ndless build, or physical-device measurement was completed.",
+    "distillation": "No teacher logits or external synthetic teacher data were used in Lesson 15.",
+    "rl": "No RL, RLVR, RLAIF, preference optimization, or reward model was used in Lesson 15."
+  },
+  "continued_pretraining": {
+    "contract": {
+      "data_manifest_sha256": "ae78d0c81c35a9b94951a679ec42f7971391408e8c470568bb7b00f414fe8dc5",
+      "optimizer_updates": 250,
+      "sampled_tokens": 1024000,
+      "seed": 20260728,
+      "tokens_per_update": 4096
+    },
+    "routes": {
+      "GQA-ALiBi-Context512-CPT": {
+        "best_step": 250,
+        "checkpoint_bytes": 38592622,
+        "checkpoint_sha256": "8019c436c089bc845c2c848c220a266f287802a7174aea2ad9b0b38618396eca",
+        "initial_full_validation_loss": 2.5183261749704218,
+        "model_state_sha256": "a8d175a00f4a6596844ca4336f510b883f2314dde1184e36595aca0d9787e838",
+        "peak_cuda_memory_allocated_bytes": 446397440,
+        "selected_full_test_loss": 1.5071690345945412,
+        "selected_full_validation_loss": 1.5889927234508843,
+        "training_tokens_per_second": 56631.37000402948,
+        "wall_seconds": 18.690300000016578
+      },
+      "GQA-Learned-Context512-CPT": {
+        "best_step": 250,
+        "checkpoint_bytes": 39379371,
+        "checkpoint_sha256": "b3a32634168ab9cd3122e199f734c50f8a384aa118e02c0cb9f0ca051669dd3d",
+        "initial_full_validation_loss": 2.66543353672279,
+        "model_state_sha256": "a6909d86133761102a2ac995d6c6b89c2ed6bfa5244dba0e95ff58e4b603175e",
+        "peak_cuda_memory_allocated_bytes": 450998272,
+        "selected_full_test_loss": 1.53581877886394,
+        "selected_full_validation_loss": 1.6190976141363,
+        "training_tokens_per_second": 64963.8759293137,
+        "wall_seconds": 16.2436123000225
+      }
+    }
+  },
+  "evaluation": {
+    "contract": {
+      "decoding": "greedy",
+      "examples": 128,
+      "frozen_evaluation_sha256": "2b04622efef4886f3edbfb1950946acf8bf3aff07659f737f2ff100ee5bb321c",
+      "longest_input_tokens": 233,
+      "primary_output_token_budget": 256,
+      "secondary_think_diagnostic_budget": 384,
+      "tasks": [
+        "arithmetic",
+        "arithmetic_easy",
+        "gsm8k",
+        "physics_numeric"
+      ]
+    },
+    "primary_256": [
+      {
+        "budget_truncation_rate": 0.0,
+        "context_truncation_rate": 0.0,
+        "format_valid_rate": 1.0,
+        "mean_final_tokens": 19.3359375,
+        "mean_reasoning_tokens": 0.0,
+        "mode": "direct",
+        "mode_compliance_rate": 1.0,
+        "route": "Hybrid-Control-SFT-Context512",
+        "task_accuracy": 0.015625,
+        "unique_finals": 52
+      },
+      {
+        "budget_truncation_rate": 0.1796875,
+        "context_truncation_rate": 0.0,
+        "final_transition_rate": 0.75,
+        "format_valid_rate": 0.75,
+        "mean_final_tokens": 15.3125,
+        "mean_reasoning_tokens": 68.8046875,
+        "mode": "think",
+        "mode_compliance_rate": 0.75,
+        "route": "Hybrid-Control-SFT-Context512",
+        "task_accuracy": 0.0078125,
+        "unique_finals": 49
+      },
+      {
+        "budget_truncation_rate": 0.0,
+        "context_truncation_rate": 0.0,
+        "format_valid_rate": 1.0,
+        "mean_final_tokens": 19.2265625,
+        "mean_reasoning_tokens": 0.0,
+        "mode": "direct",
+        "mode_compliance_rate": 1.0,
+        "route": "GQA-Learned-Hybrid-SFT-Context512",
+        "task_accuracy": 0.015625,
+        "unique_finals": 48
+      },
+      {
+        "budget_truncation_rate": 0.15625,
+        "context_truncation_rate": 0.0,
+        "final_transition_rate": 0.7578125,
+        "format_valid_rate": 0.7578125,
+        "mean_final_tokens": 15.328125,
+        "mean_reasoning_tokens": 63.8046875,
+        "mode": "think",
+        "mode_compliance_rate": 0.7578125,
+        "route": "GQA-Learned-Hybrid-SFT-Context512",
+        "task_accuracy": 0.015625,
+        "unique_finals": 43
+      },
+      {
+        "budget_truncation_rate": 0.0,
+        "context_truncation_rate": 0.0,
+        "format_valid_rate": 1.0,
+        "mean_final_tokens": 19.484375,
+        "mean_reasoning_tokens": 0.0,
+        "mode": "direct",
+        "mode_compliance_rate": 1.0,
+        "route": "GQA-ALiBi-Hybrid-SFT-Context512",
+        "task_accuracy": 0.015625,
+        "unique_finals": 50
+      },
+      {
+        "budget_truncation_rate": 0.203125,
+        "context_truncation_rate": 0.0,
+        "final_transition_rate": 0.7578125,
+        "format_valid_rate": 0.7578125,
+        "mean_final_tokens": 15.28125,
+        "mean_reasoning_tokens": 75.234375,
+        "mode": "think",
+        "mode_compliance_rate": 0.7578125,
+        "route": "GQA-ALiBi-Hybrid-SFT-Context512",
+        "task_accuracy": 0.015625,
+        "unique_finals": 45
+      }
+    ],
+    "secondary_mha_think_384": {
+      "budget_truncation_rate": 0.0078125,
+      "context_truncation_rate": 0.171875,
+      "format_valid_rate": 0.75,
+      "mean_reasoning_tokens": 82.2265625,
+      "route": "Hybrid-Control-SFT-Context512",
+      "task_accuracy": 0.0078125
+    }
+  },
+  "host_kernel_diagnostic": {
+    "claim": "PyTorch native scaled_dot_product_attention(enable_gqa=True) is not a calculator deployment path and was slower in this bounded host diagnostic, so the uncommitted prototype was reverted.",
+    "manual_tokens_per_second": {
+      "alibi": 198732.45955434322,
+      "learned": 220285.73469379186
+    },
+    "native_gqa_change_percent": {
+      "alibi": -12.4741719628676,
+      "learned": -5.66002354581991
+    },
+    "native_gqa_tokens_per_second": {
+      "alibi": 173942.23080349772,
+      "learned": 207817.510242041
+    },
+    "shape": "batch 2, sequence 512, 50 timed full-forward iterations after 10 warmups"
+  },
+  "hybrid_sft": {
+    "contract": {
+      "optimizer_updates": 1000,
+      "sampled_tokens": 4096000,
+      "seed": 20260728,
+      "tokens_per_update": 4096
+    },
+    "routes": {
+      "GQA-ALiBi-Hybrid-SFT-Context512": {
+        "best_step": 1000,
+        "checkpoint_bytes": 38592622,
+        "checkpoint_sha256": "f385a51f7ac4d53b1a640f9a977308a365bb032a6a2dbe53394ba035169513ee",
+        "model_state_sha256": "ddb0911829fb3aa82f10807a38e5c2c70bf6c0d08bd23527e47ac43a56bf6b60",
+        "peak_cuda_memory_allocated_bytes": 447446016,
+        "selected_full_test_loss": 0.845237480381061,
+        "selected_full_validation_loss": 0.819613354844635,
+        "training_tokens_per_second": 46630.1149634262,
+        "wall_seconds": 89.2808088000165
+      },
+      "GQA-Learned-Hybrid-SFT-Context512": {
+        "best_step": 1000,
+        "checkpoint_bytes": 39379371,
+        "checkpoint_sha256": "71fe26e44e1beec8426fe3eafde9d4a327de1f0d7cec9e14ab0758f99c53ec1d",
+        "model_state_sha256": "9d81f8b3cc2a87572fa44c15dd8c875b9f3ceecdf5e4f6171c267c7325f68db8",
+        "peak_cuda_memory_allocated_bytes": 450998272,
+        "selected_full_test_loss": 0.876908914828349,
+        "selected_full_validation_loss": 0.855420158459976,
+        "training_tokens_per_second": 57444.3047873307,
+        "wall_seconds": 72.4401321000187
+      },
+      "Hybrid-Control-SFT-Context512": {
+        "best_step": 1000,
+        "checkpoint_bytes": 44097771,
+        "checkpoint_sha256": "95df2cbb25c070b377cfb87f667de985a7b21bd88242fa6d2e93ff9e1702fd0e",
+        "peak_cuda_memory_allocated_bytes": 472491008,
+        "selected_full_test_loss": 0.8531256135189405,
+        "selected_full_validation_loss": 0.828237417494067,
+        "training_tokens_per_second": 73848.5784228571,
+        "wall_seconds": 56.3634854999837
+      }
+    }
+  },
+  "lesson": 15,
+  "position_loss": {
+    "eligible_targets": 328697,
+    "GQA-ALiBi-Context512-CPT": {
+      "all_positions": 1.590420629197586,
+      "positions_0_255": 1.6047753500539894,
+      "positions_256_511": 1.5760672184291187
+    },
+    "GQA-Learned-Context512-CPT": {
+      "all_positions": 1.6204950280434203,
+      "positions_0_255": 1.6075266144270313,
+      "positions_256_511": 1.633462258093622
+    }
+  },
+  "schema_version": 1,
+  "source_commits": {
+    "architecture_and_conversion": "24b9028",
+    "canonical_tensor_hash": "2d44260",
+    "design": "80fc1dc",
+    "efficient_evaluator": "628c543",
+    "training": "5a0a0c1"
+  }
+}
