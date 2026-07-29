@@ -456,21 +456,27 @@ def _parse_response(
             "provider response content schema is invalid"
         )
     raw_scores = content.get("scores")
-    if not isinstance(raw_scores, list) or not raw_scores:
-        if isinstance(raw_scores, Mapping):
-            diagnostic = (
-                f"object with {len(raw_scores)} entries"
-            )
-        elif isinstance(raw_scores, list):
-            diagnostic = f"list with {len(raw_scores)} entries"
+    if isinstance(raw_scores, Mapping) and raw_scores:
+        score_rows: list[object] = [
+            {
+                "candidate_id": candidate_id,
+                "score": score,
+            }
+            for candidate_id, score in raw_scores.items()
+        ]
+    elif isinstance(raw_scores, list) and raw_scores:
+        score_rows = list(raw_scores)
+    else:
+        if isinstance(raw_scores, (Mapping, list)):
+            diagnostic = f"{type(raw_scores).__name__} with 0 entries"
         else:
             diagnostic = type(raw_scores).__name__
         raise PreferenceJudgeError(
-            "provider scores must be a non-empty list; "
+            "provider scores must be a non-empty list or object; "
             f"received {diagnostic}"
         )
     scores: list[CandidateScore] = []
-    for raw_score in raw_scores:
+    for raw_score in score_rows:
         if (
             not isinstance(raw_score, Mapping)
             or frozenset(raw_score) != _SCORE_FIELDS
@@ -483,6 +489,7 @@ def _parse_response(
         scores.append(
             CandidateScore(candidate_id=candidate_id, score=score)  # type: ignore[arg-type]
         )
+    scores.sort(key=lambda item: item.candidate_id)
     returned_ids = [item.candidate_id for item in scores]
     if (
         len(set(returned_ids)) != len(returned_ids)

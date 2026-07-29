@@ -207,7 +207,7 @@ def test_response_schema_and_preference_are_strict(
         client.judge(judge_problem())
 
 
-def test_invalid_score_container_reports_only_safe_shape(
+def test_score_object_is_strictly_normalized_to_public_list(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("DEEPSEEK_API_KEY", FAKE_SECRET)
@@ -227,9 +227,35 @@ def test_invalid_score_container_reports_only_safe_shape(
         transport=lambda *_: provider_response(content=content),
     )
 
+    answer = client.judge(judge_problem())
+
+    assert answer.reward_by_candidate() == {
+        "candidate-a": 1.0,
+        "candidate-b": 0.0,
+    }
+    assert isinstance(answer.public_record()["scores"], list)
+
+
+def test_empty_score_container_reports_only_safe_shape(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DEEPSEEK_API_KEY", FAKE_SECRET)
+    content = {
+        "scores": {},
+        "preferred_candidate_id": "candidate-a",
+        "rationale": "No scores.",
+    }
+    client = PreferenceJudgeClient(
+        PreferenceJudgeConfig(
+            max_requests=1,
+            maximum_attempts=1,
+        ),
+        transport=lambda *_: provider_response(content=content),
+    )
+
     with pytest.raises(
         PreferenceJudgeError,
-        match="object with 2 entries",
+        match="dict with 0 entries",
     ) as captured:
         client.judge(judge_problem())
 

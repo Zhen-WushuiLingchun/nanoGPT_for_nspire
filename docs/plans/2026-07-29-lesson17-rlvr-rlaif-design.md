@@ -199,6 +199,16 @@ because high thinking consumed the available output budget. No score was
 accepted or cached. The budget was raised before any AI-rewarded policy update;
 model, rubric, reward mapping, and all policy hyperparameters remained fixed.
 
+Live V4 responses also exposed one semantically equivalent JSON variation:
+some valid judgments encode `scores` as an eight-entry
+`candidate_id -> integer score` object instead of the requested list of
+objects. The parser accepts only those two exact containers, requires the
+candidate-ID set to match exactly, enforces integer scores in `[0,4]`, checks
+that the preferred ID has a maximum score, and normalizes the public cache to a
+sorted list. Empty, missing, partial, extra-ID, fractional, or inconsistent
+score containers remain hard failures. This compatibility was fixed from
+provider behavior rather than inferred scores.
+
 Every record stores model ID, rubric version, request-body SHA-256, provider
 request ID, token usage, candidate permutation, retry count, and parsed public
 feedback. Credentials are read only at HTTP call time and are prohibited from

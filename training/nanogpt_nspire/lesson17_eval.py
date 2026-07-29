@@ -35,7 +35,7 @@ def _mode_metrics(
     metrics = evaluation.get("metrics")
     if not isinstance(metrics, Mapping):
         raise ValueError("evaluation metrics are missing")
-    examples = metrics.get("examples")
+    examples = metrics.get("examples", metrics.get("count"))
     accuracy = metrics.get("task_accuracy")
     format_rate = metrics.get("format_valid_rate")
     mode_rate = metrics.get("mode_compliance_rate")
@@ -52,7 +52,15 @@ def _mode_metrics(
     ):
         raise ValueError("evaluation metrics are invalid")
     correct_float = float(accuracy) * examples
-    correct = round(correct_float)
+    declared_correct = metrics.get("correct")
+    correct = (
+        declared_correct
+        if isinstance(declared_correct, int)
+        and not isinstance(declared_correct, bool)
+        else round(correct_float)
+    )
+    if not isinstance(correct, int) or correct < 0:
+        raise ValueError("evaluation correct count is invalid")
     if abs(correct_float - correct) > 1e-8:
         raise ValueError("evaluation accuracy does not encode an exact count")
     return {
